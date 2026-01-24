@@ -608,16 +608,22 @@ st.markdown("""
     }
     .stMarkdown p, .stCaption { color: #5D4037 !important; }
     
-    /* 7. BUTTON (NÚT BẤM CHUNG) */
+    /* 7. BUTTON (NÚT BẤM CHUNG) - [ĐÃ TĂNG SIZE CHO DỄ BẤM] */
     .stButton button, div[data-testid="stFormSubmitButton"] button {
         background-color: #8B4513 !important; 
         color: #FFFFFF !important; 
         font-weight: bold !important;
-        font-size: 20px !important; 
-        border-radius: 8px !important; 
-        margin-top: 10px;
+        
+        /* [THAY ĐỔI] Tăng kích thước chữ và chiều cao nút */
+        font-size: 24px !important;  
+        min-height: 70px !important; /* Nút cao ít nhất 70px */
+        padding-top: 10px !important;
+        padding-bottom: 10px !important;
+        
+        border-radius: 12px !important; /* Bo góc tròn hơn */
+        margin-top: 15px;
         border: none !important;
-        box-shadow: 2px 2px 5px rgba(0,0,0,0.2) !important;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.3) !important; /* Đổ bóng đậm hơn cho nổi */
     }
     .stButton button:hover, .stButton button:active, .stButton button:focus,
     div[data-testid="stFormSubmitButton"] button:hover,
@@ -1064,7 +1070,7 @@ else:
             if not has_recording:
                 c_mic1, c_mic2 = st.columns([3, 1])
                 with c_mic1:
-                    st.info("💡 Hướng dẫn: Bấm 'Bắt đầu' > Nói > Bấm 'Dừng'.")
+                    st.info("💡Giữ im lặng 5 giây trước khi bắt đầu thu âm.")
                 
                 # Gọi thư viện mic_recorder mới
                 audio_data = mic_recorder(
@@ -1236,6 +1242,7 @@ else:
     if not st.session_state['show_history_section']:
         if st.button("📂 Xem danh sách video", use_container_width=True):
             st.session_state['show_history_section'] = True
+            st.session_state['show_wait_message'] = False # [MỚI] Tắt thông báo chờ
             st.rerun()
             
     # --- TRƯỜNG HỢP 2: ĐÃ BẤM XEM (HIỆN) ---
@@ -1247,6 +1254,7 @@ else:
         with c_hist2:
             if st.button("🔄 Làm mới", help="Cập nhật danh sách mới nhất"):
                 get_all_orders_cached.clear() 
+                st.session_state['show_wait_message'] = False # [MỚI] Tắt thông báo chờ
                 st.rerun()
         
         # 2. Lấy dữ liệu
