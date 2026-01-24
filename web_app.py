@@ -932,13 +932,11 @@ else:
     
     # --- KHUNG HIỂN THỊ NỘI DUNG & BỘ ĐẾM TỪ ---
     if source_opt:
-        # [ĐÃ SỬA] Tăng chiều cao tối thiểu từ 150 lên 400px để dễ nhìn hơn
-        # Chúng ta dùng nội dung hiện tại để tính chiều cao cho chuẩn
-        current_text = st.session_state.get("main_content_area", final_script_content)
-        est_height = max(400, (len(current_text) // 70) * 30 + 80)
+        # [ĐÃ SỬA] Cố định chiều cao khung nhập liệu (Bạn có thể sửa số 350 thành số khác tùy ý)
+        FIXED_HEIGHT = 350 
         
         # Text Area - [ĐÃ SỬA LỖI WARNING] Bỏ tham số 'value' để tránh xung đột với key
-        noi_dung_gui = st.text_area("", height=est_height, 
+        noi_dung_gui = st.text_area("", height=FIXED_HEIGHT, 
                                     placeholder="Nội dung kịch bản sẽ hiện ở đây...", 
                                     key="main_content_area")
         
