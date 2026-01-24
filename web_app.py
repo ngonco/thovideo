@@ -7,7 +7,8 @@ import uuid
 import requests
 import json
 import pandas as pd
-from audio_recorder_streamlit import audio_recorder 
+# from audio_recorder_streamlit import audio_recorder 
+from streamlit_mic_recorder import mic_recorder 
 
 # --- [NEW] CÁC HÀM QUẢN LÝ USER & QUOTA ---
 # --- [UPDATE] LOGIC ĐĂNG NHẬP & RESET QUOTA THEO NGÀY ĐĂNG KÝ ---
@@ -1056,43 +1057,42 @@ else:
 
         # CASE 3: THU ÂM TRỰC TIẾP
         elif voice_method == "🎙️ Thu âm trực tiếp": 
-            # Container đóng khung
-            rec_container = st.container()
+            st.markdown("##### 🎙️ Bảng điều khiển thu âm")
+            
+            # Kiểm tra xem đã có file thu âm trong bộ nhớ chưa
             has_recording = 'temp_record_file' in st.session_state and st.session_state['temp_record_file'] is not None
 
-            with rec_container:
-                # TRƯỜNG HỢP A: CHƯA CÓ FILE THU -> HIỆN NÚT MICRO
-                if not has_recording:
-                    c_mic1, c_mic2, c_mic3 = st.columns([1, 2, 1])
-                    with c_mic2:
-                        st.markdown("<div style='text-align: center; color: #666; margin-bottom: 10px;'>Bấm Micro để bắt đầu/ Bấm lần nữa để kết thúc (nên im lặng 5 giây đầu)</div>", unsafe_allow_html=True)
-                        audio_bytes = audio_recorder(
-                            text="", 
-                            recording_color="#D32F2F", 
-                            neutral_color="#333333",   
-                            icon_name="microphone",
-                            icon_size="5x",            
-                            # [ĐÃ SỬA] Tăng thời gian chờ im lặng lên 300 giây (5 phút)
-                            # Để bạn thoải mái ngắt nghỉ mà không bị tự động dừng
-                            pause_threshold=300.0,
-                        )
-
-                    if audio_bytes:
-                        st.session_state['temp_record_file'] = audio_bytes
-                        st.session_state['temp_record_name'] = f"record_{datetime.now().strftime('%H%M%S')}.wav"
-                        st.rerun()
-
-                # TRƯỜNG HỢP B: ĐÃ THU -> HIỆN PLAYER & NÚT THU LẠI
-                else:
-                    st.success("✅ Đã thu âm xong! Hãy nghe lại bên dưới:")
-                    st.audio(st.session_state['temp_record_file'], format="audio/wav")
-                    
-                    if st.button("🔄 Hủy và Thu lại", use_container_width=True):
-                        st.session_state['temp_record_file'] = None
-                        st.rerun()
+            # KHU VỰC THU ÂM (Luôn hiện để có thể thu lại đè lên)
+            if not has_recording:
+                c_mic1, c_mic2 = st.columns([3, 1])
+                with c_mic1:
+                    st.info("💡 Hướng dẫn: Bấm 'Bắt đầu' > Nói > Bấm 'Dừng'.")
                 
-                # 2. Thông báo hướng dẫn (Nằm ngay bên dưới)
-                st.info("👇 Nếu thu âm đạt rồi, bấm nút '🚀 GỬI YÊU CẦU TẠO VIDEO.")
+                # Gọi thư viện mic_recorder mới
+                audio_data = mic_recorder(
+                    start_prompt="🔴 Bấm để BẮT ĐẦU thu",
+                    stop_prompt="⏹️ Bấm để DỪNG thu",
+                    just_once=True, 
+                    use_container_width=True,
+                    format="wav", 
+                    key="new_mic_recorder"
+                )
+                
+                if audio_data:
+                    st.session_state['temp_record_file'] = audio_data['bytes']
+                    st.session_state['temp_record_name'] = f"record_{datetime.now().strftime('%H%M%S')}.wav"
+                    st.rerun()
+
+            # KHU VỰC NGHE LẠI & XÁC NHẬN
+            else:
+                st.success("✅ Đã thu âm thành công!")
+                st.audio(st.session_state['temp_record_file'], format="audio/wav")
+                
+                if st.button("🔄 Xóa và Thu lại", use_container_width=True, type="secondary"):
+                    st.session_state['temp_record_file'] = None
+                    st.rerun()
+                    
+                st.info("👇 Nếu đã ưng ý, hãy bấm nút **'🚀 GỬI YÊU CẦU TẠO VIDEO'** bên dưới.")
         
     # --- SETTINGS (Giữ nguyên code cũ) ---
     st.markdown("---")
@@ -1226,7 +1226,7 @@ else:
     if st.session_state.get('show_wait_message', False):
         st.markdown("""
         <div style="background-color: #FFF9C4; color: #5D4037; padding: 15px; border-radius: 10px; border: 1px solid #FBC02D; margin-bottom: 20px; font-weight: bold;">
-            ⏳ Đang tạo video. Vui lòng quay lại sau 5 phút và bấm nút "Xem danh sách video"!
+            ⏳ Đang tạo video. Vui lòng quay lại sau 5 phút và bấm nút "Xem danh sách video" hoặc nút "Làm mới"!
         </div>
         """, unsafe_allow_html=True)
 
