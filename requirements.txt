@@ -4,5 +4,5 @@ gspread
 oauth2client
 google-api-python-client
 requests
-audio-recorder-streamlit
 streamlit-mic-recorder
+
