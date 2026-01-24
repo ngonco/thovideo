@@ -1226,7 +1226,7 @@ else:
     if st.session_state.get('show_wait_message', False):
         st.markdown("""
         <div style="background-color: #FFF9C4; color: #5D4037; padding: 15px; border-radius: 10px; border: 1px solid #FBC02D; margin-bottom: 20px; font-weight: bold;">
-            ⏳ Đang tạo video. Vui lòng quay lại sau 5 phút và bấm nút "Làm Mới"!
+            ⏳ Đang tạo video. Vui lòng quay lại sau 5 phút và bấm nút "Xem danh sách video"!
         </div>
         """, unsafe_allow_html=True)
 
@@ -1236,7 +1236,7 @@ else:
 
     # --- TRƯỜNG HỢP 1: CHƯA BẤM XEM (ẨN) ---
     if not st.session_state['show_history_section']:
-        if st.button("📂 Bấm để xem video cũ", use_container_width=True):
+        if st.button("📂 Xem danh sách video", use_container_width=True):
             st.session_state['show_history_section'] = True
             st.rerun()
             
