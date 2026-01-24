@@ -1227,6 +1227,9 @@ else:
         </div>
         """, unsafe_allow_html=True)
 
+    # [FIX] Khởi tạo biến history_df rỗng trước để tránh lỗi NameError ở bên dưới
+    history_df = pd.DataFrame()
+
     # --- LOGIC MỚI: CHỈ TẢI KHI BẤM NÚT (FIXED UI) ---
     if 'show_history_section' not in st.session_state:
         st.session_state['show_history_section'] = False
