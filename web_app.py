@@ -608,22 +608,16 @@ st.markdown("""
     }
     .stMarkdown p, .stCaption { color: #5D4037 !important; }
     
-    /* 7. BUTTON (NÚT BẤM CHUNG) - [ĐÃ TĂNG SIZE CHO DỄ BẤM] */
+    /* 7. BUTTON (NÚT BẤM CHUNG) */
     .stButton button, div[data-testid="stFormSubmitButton"] button {
         background-color: #8B4513 !important; 
         color: #FFFFFF !important; 
         font-weight: bold !important;
-        
-        /* [THAY ĐỔI] Tăng kích thước chữ và chiều cao nút */
-        font-size: 24px !important;  
-        min-height: 70px !important; /* Nút cao ít nhất 70px */
-        padding-top: 10px !important;
-        padding-bottom: 10px !important;
-        
-        border-radius: 12px !important; /* Bo góc tròn hơn */
-        margin-top: 15px;
+        font-size: 20px !important; 
+        border-radius: 8px !important; 
+        margin-top: 10px;
         border: none !important;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.3) !important; /* Đổ bóng đậm hơn cho nổi */
+        box-shadow: 2px 2px 5px rgba(0,0,0,0.2) !important;
     }
     .stButton button:hover, .stButton button:active, .stButton button:focus,
     div[data-testid="stFormSubmitButton"] button:hover,
@@ -693,6 +687,16 @@ st.markdown("""
         margin-bottom: 10px;
     }
     
+    /* ============================================================
+       [MỚI] PHÓNG TO RIÊNG NÚT THU ÂM (ZOOM 150%)
+       ============================================================ */
+    iframe[title="streamlit_mic_recorder.mic_recorder"] {
+        transform: scale(1.5) !important;       /* Phóng to 1.5 lần (150%) */
+        transform-origin: left top !important;  /* Phóng to từ góc trái */
+        margin-bottom: 30px !important;         /* Tạo khoảng trống bên dưới để không bị che */
+        min-height: 80px !important;            /* Ép chiều cao khung hiển thị lớn hơn */
+    }
+
     /* 2. Mẹo CSS dành riêng cho Chrome/Android để chỉnh màu */
     audio::-webkit-media-controls-panel {
         /* [FIX] Đổi từ #FFF8DC (Kem) sang #D7CCC8 (Nâu Cafe Sữa) 
@@ -1068,9 +1072,18 @@ else:
 
             # KHU VỰC THU ÂM (Luôn hiện để có thể thu lại đè lên)
             if not has_recording:
-                c_mic1, c_mic2 = st.columns([3, 1])
-                with c_mic1:
-                    st.info("💡Giữ im lặng 5 giây trước khi bắt đầu thu âm.")
+                st.info("💡 Giữ yên lặng 5 giây trước khi bắt đầu thu")
+                
+                # [ĐÃ SỬA] Bỏ cột (columns) để nút có đủ chỗ phóng to mà không bị cắt
+                # Gọi thư viện mic_recorder mới
+                audio_data = mic_recorder(
+                    start_prompt="🔴 BẤM ĐỂ BẮT ĐẦU THU", # Giữ chữ in hoa cho rõ
+                    stop_prompt="⏹️ BẤM ĐỂ DỪNG LẠI",
+                    just_once=True, 
+                    use_container_width=True,
+                    format="wav", 
+                    key="new_mic_recorder"
+                )
                 
                 # Gọi thư viện mic_recorder mới
                 audio_data = mic_recorder(
