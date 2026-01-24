@@ -1227,34 +1227,92 @@ else:
         </div>
         """, unsafe_allow_html=True)
 
-    # --- LOGIC MỚI: CHỈ TẢI KHI BẤM NÚT ---
+    # --- LOGIC MỚI: CHỈ TẢI KHI BẤM NÚT (FIXED UI) ---
     if 'show_history_section' not in st.session_state:
         st.session_state['show_history_section'] = False
 
-    # Nếu CHƯA BẤM nút xem -> Hiện nút bấm để tiết kiệm API
+    # 1. TRẠNG THÁI ẨN (CHƯA BẤM XEM)
     if not st.session_state['show_history_section']:
-        st.info("dữ liệu lịch sử được ẩn để tiết kiệm tài nguyên.")
+        # [ĐÃ XÓA] Dòng thông báo text thừa
+        # Chỉ hiện đúng 1 nút bấm gọn gàng
         if st.button("📂 Bấm để xem video cũ", use_container_width=True):
             st.session_state['show_history_section'] = True
             st.rerun()
-        history_df = pd.DataFrame() # Tạo bảng rỗng để không bị lỗi code bên dưới
-        
-    # Nếu ĐÃ BẤM nút xem -> Mới bắt đầu gọi API và hiện giao diện
+            
+    # 2. TRẠNG THÁI HIỆN (ĐÃ BẤM XEM)
     else:
         c_hist1, c_hist2 = st.columns([3, 1], vertical_alignment="center")
         with c_hist1:
             st.subheader("📜 Video của bạn")
         with c_hist2:
-            # Nút làm mới kiêm nút tải lại
             if st.button("🔄 Làm mới", help="Cập nhật danh sách mới nhất"):
                 get_all_orders_cached.clear() 
                 st.rerun()
         
-        # [QUAN TRỌNG] Chỉ gọi hàm này khi lọt vào đây
+        # Gọi API lấy dữ liệu
         history_df = get_user_history(user['email'])
         
-        # Nút ẩn lại cho gọn (Optional)
-        if st.button("❌ Ẩn lịch sử"):
+        # --- HIỂN THỊ DANH SÁCH ---
+        if not history_df.empty:
+            status_map = {
+                "Pending": "⏳ Đang chờ xử lý", "Processing": "⚙️ Đang tạo video...",
+                "Done": "✅ Hoàn thành - Bấm xem", "Error": "❌ Gặp lỗi"
+            }
+            
+            # Logic phân trang / xem thêm
+            MAX_ITEMS = 3
+            if 'history_expanded' not in st.session_state: st.session_state['history_expanded'] = False
+            
+            df_display = history_df if st.session_state['history_expanded'] else history_df.head(MAX_ITEMS)
+            total_items = len(history_df)
+
+            for index, row in df_display.iterrows():
+                # Lấy dữ liệu an toàn
+                date_str = row.get('NgayTao', '')
+                result_link = row.get('LinkKetQua', '')
+                raw_status = row.get('TrangThai', 'Pending')
+                order_id = row.get('ID', f'id_{index}')
+                
+                # Format ngày tháng
+                try: display_date = pd.to_datetime(date_str).strftime('%d/%m/%Y - %H:%M')
+                except: display_date = str(date_str)
+
+                # Preview nội dung
+                content_preview = str(row.get('NoiDung', ''))[:30] + "..."
+                
+                vn_status = status_map.get(raw_status, raw_status)
+                
+                with st.expander(f"{display_date} | {vn_status} | {content_preview}"):
+                    if result_link and str(result_link).startswith("http"):
+                        # Link tải fix cho iOS
+                        dl_link = result_link.replace("/upload/", "/upload/fl_attachment/") if "cloudinary" in result_link else result_link
+                        
+                        c_b1, c_b2 = st.columns(2)
+                        with c_b1: st.link_button("▶️ Xem Video", result_link)
+                        with c_b2: st.link_button("📥 Tải về", dl_link)
+                    elif raw_status == "Error":
+                        st.error("Video lỗi.")
+                    else:
+                        st.info("Đang xử lý...")
+            
+            # Nút Xem thêm / Thu gọn
+            if total_items > MAX_ITEMS:
+                st.markdown("---")
+                if not st.session_state['history_expanded']:
+                    if st.button(f"🔽 Xem thêm ({total_items - MAX_ITEMS} video cũ)"):
+                        st.session_state['history_expanded'] = True
+                        st.rerun()
+                else:
+                    if st.button("🔼 Thu gọn"):
+                        st.session_state['history_expanded'] = False
+                        st.rerun()
+        else:
+            # [FIX] Dòng này giờ chỉ hiện khi đã load xong dữ liệu mà vẫn không có video
+            st.info("Bạn chưa có video nào.")
+
+        # Nút đóng lịch sử
+        st.markdown("<br>", unsafe_allow_html=True)
+        if st.button("❌ Đóng lại"):
             st.session_state['show_history_section'] = False
             st.rerun()
     
