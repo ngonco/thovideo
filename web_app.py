@@ -687,16 +687,6 @@ st.markdown("""
         margin-bottom: 10px;
     }
     
-    /* ============================================================
-       [MỚI] PHÓNG TO RIÊNG NÚT THU ÂM (ZOOM 150%)
-       ============================================================ */
-    iframe[title="streamlit_mic_recorder.mic_recorder"] {
-        transform: scale(1.5) !important;       /* Phóng to 1.5 lần (150%) */
-        transform-origin: left top !important;  /* Phóng to từ góc trái */
-        margin-bottom: 30px !important;         /* Tạo khoảng trống bên dưới để không bị che */
-        min-height: 80px !important;            /* Ép chiều cao khung hiển thị lớn hơn */
-    }
-
     /* 2. Mẹo CSS dành riêng cho Chrome/Android để chỉnh màu */
     audio::-webkit-media-controls-panel {
         /* [FIX] Đổi từ #FFF8DC (Kem) sang #D7CCC8 (Nâu Cafe Sữa) 
@@ -1072,18 +1062,9 @@ else:
 
             # KHU VỰC THU ÂM (Luôn hiện để có thể thu lại đè lên)
             if not has_recording:
-                st.info("💡 Giữ yên lặng 5 giây trước khi bắt đầu thu")
-                
-                # [ĐÃ SỬA] Bỏ cột (columns) để nút có đủ chỗ phóng to mà không bị cắt
-                # Gọi thư viện mic_recorder mới
-                audio_data = mic_recorder(
-                    start_prompt="🔴 BẤM ĐỂ BẮT ĐẦU THU", # Giữ chữ in hoa cho rõ
-                    stop_prompt="⏹️ BẤM ĐỂ DỪNG LẠI",
-                    just_once=True, 
-                    use_container_width=True,
-                    format="wav", 
-                    key="new_mic_recorder"
-                )
+                c_mic1, c_mic2 = st.columns([3, 1])
+                with c_mic1:
+                    st.info("💡 Hướng dẫn: Bấm 'Bắt đầu' > Nói > Bấm 'Dừng'.")
                 
                 # Gọi thư viện mic_recorder mới
                 audio_data = mic_recorder(
@@ -1255,7 +1236,6 @@ else:
     if not st.session_state['show_history_section']:
         if st.button("📂 Xem danh sách video", use_container_width=True):
             st.session_state['show_history_section'] = True
-            st.session_state['show_wait_message'] = False # [MỚI] Tắt thông báo chờ
             st.rerun()
             
     # --- TRƯỜNG HỢP 2: ĐÃ BẤM XEM (HIỆN) ---
@@ -1267,7 +1247,6 @@ else:
         with c_hist2:
             if st.button("🔄 Làm mới", help="Cập nhật danh sách mới nhất"):
                 get_all_orders_cached.clear() 
-                st.session_state['show_wait_message'] = False # [MỚI] Tắt thông báo chờ
                 st.rerun()
         
         # 2. Lấy dữ liệu
