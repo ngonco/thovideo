@@ -15,58 +15,68 @@ def check_login(email, password):
     try:
         gc = get_gspread_client()
         ws = gc.open(DB_SHEET_NAME).worksheet("users")
-        cell = ws.find(email, in_column=1) 
         
-        if cell:
-            row_data = ws.row_values(cell.row)
+        # [OPTIMIZED] Lấy toàn bộ dữ liệu 1 lần thay vì dùng .find() + .row_values()
+        # Giúp tiết kiệm 50% số lần gọi API Google
+        all_users = ws.get_all_values()
+        
+        # Loop qua từng dòng trong RAM của Python (Siêu nhanh)
+        for i, row_data in enumerate(all_users):
+            # i=0 là tiêu đề, bỏ qua
+            if i == 0: continue
             
-            # [FIX] Tự động điền thêm phần tử rỗng nếu hàng thiếu dữ liệu (để tránh lỗi index)
-            while len(row_data) < 7:
-                row_data.append("")
-
-            # Cấu trúc: A=Email, B=Pass, C=Plan, D=Max, E=Used, F=NextResetDate, G=Stock
-            db_pass = row_data[1]
-            
-            if str(password) == str(db_pass):
-                # Hàm nhỏ giúp chuyển đổi số an toàn (gặp ô trống thì coi là 0)
-                def safe_int(val):
-                    try: return int(val)
-                    except: return 0
-
-                user_info = {
-                    "row": cell.row,
-                    "email": row_data[0],
-                    "plan": row_data[2],
-                    "quota_max": safe_int(row_data[3]),   # Dùng safe_int để tránh lỗi
-                    "quota_used": safe_int(row_data[4]),  # Dùng safe_int để tránh lỗi
-                    "next_reset": row_data[5], 
-                    "stock_level": safe_int(row_data[6])  # Dùng safe_int để tránh lỗi
-                }
+            # Cột 1 là Email (index 0). So sánh không phân biệt hoa thường
+            if len(row_data) > 0 and str(row_data[0]).strip().lower() == str(email).strip().lower():
                 
-                # [NEW LOGIC] Reset theo chu kỳ 30 ngày từ ngày đăng ký
-                try:
-                    today = datetime.now().date()
-                    # Chuyển string trong sheet thành object ngày tháng
-                    next_reset_date = datetime.strptime(user_info["next_reset"], "%Y-%m-%d").date()
+                # [FIX] Tự động điền thêm phần tử rỗng nếu hàng thiếu dữ liệu
+                while len(row_data) < 7:
+                    row_data.append("")
+
+                # Cấu trúc: A=Email, B=Pass, C=Plan, D=Max, E=Used, F=NextResetDate, G=Stock
+                db_pass = row_data[1]
+                
+                if str(password) == str(db_pass):
+                    def safe_int(val):
+                        try: return int(val)
+                        except: return 0
+
+                    # Vì Sheet tính dòng từ 1, mà list Python tính từ 0, nên dòng thực tế là i + 1
+                    current_row = i + 1 
+
+                    user_info = {
+                        "row": current_row,
+                        "email": row_data[0],
+                        "plan": row_data[2],
+                        "quota_max": safe_int(row_data[3]),   
+                        "quota_used": safe_int(row_data[4]),  
+                        "next_reset": row_data[5], 
+                        "stock_level": safe_int(row_data[6])  
+                    }
                     
-                    # Nếu hôm nay đã vượt qua ngày reset
-                    if today >= next_reset_date:
-                        # 1. Reset Quota Used = 0
-                        ws.update_cell(cell.row, 5, 0) 
-                        user_info["quota_used"] = 0
-                        
-                        # 2. Tính ngày reset tiếp theo (cộng thêm 30 ngày)
-                        new_next_reset = next_reset_date + timedelta(days=30)
-                        new_reset_str = new_next_reset.strftime("%Y-%m-%d")
-                        
-                        # 3. Cập nhật ngày reset mới vào Sheet
-                        ws.update_cell(cell.row, 6, new_reset_str)
-                        user_info["next_reset"] = new_reset_str
-                except Exception as e:
-                    print(f"Lỗi format ngày tháng: {e}") 
-                    # Nếu lỗi format ngày, bỏ qua không reset để tránh crash app
-                
-                return user_info
+                    # [NEW LOGIC] Reset theo chu kỳ 30 ngày từ ngày đăng ký
+                    try:
+                        today = datetime.now().date()
+                        if user_info["next_reset"]:
+                            next_reset_date = datetime.strptime(user_info["next_reset"], "%Y-%m-%d").date()
+                            
+                            # Nếu hôm nay đã vượt qua ngày reset
+                            if today >= next_reset_date:
+                                # 1. Reset Quota Used = 0
+                                ws.update_cell(current_row, 5, 0) 
+                                user_info["quota_used"] = 0
+                                
+                                # 2. Tính ngày reset tiếp theo
+                                new_next_reset = next_reset_date + timedelta(days=30)
+                                new_reset_str = new_next_reset.strftime("%Y-%m-%d")
+                                
+                                # 3. Cập nhật ngày reset mới vào Sheet
+                                ws.update_cell(current_row, 6, new_reset_str)
+                                user_info["next_reset"] = new_reset_str
+                    except Exception as e:
+                        print(f"Lỗi format ngày tháng: {e}") 
+                    
+                    return user_info
+                    
     except Exception as e:
         st.error(f"Lỗi đăng nhập: {e}")
     return None
@@ -123,9 +133,14 @@ def load_draft_from_sheet(email):
     try:
         gc = get_gspread_client()
         ws = gc.open(DB_SHEET_NAME).worksheet("drafts")
-        cell = ws.find(email, in_column=1)
-        if cell:
-            return ws.cell(cell.row, 2).value
+        
+        # [OPTIMIZED] Lấy hết về 1 lần thay vì tìm và gọi cell lẻ tẻ
+        all_drafts = ws.get_all_values()
+        
+        for row in all_drafts:
+            # Nếu tìm thấy email ở cột đầu tiên (index 0)
+            if len(row) >= 2 and str(row[0]).strip().lower() == str(email).strip().lower():
+                return row[1] # Trả về cột Content (index 1)
     except: pass
     return ""
 
@@ -1200,28 +1215,48 @@ else:
     
 
     # ==========================================
-    # [NEW] LỊCH SỬ VIDEO (LẤY TỪ ORDERS)
+    # [NEW] LỊCH SỬ VIDEO (LẤY TỪ ORDERS) - [OPTIMIZED LAZY LOAD]
     # ==========================================
     st.markdown("---")
     
-    # [MOI] Hiển thị thông báo nhắc nhở quay lại sau 5 phút (Đã sửa màu chữ dễ đọc)
+    # [MOI] Hiển thị thông báo nhắc nhở (Giữ nguyên)
     if st.session_state.get('show_wait_message', False):
         st.markdown("""
         <div style="background-color: #FFF9C4; color: #5D4037; padding: 15px; border-radius: 10px; border: 1px solid #FBC02D; margin-bottom: 20px; font-weight: bold;">
             ⏳ Đang tạo video. Vui lòng quay lại sau 5 phút và bấm nút "Làm Mới"!
         </div>
         """, unsafe_allow_html=True)
-    c_hist1, c_hist2 = st.columns([3, 1], vertical_alignment="center")
-    with c_hist1:
-        st.subheader("📜 Video của bạn")
-    with c_hist2:
-        # Nút này sẽ xóa cache cũ đi để lấy dữ liệu mới nhất
-        if st.button("🔄 Làm mới", help="Bấm để cập nhật danh sách video mới nhất"):
-            get_all_orders_cached.clear() # Xóa cache
-            st.rerun()
 
-    # Gọi hàm mới đã sửa
-    history_df = get_user_history(user['email'])
+    # --- LOGIC MỚI: CHỈ TẢI KHI BẤM NÚT ---
+    if 'show_history_section' not in st.session_state:
+        st.session_state['show_history_section'] = False
+
+    # Nếu CHƯA BẤM nút xem -> Hiện nút bấm để tiết kiệm API
+    if not st.session_state['show_history_section']:
+        st.info("dữ liệu lịch sử được ẩn để tiết kiệm tài nguyên.")
+        if st.button("📂 Bấm để xem video cũ", use_container_width=True):
+            st.session_state['show_history_section'] = True
+            st.rerun()
+        history_df = pd.DataFrame() # Tạo bảng rỗng để không bị lỗi code bên dưới
+        
+    # Nếu ĐÃ BẤM nút xem -> Mới bắt đầu gọi API và hiện giao diện
+    else:
+        c_hist1, c_hist2 = st.columns([3, 1], vertical_alignment="center")
+        with c_hist1:
+            st.subheader("📜 Video của bạn")
+        with c_hist2:
+            # Nút làm mới kiêm nút tải lại
+            if st.button("🔄 Làm mới", help="Cập nhật danh sách mới nhất"):
+                get_all_orders_cached.clear() 
+                st.rerun()
+        
+        # [QUAN TRỌNG] Chỉ gọi hàm này khi lọt vào đây
+        history_df = get_user_history(user['email'])
+        
+        # Nút ẩn lại cho gọn (Optional)
+        if st.button("❌ Ẩn lịch sử"):
+            st.session_state['show_history_section'] = False
+            st.rerun()
     
     # [FIX] Đưa biến đếm ra ngoài để tránh lỗi NameError khi không có dữ liệu
     MAX_ITEMS = 3
