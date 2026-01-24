@@ -342,6 +342,7 @@ def get_app_style():
 
 
 # --- [UPDATED] HÀM KIỂM TRA LINK (MẠNH HƠN) ---
+@st.cache_data(ttl=86400) # Lưu kết quả kiểm tra trong 24 giờ
 def check_link_exists(url):
     if not url: return False
     try:
@@ -387,7 +388,7 @@ def get_creds():
 
 def get_gspread_client(): return gspread.authorize(get_creds())
 
-@st.cache_data(ttl=600) 
+@st.cache_data(ttl=3600) 
 def get_library_structure():
     try:
         gc = get_gspread_client()
@@ -401,7 +402,7 @@ def get_library_structure():
     except Exception as e: return [f"Lỗi: {str(e)}"]
 
 # --- ĐÃ SỬA ĐỂ HỖ TRỢ PHÂN QUYỀN STOCK ---
-@st.cache_data(ttl=600)
+@st.cache_data(ttl=3600, show_spinner="Đang tải dữ liệu từ thư viện...")
 def get_scripts_with_audio(sheet_name, stock_limit=1000):
     # [CẤU HÌNH] Thay link Hugging Face của bạn vào bên dưới
     # Cấu trúc chuẩn: https://huggingface.co/datasets/{USERNAME}/{DATASET}/resolve/main/
