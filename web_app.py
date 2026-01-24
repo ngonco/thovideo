@@ -1313,7 +1313,8 @@ else:
                     # B. Nút Tạo lại (Re-create)
                     st.markdown('<div style="margin-top: 5px;"></div>', unsafe_allow_html=True) 
                     if old_audio_link and str(old_audio_link).startswith("http"):
-                        if st.button(f"♻️ Tạo lại bằng Audio này", key=f"recreate_{order_id}", disabled=is_out_of_quota, use_container_width=True):
+                        # [FIX] Thêm _{index} vào key để đảm bảo không bao giờ bị trùng
+                        if st.button(f"♻️ Tạo lại bằng Audio này", key=f"recreate_{order_id}_{index}", disabled=is_out_of_quota, use_container_width=True):
                             if not is_out_of_quota:
                                 try:
                                     with st.spinner("Đang gửi lệnh tạo lại..."):
