@@ -1,0 +1,7 @@
+streamlit>=1.40.0
+pandas
+gspread
+oauth2client
+google-api-python-client
+requests
+audio-recorder-streamlit
