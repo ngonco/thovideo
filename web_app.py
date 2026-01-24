@@ -1219,6 +1219,9 @@ else:
     # ==========================================
     st.markdown("---")
     
+    # [FIX] Thêm dòng này để tránh lỗi NameError
+    history_df = pd.DataFrame()
+    
     # Hiển thị thông báo nhắc nhở nếu vừa tạo đơn
     if st.session_state.get('show_wait_message', False):
         st.markdown("""
