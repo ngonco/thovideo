@@ -1219,7 +1219,7 @@ else:
     # ==========================================
     st.markdown("---")
     
-    # [MOI] Hiển thị thông báo nhắc nhở (Giữ nguyên)
+    # Hiển thị thông báo nhắc nhở nếu vừa tạo đơn
     if st.session_state.get('show_wait_message', False):
         st.markdown("""
         <div style="background-color: #FFF9C4; color: #5D4037; padding: 15px; border-radius: 10px; border: 1px solid #FBC02D; margin-bottom: 20px; font-weight: bold;">
@@ -1227,23 +1227,19 @@ else:
         </div>
         """, unsafe_allow_html=True)
 
-    # [FIX] Khởi tạo biến history_df rỗng trước để tránh lỗi NameError ở bên dưới
-    history_df = pd.DataFrame()
-
-    # --- LOGIC MỚI: CHỈ TẢI KHI BẤM NÚT (FIXED UI) ---
+    # Khởi tạo trạng thái
     if 'show_history_section' not in st.session_state:
         st.session_state['show_history_section'] = False
 
-    # 1. TRẠNG THÁI ẨN (CHƯA BẤM XEM)
+    # --- TRƯỜNG HỢP 1: CHƯA BẤM XEM (ẨN) ---
     if not st.session_state['show_history_section']:
-        # [ĐÃ XÓA] Dòng thông báo text thừa
-        # Chỉ hiện đúng 1 nút bấm gọn gàng
         if st.button("📂 Bấm để xem video cũ", use_container_width=True):
             st.session_state['show_history_section'] = True
             st.rerun()
             
-    # 2. TRẠNG THÁI HIỆN (ĐÃ BẤM XEM)
+    # --- TRƯỜNG HỢP 2: ĐÃ BẤM XEM (HIỆN) ---
     else:
+        # 1. Header & Nút Làm mới
         c_hist1, c_hist2 = st.columns([3, 1], vertical_alignment="center")
         with c_hist1:
             st.subheader("📜 Video của bạn")
@@ -1252,70 +1248,108 @@ else:
                 get_all_orders_cached.clear() 
                 st.rerun()
         
-        # Gọi API lấy dữ liệu
+        # 2. Lấy dữ liệu
         history_df = get_user_history(user['email'])
         
-        # --- HIỂN THỊ DANH SÁCH ---
+        # 3. Hiển thị danh sách
         if not history_df.empty:
             status_map = {
                 "Pending": "⏳ Đang chờ xử lý", "Processing": "⚙️ Đang tạo video...",
-                "Done": "✅ Hoàn thành - Bấm xem", "Error": "❌ Gặp lỗi"
+                "Done": "✅ Hoàn thành - Bấm xem", "Error": "❌ Gặp lỗi", "": "❓ Chưa xác định"
             }
             
-            # Logic phân trang / xem thêm
+            # Logic phân trang (Xem thêm / Thu gọn)
             MAX_ITEMS = 3
             if 'history_expanded' not in st.session_state: st.session_state['history_expanded'] = False
             
+            # Cắt danh sách tùy theo trạng thái
             df_display = history_df if st.session_state['history_expanded'] else history_df.head(MAX_ITEMS)
             total_items = len(history_df)
 
+            # Vòng lặp hiển thị từng video
             for index, row in df_display.iterrows():
-                # Lấy dữ liệu an toàn
+                # Lấy thông tin an toàn
                 date_str = row.get('NgayTao', '')
                 result_link = row.get('LinkKetQua', '')
                 raw_status = row.get('TrangThai', 'Pending')
                 order_id = row.get('ID', f'id_{index}')
-                
-                # Format ngày tháng
+                old_audio_link = row.get('LinkGiongNoi', '')
+                old_content_script = row.get('NoiDung', '')
+
+                # Tạo trích dẫn ngắn
+                try:
+                    words = str(old_content_script).split()
+                    script_preview = " ".join(words[:10]) + "..." if len(words) > 10 else str(old_content_script)
+                except: script_preview = ""
+
+                # Format ngày & Trạng thái
                 try: display_date = pd.to_datetime(date_str).strftime('%d/%m/%Y - %H:%M')
                 except: display_date = str(date_str)
-
-                # Preview nội dung
-                content_preview = str(row.get('NoiDung', ''))[:30] + "..."
-                
                 vn_status = status_map.get(raw_status, raw_status)
-                
-                with st.expander(f"{display_date} | {vn_status} | {content_preview}"):
+
+                # HIỂN THỊ EXPANDER
+                with st.expander(f"{display_date} | {vn_status} | 📝 {script_preview}"):
+                    # A. Nếu có link kết quả -> Hiện nút Xem & Tải
                     if result_link and str(result_link).startswith("http"):
-                        # Link tải fix cho iOS
-                        dl_link = result_link.replace("/upload/", "/upload/fl_attachment/") if "cloudinary" in result_link else result_link
+                        # Fix link tải cho iOS
+                        dl_link = result_link.replace("/upload/", "/upload/fl_attachment/") if "cloudinary" in str(result_link) else result_link
                         
-                        c_b1, c_b2 = st.columns(2)
-                        with c_b1: st.link_button("▶️ Xem Video", result_link)
-                        with c_b2: st.link_button("📥 Tải về", dl_link)
+                        col_btn1, col_btn2 = st.columns([1, 1], gap="small")
+                        btn_style = "width: 100%; padding: 10px; border-radius: 8px; text-align: center; font-weight: bold; text-decoration: none; display: block; box-shadow: 0 2px 3px rgba(0,0,0,0.1);"
+                        
+                        with col_btn1:
+                            st.markdown(f'<a href="{result_link}" target="_blank" style="{btn_style} background-color: #8D6E63; color: white;">▶️ XEM VIDEO</a>', unsafe_allow_html=True)
+                        with col_btn2:
+                            st.markdown(f'<a href="{dl_link}" target="_self" style="{btn_style} background-color: #5D4037; color: white;">📥 TẢI VỀ MÁY</a>', unsafe_allow_html=True)
+                    
                     elif raw_status == "Error":
-                        st.error("Video lỗi.")
+                        st.error("Video này bị lỗi xử lý.")
                     else:
-                        st.info("Đang xử lý...")
-            
-            # Nút Xem thêm / Thu gọn
+                        st.info("Hệ thống đang xử lý...")
+
+                    # B. Nút Tạo lại (Re-create)
+                    st.markdown('<div style="margin-top: 5px;"></div>', unsafe_allow_html=True) 
+                    if old_audio_link and str(old_audio_link).startswith("http"):
+                        if st.button(f"♻️ Tạo lại bằng Audio này", key=f"recreate_{order_id}", disabled=is_out_of_quota, use_container_width=True):
+                            if not is_out_of_quota:
+                                try:
+                                    with st.spinner("Đang gửi lệnh tạo lại..."):
+                                        gc = get_gspread_client()
+                                        ws = gc.open(DB_SHEET_NAME).worksheet(DB_WORKSHEET)
+                                        # Tạo ID mới
+                                        now_vn = datetime.utcnow() + timedelta(hours=7)
+                                        new_id = now_vn.strftime("%Y%m%d_%H%M%S")
+                                        ws.append_row([new_id, now_vn.strftime("%Y-%m-%d %H:%M:%S"), user['email'], "Re-created", old_content_script, old_audio_link, "Pending", "", json.dumps(settings)])
+                                        
+                                        # Log & Update Quota
+                                        log_history(new_id, user['email'], "", now_vn.strftime("%Y-%m-%d %H:%M:%S"))
+                                        update_user_usage(user['row'], user['quota_used'])
+                                        st.session_state['user_info']['quota_used'] += 1
+                                        get_all_orders_cached.clear()
+                                        st.session_state['show_wait_message'] = True
+                                        st.success("✅ Đã gửi lệnh tạo lại!")
+                                        st.rerun()
+                                except Exception as e: st.error(f"Lỗi: {e}")
+
+            # 4. Nút Xem thêm / Thu gọn
             if total_items > MAX_ITEMS:
                 st.markdown("---")
-                if not st.session_state['history_expanded']:
-                    if st.button(f"🔽 Xem thêm ({total_items - MAX_ITEMS} video cũ)"):
-                        st.session_state['history_expanded'] = True
-                        st.rerun()
-                else:
-                    if st.button("🔼 Thu gọn"):
-                        st.session_state['history_expanded'] = False
-                        st.rerun()
+                col_c = st.columns([1, 2, 1])[1]
+                with col_c:
+                    if not st.session_state['history_expanded']:
+                        if st.button(f"🔽 Xem thêm ({total_items - MAX_ITEMS} video cũ)", use_container_width=True):
+                            st.session_state['history_expanded'] = True
+                            st.rerun()
+                    else:
+                        if st.button("🔼 Thu gọn danh sách", use_container_width=True):
+                            st.session_state['history_expanded'] = False
+                            st.rerun()
         else:
-            # [FIX] Dòng này giờ chỉ hiện khi đã load xong dữ liệu mà vẫn không có video
             st.info("Bạn chưa có video nào.")
 
-        # Nút đóng lịch sử
+        # 5. Nút Đóng danh sách
         st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("❌ Đóng lại"):
+        if st.button("❌ Đóng lại", use_container_width=True):
             st.session_state['show_history_section'] = False
             st.rerun()
     
