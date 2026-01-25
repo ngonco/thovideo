@@ -1068,12 +1068,12 @@ else:
             if not has_recording:
                 c_mic1, c_mic2 = st.columns([3, 1])
                 with c_mic1:
-                    st.info("💡 Hướng dẫn: Bấm 'Bắt đầu' > Nói > Bấm 'Dừng'.")
+                    st.info("💡GIỮ IM LẶNG 5 GIÂY ĐẦU")
                 
                 # Gọi thư viện mic_recorder mới
                 audio_data = mic_recorder(
-                    start_prompt="🔴 Bấm để BẮT ĐẦU thu",
-                    stop_prompt="⏹️ Bấm để DỪNG thu",
+                    start_prompt="🔴 BẤM ĐỂ BẮT ĐẦU THU",
+                    stop_prompt="⏹️ BẤM ĐỂ DỪNG THU",
                     just_once=True, 
                     use_container_width=True,
                     format="wav", 
