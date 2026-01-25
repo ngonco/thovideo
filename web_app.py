@@ -576,8 +576,8 @@ st.markdown("""
         font-size: 22px !important; font-weight: bold; color: #5D4037;
         background-color: #fcefe3; padding: 8px 15px; border-left: 6px solid #8B4513;
         
-        /* [THAY ĐỔI] Tăng khoảng cách bên trên từ 25px lên 60px cho thoáng */
-        margin-top: 60px !important; 
+        /* [ĐÃ SỬA] Giảm khoảng cách xuống 20px cho gần hơn */
+        margin-top: 20px !important; 
         
         margin-bottom: 20px !important; 
         border-radius: 0 5px 5px 0;
@@ -851,7 +851,7 @@ else:
             st.session_state['user_info'] = None
             st.rerun()
 
-    st.markdown("<br>", unsafe_allow_html=True) # Khoảng cách trước khi vào Bước 1
+    # [ĐÃ SỬA] Đã xóa khoảng trắng <br> ở đây để Bước 1 đẩy lên cao hơn
 
     # --- (B1) EMAIL (ĐÃ ẨN GIAO DIỆN) ---
     # Chúng ta gán thẳng email từ session vào biến, không cần hiện input
@@ -1217,11 +1217,19 @@ else:
     # ==========================================
     st.markdown("---")
     
-    # [FIX] Thêm dòng này để tránh lỗi NameError
-    history_df = pd.DataFrame()
+    # [FIX] Lấy dữ liệu lịch sử ngay lập tức để kiểm tra trạng thái thực tế
+    history_df = get_user_history(user['email'])
     
-    # Hiển thị thông báo nhắc nhở nếu vừa tạo đơn
-    if st.session_state.get('show_wait_message', False):
+    # Logic kiểm tra thông minh: Chỉ hiện thông báo nếu CÓ video đang Pending hoặc Processing
+    is_processing_real = False
+    if not history_df.empty and 'TrangThai' in history_df.columns:
+        # Kiểm tra trong 5 đơn mới nhất xem có đơn nào chưa xong không
+        check_pending = history_df.head(5)[history_df.head(5)['TrangThai'].isin(['Pending', 'Processing'])]
+        if not check_pending.empty:
+            is_processing_real = True
+
+    # Chỉ hiển thị thông báo khi thực sự có video đang chạy
+    if is_processing_real:
         st.markdown("""
         <div style="background-color: #FFF9C4; color: #5D4037; padding: 15px; border-radius: 10px; border: 1px solid #FBC02D; margin-bottom: 20px; font-weight: bold;">
             ⏳ Đang tạo video. Vui lòng quay lại sau 5 phút và bấm nút "Xem danh sách video" hoặc nút "Làm mới"!
