@@ -999,7 +999,7 @@ else:
     # --- (B2) GIỌNG ĐỌC (GIAO DIỆN ẨN MẶC ĐỊNH) ---
     
     # [MỚI] Thêm 3 dòng <br> để đẩy Bước 2 xuống xa hơn (Bạn có thể thêm bớt <br> tùy ý)
-    st.markdown("<br><br><br>", unsafe_allow_html=True) 
+    st.markdown("<br><br>", unsafe_allow_html=True) 
 
     st.markdown("""
         <div class="step-card">
