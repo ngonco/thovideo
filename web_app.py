@@ -932,8 +932,8 @@ else:
     
     # --- KHUNG HIỂN THỊ NỘI DUNG & BỘ ĐẾM TỪ ---
     if source_opt:
-        # [ĐÃ SỬA] Cố định chiều cao khung nhập liệu (Bạn có thể sửa số 350 thành số khác tùy ý)
-        FIXED_HEIGHT = 350 
+        # [ĐÃ SỬA] Cố định chiều cao khung nhập liệu (Bạn có thể sửa số 450 thành số khác tùy ý)
+        FIXED_HEIGHT = 450 
         
         # Text Area - [ĐÃ SỬA LỖI WARNING] Bỏ tham số 'value' để tránh xung đột với key
         noi_dung_gui = st.text_area("", height=FIXED_HEIGHT, 
@@ -997,6 +997,10 @@ else:
         noi_dung_gui = ""
 
     # --- (B2) GIỌNG ĐỌC (GIAO DIỆN ẨN MẶC ĐỊNH) ---
+    
+    # [MỚI] Thêm 3 dòng <br> để đẩy Bước 2 xuống xa hơn (Bạn có thể thêm bớt <br> tùy ý)
+    st.markdown("<br><br><br>", unsafe_allow_html=True) 
+
     st.markdown("""
         <div class="step-card">
             <span class="step-label">2️⃣ BƯỚC 2: CHUẨN BỊ GIỌNG ĐỌC</span>
