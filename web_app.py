@@ -860,7 +860,7 @@ else:
     # --- (B1) NGUỒN KỊCH BẢN (GIAO DIỆN TÌM KIẾM MỚI) ---
     st.markdown("""
         <div class="step-card">
-            <span class="step-label">1️⃣ BƯỚC 1: CHUẨN BỊ KỊCH BẢN</span>
+            <span class="step-label"> BƯỚC 1️⃣: CHUẨN BỊ KỊCH BẢN</span>
         </div>
     """, unsafe_allow_html=True)
     
@@ -1003,7 +1003,7 @@ else:
 
     st.markdown("""
         <div class="step-card">
-            <span class="step-label">2️⃣ BƯỚC 2: CHUẨN BỊ GIỌNG ĐỌC</span>
+            <span class="step-label"> BƯỚC 2️⃣: CHUẨN BỊ GIỌNG ĐỌC</span>
         </div>
     """, unsafe_allow_html=True)
     
