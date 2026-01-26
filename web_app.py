@@ -848,8 +848,11 @@ else:
         
         # [NEW] Cảnh báo an toàn cho người dùng (Đã chỉnh màu chữ đậm hơn)
         st.markdown("""
-        <div style="background-color: #FFF9C4; color: #3E2723; padding: 15px; border-radius: 5px; border: 1px solid #FBC02D; margin-bottom: 10px; font-weight: bold;">
-            ⚠️ KHÔNG ĐƯỢC ĐỔI MẬT KHẨU GIỐNG MẬT KHẨU CÁC TÀI KHOẢN QUAN TRỌNG. ĐÂY CHỈ LÀ APP TẠO VIDEO, HÃY ĐẶT ĐƠN GIẢN 1234..
+        <div style="background-color: #FFEBEE; color: #D32F2F; padding: 15px; border-radius: 5px; border: 2px solid #D32F2F; margin-bottom: 10px; font-weight: bold;">
+            ⛔ CẢNH BÁO QUAN TRỌNG:<br>
+            Vì mật khẩu ở đây không quan trọng nên KHÔNG ĐƯỢC BẢO MẬT.<br>
+            TUYỆT ĐỐI KHÔNG dùng mật khẩu Facebook, Gmail ... hay Ngân hàng tại đây.<br>
+            Hãy dùng mật khẩu rác (Ví dụ: 123456, abcxyz).
         </div>
         """, unsafe_allow_html=True)
 
