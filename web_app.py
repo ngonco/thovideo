@@ -713,6 +713,12 @@ st.markdown("""
     }
     
     footer {visibility: hidden;}
+    
+    /* [NEW] ẨN THANH MENU VÀ HEADER CỦA STREAMLIT */
+    #MainMenu {visibility: hidden;}
+    header {visibility: hidden;}
+    .stDeployButton {display:none;}
+    
     </style>
 """, unsafe_allow_html=True)
 
