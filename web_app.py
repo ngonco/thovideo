@@ -712,18 +712,21 @@ st.markdown("""
         font-weight: bold;
     }
     
-    /* --- CODE MỚI: ẨN SẠCH SẼ MỌI DẤU VẾT --- */
+    /* --- ẨN TOÀN BỘ GIAO DIỆN HỆ THỐNG --- */
     
-    /* 1. Ẩn menu 3 chấm và thanh màu đen trên cùng */
+    /* 1. Ẩn menu 3 chấm và thanh header trên cùng */
     #MainMenu {visibility: hidden; display: none;}
     header {visibility: hidden; display: none;}
     
-    /* 2. Ẩn chữ 'Made with Streamlit' mặc định */
+    /* 2. Ẩn footer mặc định */
     footer {visibility: hidden; display: none;}
     
-    /* 3. QUAN TRỌNG: Ẩn thanh 'Hosted with Streamlit' (cái màu đỏ trong ảnh của bạn) */
-    /* Lệnh này tìm tất cả các thành phần có tên chứa chữ 'viewerBadge' để ẩn đi */
+    /* 3. QUAN TRỌNG: Ẩn thanh 'Hosted with Streamlit' màu đỏ và Avatar */
+    /* Lệnh này tìm mọi thành phần có tên chứa chữ 'viewerBadge' để ẩn đi */
     div[class*="viewerBadge"] {display: none !important;}
+    
+    /* 4. Ẩn luôn thanh trang trí 7 màu trên cùng (nếu có) */
+    div[data-testid="stDecoration"] {display: none;}
     
     </style>
 """, unsafe_allow_html=True)
