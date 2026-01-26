@@ -10,6 +10,15 @@ import pandas as pd
 # from audio_recorder_streamlit import audio_recorder 
 from streamlit_mic_recorder import mic_recorder 
 
+# [BẢO MẬT] Hàm chặn tiêm công thức vào Google Sheet
+def sanitize_input(text):
+    text_str = str(text)
+    # Nếu ký tự đầu tiên là =, +, -, @ (các ký tự kích hoạt công thức)
+    if text_str.startswith(("=", "+", "-", "@")):
+        # Thêm dấu nháy đơn vào trước để biến nó thành văn bản thường
+        return "'" + text_str
+    return text_str
+
 # --- [NEW] CÁC HÀM QUẢN LÝ USER & QUOTA ---
 # --- [UPDATE] LOGIC ĐĂNG NHẬP & RESET QUOTA THEO NGÀY ĐĂNG KÝ ---
 def check_login(email, password):
@@ -119,12 +128,15 @@ def save_draft_to_sheet(email, content):
             
         # Tìm xem user đã có bản nháp chưa
         cell = ws.find(email, in_column=1)
+        # [BẢO MẬT] Làm sạch nội dung trước khi lưu
+        safe_content = sanitize_input(content)
+
         if cell:
             # Nếu có rồi -> Cập nhật nội dung (Cột 2)
-            ws.update_cell(cell.row, 2, content)
+            ws.update_cell(cell.row, 2, safe_content)
         else:
             # Nếu chưa -> Thêm dòng mới
-            ws.append_row([email, content])
+            ws.append_row([email, safe_content])
         return True
     except Exception as e:
         print(f"Lỗi save draft: {e}")
@@ -1213,13 +1225,16 @@ else:
                 timestamp = now_vn.strftime("%Y-%m-%d %H:%M:%S")
                 # ----------------------------------------------------
                 # GHI ĐƠN HÀNG VÀO SHEET ORDERS
+                # [BẢO MẬT] Làm sạch nội dung do người dùng nhập
+                safe_noidung = sanitize_input(noi_dung_gui)
+                
                 # Cấu trúc: ID | Date | Email | Nguồn | Nội dung | Audio | Trạng thái | Link KQ | Cài đặt
                 ws.append_row([
                     order_id, 
                     timestamp, 
                     user['email'], 
                     source_opt, 
-                    noi_dung_gui, 
+                    safe_noidung, # <-- Đã thay bằng biến an toàn
                     final_audio_link_to_send, 
                     "Pending", 
                     "", 
