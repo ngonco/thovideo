@@ -712,12 +712,18 @@ st.markdown("""
         font-weight: bold;
     }
     
-    footer {visibility: hidden;}
+    /* --- CODE MỚI: ẨN SẠCH SẼ MỌI DẤU VẾT --- */
     
-    /* [NEW] ẨN THANH MENU VÀ HEADER CỦA STREAMLIT */
-    #MainMenu {visibility: hidden;}
-    header {visibility: hidden;}
-    .stDeployButton {display:none;}
+    /* 1. Ẩn menu 3 chấm và thanh màu đen trên cùng */
+    #MainMenu {visibility: hidden; display: none;}
+    header {visibility: hidden; display: none;}
+    
+    /* 2. Ẩn chữ 'Made with Streamlit' mặc định */
+    footer {visibility: hidden; display: none;}
+    
+    /* 3. QUAN TRỌNG: Ẩn thanh 'Hosted with Streamlit' (cái màu đỏ trong ảnh của bạn) */
+    /* Lệnh này tìm tất cả các thành phần có tên chứa chữ 'viewerBadge' để ẩn đi */
+    div[class*="viewerBadge"] {display: none !important;}
     
     </style>
 """, unsafe_allow_html=True)
