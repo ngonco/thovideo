@@ -846,8 +846,12 @@ else:
         # 1. Phần Đổi mật khẩu
         st.markdown("##### 🔐 Đổi mật khẩu")
         
-        # [NEW] Cảnh báo an toàn cho người dùng
-        st.warning("⚠️ KHÔNG ĐƯỢC ĐỔI MẬT KHẨU GIỐNG MẬT KHẨU CÁC TÀI KHOẢN QUAN TRỌNG. ĐÂY CHỈ LÀ APP TẠO VIDEO, HÃY ĐẶT ĐƠN GIẢN 1234..")
+        # [NEW] Cảnh báo an toàn cho người dùng (Đã chỉnh màu chữ đậm hơn)
+        st.markdown("""
+        <div style="background-color: #FFF9C4; color: #3E2723; padding: 15px; border-radius: 5px; border: 1px solid #FBC02D; margin-bottom: 10px; font-weight: bold;">
+            ⚠️ KHÔNG ĐƯỢC ĐỔI MẬT KHẨU GIỐNG MẬT KHẨU CÁC TÀI KHOẢN QUAN TRỌNG. ĐÂY CHỈ LÀ APP TẠO VIDEO, HÃY ĐẶT ĐƠN GIẢN 1234..
+        </div>
+        """, unsafe_allow_html=True)
 
         with st.form("change_pass_form_inside"):
             cp_old = st.text_input("Mật khẩu cũ", type="password")
