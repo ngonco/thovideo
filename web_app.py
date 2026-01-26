@@ -420,11 +420,12 @@ def get_library_structure():
 # --- ĐÃ SỬA ĐỂ HỖ TRỢ PHÂN QUYỀN STOCK ---
 @st.cache_data(ttl=3600, show_spinner="Đang tải dữ liệu từ thư viện...")
 def get_scripts_with_audio(sheet_name, stock_limit=1000):
-    # [CẤU HÌNH] Thay link Hugging Face của bạn vào bên dưới
-    # Cấu trúc chuẩn: https://huggingface.co/datasets/{USERNAME}/{DATASET}/resolve/main/
-    # Lưu ý: Phải có dấu / ở cuối cùng
-    BASE_URL = "https://huggingface.co/datasets/vinhn8n/voicedaoly/resolve/main/"
-    
+    # [BẢO MẬT] Lấy link Hugging Face từ secrets
+    if "huggingface" in st.secrets:
+        BASE_URL = st.secrets["huggingface"]["base_url"]
+    else:
+        # Fallback nếu quên cấu hình secrets (giữ link cũ làm dự phòng hoặc để trống)
+        BASE_URL = "nothing"    
     try:
         gc = get_gspread_client()
         sh = gc.open_by_key(LIBRARY_SHEET_ID)
@@ -504,9 +505,14 @@ def upload_to_catbox(file_obj, custom_name=None):
     # [NÂNG CẤP] Sử dụng hạ tầng CLOUDINARY (Siêu nhanh & Ổn định)
     import io
     
-    # --- CẤU HÌNH CỦA BẠN (ĐIỀN VÀO ĐÂY) ---
-    CLOUD_NAME = "dsaiot45b"  # Ví dụ: "demo123"
-    UPLOAD_PRESET = "aicunglamvideo"   # Ví dụ: "ml_default" (Phải là Unsigned)
+    # --- CẤU HÌNH TỪ SECRETS (BẢO MẬT) ---
+    if "cloudinary" in st.secrets:
+        CLOUD_NAME = st.secrets["cloudinary"]["cloud_name"]
+        UPLOAD_PRESET = st.secrets["cloudinary"]["upload_preset"]
+    else:
+        # Giá trị mặc định nếu chưa cấu hình secrets
+        CLOUD_NAME = "nothing" 
+        UPLOAD_PRESET = "nothing"
     # ----------------------------------------
 
     try:
@@ -839,6 +845,10 @@ else:
         
         # 1. Phần Đổi mật khẩu
         st.markdown("##### 🔐 Đổi mật khẩu")
+        
+        # [NEW] Cảnh báo an toàn cho người dùng
+        st.warning("⚠️ KHÔNG ĐƯỢC ĐỔI MẬT KHẨU GIỐNG MẬT KHẨU CÁC TÀI KHOẢN QUAN TRỌNG. ĐÂY CHỈ LÀ APP TẠO VIDEO, HÃY ĐẶT ĐƠN GIẢN 1234..")
+
         with st.form("change_pass_form_inside"):
             cp_old = st.text_input("Mật khẩu cũ", type="password")
             cp_new = st.text_input("Mật khẩu mới", type="password")
