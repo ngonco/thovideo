@@ -1328,7 +1328,6 @@ else:
                 st.session_state['submitted_order_id'] = order_id 
                 
                 # [MOI] Xóa cache lịch sử cũ & Bật thông báo chờ
-                get_all_orders_cached.clear()
                 st.session_state['show_wait_message'] = True
                 
                 st.success(f"✅ ĐÃ GỬI THÀNH CÔNG! Mã đơn: {order_id}")
@@ -1382,7 +1381,7 @@ else:
             st.subheader("📜 Video của bạn")
         with c_hist2:
             if st.button("🔄 Làm mới", help="Cập nhật danh sách mới nhất"):
-                get_all_orders_cached.clear() 
+                # get_all_orders_cached.clear() <-- ĐÃ TẮT DÒNG NÀY
                 st.rerun()
         
         # 2. Lấy dữ liệu
@@ -1463,7 +1462,7 @@ else:
                                         log_history(new_id, user['email'], "", now_vn.strftime("%Y-%m-%d %H:%M:%S"))
                                         update_user_usage(user['row'], user['quota_used'])
                                         st.session_state['user_info']['quota_used'] += 1
-                                        get_all_orders_cached.clear()
+                                        # get_all_orders_cached.clear() <-- ĐÃ TẮT DÒNG NÀY
                                         st.session_state['show_wait_message'] = True
                                         st.success("✅ Đã gửi lệnh tạo lại!")
                                         st.rerun()
