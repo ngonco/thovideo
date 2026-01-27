@@ -68,6 +68,10 @@ def check_login(email, password):
             
             # 2. Kiểm tra mật khẩu (Dùng bcrypt để so sánh password nhập vào và hash trong DB)
             if verify_password(password, stored_hash):
+                # [BẢO MẬT] Xóa mật khẩu khỏi dữ liệu trước khi lưu vào session
+                if 'password' in user_data:
+                    del user_data['password']
+
                 # Đảm bảo các trường số liệu không bị None để tránh lỗi cộng trừ sau này
                 if user_data.get('quota_used') is None: user_data['quota_used'] = 0
                 if user_data.get('quota_max') is None: user_data['quota_max'] = 10
@@ -171,7 +175,7 @@ def get_user_history(email):
         
         if response.data:
             df = pd.DataFrame(response.data)
-            # Đổi tên cột cho khớp với giao diện cũ (nếu cần)
+            # Đổi tên cột cho khớp với giao diện hiển thị
             df = df.rename(columns={
                 'created_at': 'NgayTao', 
                 'result_link': 'LinkKetQua', 
@@ -183,26 +187,9 @@ def get_user_history(email):
             return df
     except Exception as e:
         print(f"Lỗi tải lịch sử Supabase: {e}")
+    
+    # Trả về bảng rỗng nếu có lỗi hoặc không có dữ liệu
     return pd.DataFrame()
-        
-        if df.empty: return pd.DataFrame()
-
-        # 1. Lọc theo Email người dùng hiện tại
-        # Lưu ý: Tên cột phải khớp chính xác với tiêu đề trong file Sheet (theo ảnh bạn gửi)
-        if 'Email' in df.columns:
-            df_user = df[df['Email'] == email].copy()
-        else:
-            return pd.DataFrame() # Tránh lỗi nếu không tìm thấy cột Email
-        
-        # 2. Sắp xếp mới nhất lên đầu (Dựa vào cột NgayTao)
-        if 'NgayTao' in df.columns:
-            df_user['NgayTao'] = pd.to_datetime(df_user['NgayTao'], errors='coerce')
-            df_user = df_user.sort_values(by='NgayTao', ascending=False)
-        
-        return df_user
-    except Exception as e:
-        # st.error(f"Lỗi tải lịch sử: {e}") # Bật lên nếu muốn debug
-        return pd.DataFrame()
 
 def update_user_usage(user_row, current_used):
     try:
