@@ -1,8 +1,8 @@
-streamlit>=1.40.0
-pandas
+streamlit
+supabase
+bcrypt
 gspread
 oauth2client
-google-api-python-client
+pandas
 requests
 streamlit-mic-recorder
-
