@@ -85,21 +85,22 @@ def check_login(email, password):
         st.error(f"Lỗi hệ thống đăng nhập: {e}")
     return None
 
-# --- [NEW] HÀM ĐỔI MẬT KHẨU ---
+# --- [NEW] HÀM ĐỔI MẬT KHẨU (SUPABASE VERSION) ---
 def change_password_action(email, old_pass_input, new_pass_input):
     try:
-        gc = get_gspread_client()
-        ws = gc.open(DB_SHEET_NAME).worksheet("users")
-        cell = ws.find(email, in_column=1)
+        # 1. Lấy mật khẩu hash hiện tại từ Supabase
+        response = supabase.table('users').select("password").eq('email', email).execute()
         
-        if cell:
-            # Lấy mật khẩu hiện tại trong DB để kiểm tra (Cột 2)
-            current_db_pass = ws.cell(cell.row, 2).value
+        if response.data:
+            stored_hash = response.data[0]['password']
             
-            # Kiểm tra mật khẩu cũ người dùng nhập có đúng không
-            if str(current_db_pass) == str(old_pass_input):
-                # Nếu đúng thì cập nhật mật khẩu mới
-                ws.update_cell(cell.row, 2, new_pass_input)
+            # 2. Kiểm tra mật khẩu cũ (dùng bcrypt verify)
+            if verify_password(old_pass_input, stored_hash):
+                # 3. Mã hóa mật khẩu mới
+                new_hashed = hash_password(new_pass_input)
+                
+                # 4. Cập nhật vào DB
+                supabase.table('users').update({"password": new_hashed}).eq('email', email).execute()
                 return True, "✅ Đổi mật khẩu thành công!"
             else:
                 return False, "❌ Mật khẩu cũ không đúng!"
@@ -108,33 +109,34 @@ def change_password_action(email, old_pass_input, new_pass_input):
     return False, "❌ Không tìm thấy tài khoản!"
 
 
-# --- [NEW] HÀM LƯU VÀ TẢI BẢN NHÁP ---
+# --- [NEW] HÀM LƯU VÀ TẢI BẢN NHÁP (SUPABASE VERSION) ---
 def save_draft_to_sheet(email, content):
     try:
-        gc = get_gspread_client()
-        # Mở sheet drafts (Bạn nhớ tạo sheet này trong file Google Sheet nhé)
-        try:
-            ws = gc.open(DB_SHEET_NAME).worksheet("drafts")
-        except:
-            # Nếu chưa có thì tự tạo (phòng hờ)
-            ws = gc.open(DB_SHEET_NAME).add_worksheet(title="drafts", rows=100, cols=5)
-            ws.append_row(["Email", "Content"])
-            
-        # Tìm xem user đã có bản nháp chưa
-        cell = ws.find(email, in_column=1)
         # [BẢO MẬT] Làm sạch nội dung trước khi lưu
         safe_content = sanitize_input(content)
-
-        if cell:
-            # Nếu có rồi -> Cập nhật nội dung (Cột 2)
-            ws.update_cell(cell.row, 2, safe_content)
-        else:
-            # Nếu chưa -> Thêm dòng mới
-            ws.append_row([email, safe_content])
+        
+        # Upsert: Nếu có email rồi thì update, chưa có thì insert
+        data = {
+            "email": email,
+            "content": safe_content,
+            "updated_at": datetime.utcnow().isoformat()
+        }
+        # Lưu vào bảng 'drafts'
+        supabase.table('drafts').upsert(data).execute()
         return True
     except Exception as e:
-        print(f"Lỗi save draft: {e}")
+        print(f"Lỗi save draft Supabase: {e}")
         return False
+
+def load_draft_from_sheet(email):
+    try:
+        # Lấy nội dung từ bảng 'drafts'
+        response = supabase.table('drafts').select("content").eq('email', email).execute()
+        if response.data and len(response.data) > 0:
+            return response.data[0]['content']
+    except Exception as e:
+        print(f"Lỗi load draft Supabase: {e}")
+    return ""
 
 def load_draft_from_sheet(email):
     try:
@@ -818,13 +820,12 @@ st.markdown("""
 if 'user_info' not in st.session_state:
     st.session_state['user_info'] = None
 
-# [FIX] LOGIC TỰ ĐỘNG ĐĂNG NHẬP KHI F5 (Load lại trang)
+# [FIX] LOGIC TỰ ĐỘNG ĐIỀN EMAIL KHI F5
 if not st.session_state['user_info']:
-    # Kiểm tra ngay lập tức xem trên URL có user/pass không
     params = st.query_params
-    if "u" in params and "p" in params:
-        # Tự động login lại
-        user = check_login(params["u"], params["p"])
+    # Nếu có lưu email trên URL thì tự động điền vào ô nhập liệu sau này (không tự login nữa để an toàn)
+    if "u" in params:
+        st.session_state['saved_email'] = params["u"]
         if user:
             st.session_state['user_info'] = user
             # [NEW] Sau khi login lại thành công, tự động tải bản nháp về
@@ -851,8 +852,9 @@ if not st.session_state['user_info']:
             
             # Form nhập liệu
             st.markdown("<br>", unsafe_allow_html=True) # Thêm khoảng trắng
-            login_email = st.text_input("📧 Nhập tên tài khoản hoặc email được cung cấp", placeholder="ví dụ: hoasen", key="login_email_unique")
-            
+            # Lấy email đã lưu nếu có
+            default_email = st.session_state.get('saved_email', "")
+            login_email = st.text_input("📧 Nhập tên tài khoản hoặc email", value=default_email, placeholder="ví dụ: hoasen", key="login_email_unique")            
             st.markdown("<br>", unsafe_allow_html=True) # Thêm khoảng trắng giữa email và pass
             login_pass = st.text_input("🔑 Mật khẩu", type="password", key="login_pass_unique")
             
@@ -870,7 +872,9 @@ if not st.session_state['user_info']:
                     st.session_state['user_info'] = user
                     if remember_me:
                         st.query_params["u"] = login_email
-                        st.query_params["p"] = login_pass 
+                        # [BẢO MẬT] TUYỆT ĐỐI KHÔNG LƯU MẬT KHẨU LÊN URL
+                        # st.query_params["p"] = login_pass 
+                        st.toast("Đã ghi nhớ Email (Vì an toàn, vui lòng tự nhập lại mật khẩu lần sau)", icon="🔒")
                     else:
                         st.query_params.clear()
                     st.toast("Đăng nhập thành công!", icon="🎉")
@@ -1447,20 +1451,38 @@ else:
                     st.markdown('<div style="margin-top: 5px;"></div>', unsafe_allow_html=True) 
                     if old_audio_link and str(old_audio_link).startswith("http"):
                         # [FIX] Thêm _{index} vào key để đảm bảo không bao giờ bị trùng
-                        if st.button(f"♻️ Tạo lại bằng Audio này", key=f"recreate_{order_id}_{index}", disabled=is_out_of_quota, use_container_width=True):
+                        if st.button(f"♻️ Tạo lại bằng giọng nói này", key=f"recreate_{order_id}_{index}", disabled=is_out_of_quota, use_container_width=True):
                             if not is_out_of_quota:
                                 try:
                                     with st.spinner("Đang gửi lệnh tạo lại..."):
-                                        gc = get_gspread_client()
-                                        ws = gc.open(DB_SHEET_NAME).worksheet(DB_WORKSHEET)
-                                        # Tạo ID mới
+                                        # 1. Tạo ID mới
                                         now_vn = datetime.utcnow() + timedelta(hours=7)
                                         new_id = now_vn.strftime("%Y%m%d_%H%M%S")
-                                        ws.append_row([new_id, now_vn.strftime("%Y-%m-%d %H:%M:%S"), user['email'], "Re-created", old_content_script, old_audio_link, "Pending", "", json.dumps(settings)])
+                                        
+                                        # 2. Chuẩn bị dữ liệu cho Supabase
+                                        order_data = {
+                                            "id": new_id,
+                                            "created_at": datetime.utcnow().isoformat(),
+                                            "email": user['email'],
+                                            "source": "Re-created",
+                                            "content": old_content_script, # Dùng lại nội dung cũ
+                                            "audio_link": old_audio_link,  # Dùng lại link audio cũ
+                                            "status": "Pending",
+                                            "result_link": "",
+                                            "settings": settings 
+                                        }
+                                        
+                                        # 3. Gửi vào Supabase
+                                        supabase.table('orders').insert(order_data).execute()
+                                        
+                                        # 4. Cập nhật Quota (Trừ lượt dùng)
+                                        update_user_usage_supabase(user['id'], user['quota_used'])
                                         
                                         # Log & Update Quota
+                                        # [FIX] Chỉ log lịch sử, bỏ qua việc update row sheet cũ vì không còn biến row
                                         log_history(new_id, user['email'], "", now_vn.strftime("%Y-%m-%d %H:%M:%S"))
-                                        update_user_usage(user['row'], user['quota_used'])
+                                        # update_user_usage(user['row'], user['quota_used']) <--- DÒNG NÀY GÂY LỖI NÊN ĐÃ BỊ XÓA/COMMENT
+                                        
                                         st.session_state['user_info']['quota_used'] += 1
                                         # get_all_orders_cached.clear() <-- ĐÃ TẮT DÒNG NÀY
                                         st.session_state['show_wait_message'] = True
