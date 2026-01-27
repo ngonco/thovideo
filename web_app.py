@@ -207,7 +207,8 @@ def auto_save_callback():
 
 # --- [UPDATE] HÀM LẤY LỊCH SỬ TỪ SHEET ORDERS ---
 # [ĐÃ SỬA] Thêm Cache để không gọi API liên tục (ttl=300 nghĩa là lưu cache 300 giây/5 phút)
-@st.cache_data(ttl=300)
+# Sửa st.cache_data thành st.cache (để chạy được trên server cũ)
+@st.cache(ttl=300, allow_output_mutation=True)
 def get_all_orders_cached():
     try:
         gc = get_gspread_client()
@@ -450,7 +451,7 @@ def get_creds():
 
 def get_gspread_client(): return gspread.authorize(get_creds())
 
-@st.cache_data(ttl=3600) 
+@st.cache(ttl=3600, allow_output_mutation=True)
 def get_library_structure():
     try:
         gc = get_gspread_client()
@@ -464,7 +465,7 @@ def get_library_structure():
     except Exception as e: return [f"Lỗi: {str(e)}"]
 
 # --- ĐÃ SỬA ĐỂ HỖ TRỢ PHÂN QUYỀN STOCK ---
-@st.cache_data(ttl=3600, show_spinner="Đang tải dữ liệu từ thư viện...")
+@st.cache(ttl=3600, show_spinner="Đang tải dữ liệu từ thư viện...", allow_output_mutation=True)
 def get_scripts_with_audio(sheet_name, stock_limit=1000):
     # [BẢO MẬT] Lấy link Hugging Face từ secrets
     if "huggingface" in st.secrets:
