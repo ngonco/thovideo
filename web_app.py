@@ -1,6 +1,15 @@
-# --- THÊM ĐOẠN NÀY VÀO SAU CÁC DÒNG IMPORT ---
+import streamlit as st
+import pandas as pd
+import requests
+import json
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+from datetime import datetime, timedelta
+import bcrypt
+import time
 from supabase import create_client, Client
 
+# --- THÊM ĐOẠN NÀY VÀO SAU CÁC DÒNG IMPORT ---
 # Hàm này giúp kết nối Supabase và giữ kết nối không bị ngắt
 # Dùng cache_resource cho KẾT NỐI (Database, ML models...)
 @st.cache_resource
