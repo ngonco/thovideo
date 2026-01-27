@@ -81,75 +81,26 @@ def update_user_usage_supabase(user_id, current_used):
         print(f"Lỗi update quota: {e}")
 
 # --- [NEW] CÁC HÀM QUẢN LÝ USER & QUOTA ---
-# --- [UPDATE] LOGIC ĐĂNG NHẬP & RESET QUOTA THEO NGÀY ĐĂNG KÝ ---
+# --- [UPDATE] LOGIC ĐĂNG NHẬP CHUẨN SUPABASE (ĐÃ XÓA BACKDOOR) ---
 def check_login(email, password):
-    # [FIX] CẤP QUYỀN ADMIN KHẨN CẤP
-    # Cho phép đăng nhập ngay lập tức không cần check Database
-    if str(email).strip() == "admin@gmail.com" and str(password).strip() == "123456":
-        return {
-            "email": "admin@gmail.com",
-            "plan": "vip",
-            "quota_max": 9999,
-            "quota_used": 0,
-            "role": "admin",  # <-- Quan trọng: Cấp quyền Admin để hiện menu
-            "stock_level": 9999,
-            "row": 0
-        }
-
     try:
-        gc = get_gspread_client()
-        ws = gc.open(DB_SHEET_NAME).worksheet("users")
+        # 1. Tìm user trong Supabase (Bảng 'users')
+        response = supabase.table('users').select("*").eq('email', email).execute()
         
-        # [OPTIMIZED] Lấy toàn bộ dữ liệu 1 lần
-        all_users = ws.get_all_values()
-        
-        for i, row_data in enumerate(all_users):
-            if i == 0: continue # Bỏ qua tiêu đề
+        if response.data and len(response.data) > 0:
+            user_data = response.data[0]
+            stored_hash = user_data['password']
             
-            # Cột 1 là Email (index 0)
-            if len(row_data) > 0 and str(row_data[0]).strip().lower() == str(email).strip().lower():
+            # 2. Kiểm tra mật khẩu (Dùng bcrypt để so sánh password nhập vào và hash trong DB)
+            if verify_password(password, stored_hash):
+                # Đảm bảo các trường số liệu không bị None để tránh lỗi cộng trừ sau này
+                if user_data.get('quota_used') is None: user_data['quota_used'] = 0
+                if user_data.get('quota_max') is None: user_data['quota_max'] = 10
                 
-                while len(row_data) < 7: row_data.append("")
-                
-                # Cấu trúc: A=Email, B=Pass
-                db_pass = row_data[1]
-                
-                # So sánh mật khẩu (Lưu ý: Sheet đang lưu pass thường)
-                if str(password) == str(db_pass):
-                    def safe_int(val):
-                        try: return int(val)
-                        except: return 0
-
-                    current_row = i + 1 
-                    
-                    user_info = {
-                        "row": current_row,
-                        "email": row_data[0],
-                        "plan": row_data[2],
-                        "quota_max": safe_int(row_data[3]),   
-                        "quota_used": safe_int(row_data[4]),  
-                        "next_reset": row_data[5], 
-                        "stock_level": safe_int(row_data[6]),
-                        "role": "user" # Mặc định là user thường
-                    }
-                    
-                    # [NEW LOGIC] Reset theo chu kỳ 30 ngày
-                    try:
-                        today = datetime.now().date()
-                        if user_info["next_reset"]:
-                            next_reset_date = datetime.strptime(user_info["next_reset"], "%Y-%m-%d").date()
-                            if today >= next_reset_date:
-                                ws.update_cell(current_row, 5, 0) 
-                                user_info["quota_used"] = 0
-                                new_next_reset = next_reset_date + timedelta(days=30)
-                                ws.update_cell(current_row, 6, new_next_reset.strftime("%Y-%m-%d"))
-                                user_info["next_reset"] = new_next_reset.strftime("%Y-%m-%d")
-                    except Exception as e: print(f"Lỗi ngày tháng: {e}") 
-                    
-                    return user_info
-                    
+                # Trả về thông tin user để lưu vào session
+                return user_data
     except Exception as e:
-        st.error(f"Lỗi đăng nhập: {e}")
+        st.error(f"Lỗi hệ thống đăng nhập: {e}")
     return None
 
 # --- [NEW] HÀM ĐỔI MẬT KHẨU ---
