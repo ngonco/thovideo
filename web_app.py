@@ -164,36 +164,26 @@ def auto_save_callback():
 # --- [UPDATE] HÀM LẤY LỊCH SỬ TỪ SHEET ORDERS ---
 # [ĐÃ SỬA] Thêm Cache để không gọi API liên tục (ttl=300 nghĩa là lưu cache 300 giây/5 phút)
 # Sửa st.cache_data thành st.cache (để chạy được trên server cũ)
-@st.cache_data(ttl=300)
-def get_all_orders_cached():
-    try:
-        gc = get_gspread_client()
-        ws = gc.open(DB_SHEET_NAME).worksheet(DB_WORKSHEET)
-        return pd.DataFrame(ws.get_all_records())
-    except:
-        return pd.DataFrame()
-
 def get_user_history(email):
     try:
-        # Gọi hàm đã được cache thay vì gọi trực tiếp sheet
-        df = get_all_orders_cached()
+        # Gọi trực tiếp Supabase, chỉ lấy dữ liệu của user đó (Bảo mật hơn)
+        response = supabase.table('orders').select("*").eq('email', email).order('created_at', desc=True).execute()
         
-        if df.empty: return pd.DataFrame()
-
-        # 1. Lọc theo Email (Code cũ)
-        if 'Email' in df.columns:
-            df_user = df[df['Email'] == email].copy()
-        else:
-            return pd.DataFrame()
-        
-        # 2. Sắp xếp (Code cũ)
-        if 'NgayTao' in df.columns:
-            df_user['NgayTao'] = pd.to_datetime(df_user['NgayTao'], errors='coerce')
-            df_user = df_user.sort_values(by='NgayTao', ascending=False)
-        
-        return df_user
+        if response.data:
+            df = pd.DataFrame(response.data)
+            # Đổi tên cột cho khớp với giao diện cũ (nếu cần)
+            df = df.rename(columns={
+                'created_at': 'NgayTao', 
+                'result_link': 'LinkKetQua', 
+                'status': 'TrangThai',
+                'id': 'ID',
+                'audio_link': 'LinkGiongNoi',
+                'content': 'NoiDung'
+            })
+            return df
     except Exception as e:
-        return pd.DataFrame()
+        print(f"Lỗi tải lịch sử Supabase: {e}")
+    return pd.DataFrame()
         
         if df.empty: return pd.DataFrame()
 
@@ -1324,24 +1314,23 @@ else:
                 # Cập nhật lại timestamp theo cái ID chốt cuối cùng
                 timestamp = now_vn.strftime("%Y-%m-%d %H:%M:%S")
                 # ----------------------------------------------------
-                # GHI ĐƠN HÀNG VÀO SHEET ORDERS
-                # [BẢO MẬT] Làm sạch nội dung do người dùng nhập
+                # GHI VÀO SUPABASE
                 safe_noidung = sanitize_input(noi_dung_gui)
                 
-                # Cấu trúc: ID | Date | Email | Nguồn | Nội dung | Audio | Trạng thái | Link KQ | Cài đặt
-                ws.append_row([
-                    order_id, 
-                    timestamp, 
-                    user['email'], 
-                    source_opt, 
-                    safe_noidung, # <-- Đã thay bằng biến an toàn
-                    final_audio_link_to_send, 
-                    "Pending", 
-                    "", 
-                    json.dumps(settings)
-                ])
-                # [NEW] Ghi vào History
-                log_history(order_id, user['email'], "", timestamp)
+                order_data = {
+                    "id": order_id,
+                    "created_at": datetime.utcnow().isoformat(),
+                    "email": user['email'],
+                    "source": source_opt,
+                    "content": safe_noidung,
+                    "audio_link": final_audio_link_to_send,
+                    "status": "Pending",
+                    "result_link": "",
+                    "settings": settings 
+                }
+                
+                # Insert vào bảng orders
+                supabase.table('orders').insert(order_data).execute()
                 
                 # [NEW] Trừ Quota (Đã chuyển sang Supabase)
                 # update_user_usage_supabase đã được định nghĩa ở đầu file
