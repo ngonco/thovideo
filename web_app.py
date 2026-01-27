@@ -7,6 +7,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 from datetime import datetime, timedelta
 import bcrypt
 import time
+import html  # <--- Thêm thư viện này để xử lý ký tự đặc biệt
 from supabase import create_client, Client
 
 # --- THÊM ĐOẠN NÀY VÀO SAU CÁC DÒNG IMPORT ---
@@ -22,6 +23,20 @@ def init_supabase():
 supabase = init_supabase()
 
 # FILE: web_app.py (VERSION 7.2 - FULL SETTINGS RESTORED)
+
+# --- [FIX] HÀM LÀM SẠCH DỮ LIỆU (BẢO MẬT) ---
+def sanitize_input(text):
+    if text is None: return ""
+    text = str(text).strip()
+    
+    # 1. Ngăn chặn Formula Injection trong Google Sheets
+    # (Nếu người dùng nhập =, +, - hoặc @ ở đầu dòng, Sheet sẽ tưởng là công thức)
+    if text.startswith(("=", "+", "-", "@")):
+        text = "'" + text
+        
+    # 2. Mã hóa các ký tự HTML đặc biệt (<, >, &) để tránh lỗi hiển thị hoặc XSS
+    return html.escape(text)
+
 # --- [NEW] HÀM MẬT KHẨU AN TOÀN ---
 def hash_password(plain_text_password):
     # Mã hóa mật khẩu
@@ -611,10 +626,16 @@ def admin_dashboard():
                     st.warning("Điền thiếu thông tin!")
                 else:
                     try:
-                        # Mã hóa mật khẩu trước khi lưu
-                        hashed = bcrypt.hashpw(new_pass.encode(), bcrypt.gensalt()).decode()
-                        
-                        data = {
+    # [BẢO MẬT] Kiểm tra email trùng trước
+    check_exist = supabase.table('users').select("email").eq('email', new_email).execute()
+    if check_exist.data and len(check_exist.data) > 0:
+        st.warning("⚠️ Email này đã tồn tại trong hệ thống!")
+        st.stop() # Dừng lại, không chạy tiếp
+
+    # Mã hóa mật khẩu trước khi lưu
+    hashed = bcrypt.hashpw(new_pass.encode(), bcrypt.gensalt()).decode()
+    
+    data = {
                             "email": new_email,
                             "password": hashed,
                             "plan": new_plan,
