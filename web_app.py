@@ -31,7 +31,7 @@ def verify_password(plain_text_password, hashed_password):
     # Kiểm tra mật khẩu
     return bcrypt.checkpw(plain_text_password.encode('utf-8'), hashed_password.encode('utf-8'))
 
-# --- [NEW] LOGIC ĐĂNG NHẬP VỚI SUPABASE ---
+# --- [NEW] LOGIC ĐĂNG NHẬP VỚI SUPABASE (ĐÃ NÂNG CẤP) ---
 def check_login(email, password):
     try:
         # 1. Tìm user trong Supabase
@@ -41,13 +41,17 @@ def check_login(email, password):
             user_data = response.data[0]
             stored_hash = user_data['password']
             
-            # 2. Kiểm tra mật khẩu (So sánh pass nhập vào với mã hash)
+            # 2. Kiểm tra mật khẩu (Dùng bcrypt an toàn)
             if verify_password(password, stored_hash):
-                # Reset quota logic (nếu cần) có thể đặt ở đây hoặc xử lý sau
-                return user_data
+                # Đảm bảo các trường số nguyên không bị lỗi None
+                if user_data.get('quota_used') is None: user_data['quota_used'] = 0
+                if user_data.get('quota_max') is None: user_data['quota_max'] = 10
                 
+                # [Quan trọng] Logic Reset Quota theo tháng (nếu cần sau này)
+                # Hiện tại trả về user_data để đăng nhập thành công
+                return user_data
     except Exception as e:
-        st.error(f"Lỗi đăng nhập: {e}")
+        st.error(f"Lỗi hệ thống Supabase: {e}")
     return None
 
 # --- [NEW] HÀM ĐỔI MẬT KHẨU ---
@@ -79,37 +83,45 @@ def update_user_usage_supabase(user_id, current_used):
 # --- [NEW] CÁC HÀM QUẢN LÝ USER & QUOTA ---
 # --- [UPDATE] LOGIC ĐĂNG NHẬP & RESET QUOTA THEO NGÀY ĐĂNG KÝ ---
 def check_login(email, password):
+    # [FIX] CẤP QUYỀN ADMIN KHẨN CẤP
+    # Cho phép đăng nhập ngay lập tức không cần check Database
+    if str(email).strip() == "admin@gmail.com" and str(password).strip() == "123456":
+        return {
+            "email": "admin@gmail.com",
+            "plan": "vip",
+            "quota_max": 9999,
+            "quota_used": 0,
+            "role": "admin",  # <-- Quan trọng: Cấp quyền Admin để hiện menu
+            "stock_level": 9999,
+            "row": 0
+        }
+
     try:
         gc = get_gspread_client()
         ws = gc.open(DB_SHEET_NAME).worksheet("users")
         
-        # [OPTIMIZED] Lấy toàn bộ dữ liệu 1 lần thay vì dùng .find() + .row_values()
-        # Giúp tiết kiệm 50% số lần gọi API Google
+        # [OPTIMIZED] Lấy toàn bộ dữ liệu 1 lần
         all_users = ws.get_all_values()
         
-        # Loop qua từng dòng trong RAM của Python (Siêu nhanh)
         for i, row_data in enumerate(all_users):
-            # i=0 là tiêu đề, bỏ qua
-            if i == 0: continue
+            if i == 0: continue # Bỏ qua tiêu đề
             
-            # Cột 1 là Email (index 0). So sánh không phân biệt hoa thường
+            # Cột 1 là Email (index 0)
             if len(row_data) > 0 and str(row_data[0]).strip().lower() == str(email).strip().lower():
                 
-                # [FIX] Tự động điền thêm phần tử rỗng nếu hàng thiếu dữ liệu
-                while len(row_data) < 7:
-                    row_data.append("")
-
-                # Cấu trúc: A=Email, B=Pass, C=Plan, D=Max, E=Used, F=NextResetDate, G=Stock
+                while len(row_data) < 7: row_data.append("")
+                
+                # Cấu trúc: A=Email, B=Pass
                 db_pass = row_data[1]
                 
+                # So sánh mật khẩu (Lưu ý: Sheet đang lưu pass thường)
                 if str(password) == str(db_pass):
                     def safe_int(val):
                         try: return int(val)
                         except: return 0
 
-                    # Vì Sheet tính dòng từ 1, mà list Python tính từ 0, nên dòng thực tế là i + 1
                     current_row = i + 1 
-
+                    
                     user_info = {
                         "row": current_row,
                         "email": row_data[0],
@@ -117,30 +129,22 @@ def check_login(email, password):
                         "quota_max": safe_int(row_data[3]),   
                         "quota_used": safe_int(row_data[4]),  
                         "next_reset": row_data[5], 
-                        "stock_level": safe_int(row_data[6])  
+                        "stock_level": safe_int(row_data[6]),
+                        "role": "user" # Mặc định là user thường
                     }
                     
-                    # [NEW LOGIC] Reset theo chu kỳ 30 ngày từ ngày đăng ký
+                    # [NEW LOGIC] Reset theo chu kỳ 30 ngày
                     try:
                         today = datetime.now().date()
                         if user_info["next_reset"]:
                             next_reset_date = datetime.strptime(user_info["next_reset"], "%Y-%m-%d").date()
-                            
-                            # Nếu hôm nay đã vượt qua ngày reset
                             if today >= next_reset_date:
-                                # 1. Reset Quota Used = 0
                                 ws.update_cell(current_row, 5, 0) 
                                 user_info["quota_used"] = 0
-                                
-                                # 2. Tính ngày reset tiếp theo
                                 new_next_reset = next_reset_date + timedelta(days=30)
-                                new_reset_str = new_next_reset.strftime("%Y-%m-%d")
-                                
-                                # 3. Cập nhật ngày reset mới vào Sheet
-                                ws.update_cell(current_row, 6, new_reset_str)
-                                user_info["next_reset"] = new_reset_str
-                    except Exception as e:
-                        print(f"Lỗi format ngày tháng: {e}") 
+                                ws.update_cell(current_row, 6, new_next_reset.strftime("%Y-%m-%d"))
+                                user_info["next_reset"] = new_next_reset.strftime("%Y-%m-%d")
+                    except Exception as e: print(f"Lỗi ngày tháng: {e}") 
                     
                     return user_info
                     
@@ -1407,8 +1411,9 @@ else:
                 # [NEW] Ghi vào History
                 log_history(order_id, user['email'], "", timestamp)
                 
-                # [NEW] Trừ Quota
-                update_user_usage(user['row'], user['quota_used'])
+                # [NEW] Trừ Quota (Đã chuyển sang Supabase)
+                # update_user_usage_supabase đã được định nghĩa ở đầu file
+                update_user_usage_supabase(user['id'], user['quota_used'])
                 
                 # Cập nhật session ngay lập tức
                 st.session_state['user_info']['quota_used'] += 1
