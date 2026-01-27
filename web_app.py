@@ -626,16 +626,16 @@ def admin_dashboard():
                     st.warning("Điền thiếu thông tin!")
                 else:
                     try:
-    # [BẢO MẬT] Kiểm tra email trùng trước
-    check_exist = supabase.table('users').select("email").eq('email', new_email).execute()
-    if check_exist.data and len(check_exist.data) > 0:
-        st.warning("⚠️ Email này đã tồn tại trong hệ thống!")
-        st.stop() # Dừng lại, không chạy tiếp
+                        # [BẢO MẬT] Kiểm tra email trùng trước
+                        check_exist = supabase.table('users').select("email").eq('email', new_email).execute()
+                        if check_exist.data and len(check_exist.data) > 0:
+                            st.warning("⚠️ Email này đã tồn tại trong hệ thống!")
+                            st.stop() # Dừng lại, không chạy tiếp
 
-    # Mã hóa mật khẩu trước khi lưu
-    hashed = bcrypt.hashpw(new_pass.encode(), bcrypt.gensalt()).decode()
-    
-    data = {
+                        # Mã hóa mật khẩu trước khi lưu
+                        hashed = bcrypt.hashpw(new_pass.encode(), bcrypt.gensalt()).decode()
+                        
+                        data = {
                             "email": new_email,
                             "password": hashed,
                             "plan": new_plan,
@@ -645,7 +645,7 @@ def admin_dashboard():
                         supabase.table('users').insert(data).execute()
                         st.success(f"✅ Đã tạo tài khoản: {new_email}")
                     except Exception as e:
-                        st.error(f"Lỗi (có thể trùng email): {e}")
+                        st.error(f"Lỗi tạo user: {e}")
 
     with tab2:
         st.subheader("Cập nhật dữ liệu từ Google Sheet sang Supabase")
@@ -874,7 +874,7 @@ if not st.session_state['user_info']:
             
             # Form nhập liệu
             st.markdown("<br>", unsafe_allow_html=True) # Thêm khoảng trắng
-            login_email = st.text_input("📧 Nhập Email", placeholder="vidu@gmail.com", key="login_email_unique")
+            login_email = st.text_input("📧 Nhập tên tài khoản hoặc email được cung cấp", placeholder="ví dụ: hoasen", key="login_email_unique")
             
             st.markdown("<br>", unsafe_allow_html=True) # Thêm khoảng trắng giữa email và pass
             login_pass = st.text_input("🔑 Mật khẩu", type="password", key="login_pass_unique")
