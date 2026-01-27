@@ -9,6 +9,7 @@ import bcrypt
 import time
 import html  # <--- Thêm thư viện này để xử lý ký tự đặc biệt
 from supabase import create_client, Client
+from streamlit_mic_recorder import mic_recorder  # <--- [QUAN TRỌNG] Thêm dòng này
 
 # --- THÊM ĐOẠN NÀY VÀO SAU CÁC DÒNG IMPORT ---
 # Hàm này giúp kết nối Supabase và giữ kết nối không bị ngắt
