@@ -821,12 +821,12 @@ if 'user_info' not in st.session_state:
     st.session_state['user_info'] = None
 
 # [FIX] LOGIC TỰ ĐỘNG ĐIỀN EMAIL KHI F5
-        if not st.session_state['user_info']:
-            params = st.query_params
-            # Nếu có lưu email trên URL thì tự động điền vào ô nhập liệu sau này (không tự login nữa để an toàn)
-            if "u" in params:
-                st.session_state['saved_email'] = params["u"]
-                # Đã xóa đoạn "if user:" gây lỗi vì biến user chưa tồn tại ở đây
+if not st.session_state['user_info']:
+    params = st.query_params
+    # Nếu có lưu email trên URL thì tự động điền vào ô nhập liệu sau này (không tự login nữa để an toàn)
+    if "u" in params:
+        st.session_state['saved_email'] = params["u"]
+        # Đã xóa đoạn "if user:" gây lỗi vì biến user chưa tồn tại ở đây
 
 # --- GIAO DIỆN ĐĂNG NHẬP ---
 if not st.session_state['user_info']:
