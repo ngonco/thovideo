@@ -821,18 +821,12 @@ if 'user_info' not in st.session_state:
     st.session_state['user_info'] = None
 
 # [FIX] LOGIC TỰ ĐỘNG ĐIỀN EMAIL KHI F5
-if not st.session_state['user_info']:
-    params = st.query_params
-    # Nếu có lưu email trên URL thì tự động điền vào ô nhập liệu sau này (không tự login nữa để an toàn)
-    if "u" in params:
-        st.session_state['saved_email'] = params["u"]
-        if user:
-            st.session_state['user_info'] = user
-            # [NEW] Sau khi login lại thành công, tự động tải bản nháp về
-            draft_content = load_draft_from_sheet(user['email'])
-            if draft_content:
-                 st.session_state['main_content_area'] = draft_content
-            st.rerun()
+        if not st.session_state['user_info']:
+            params = st.query_params
+            # Nếu có lưu email trên URL thì tự động điền vào ô nhập liệu sau này (không tự login nữa để an toàn)
+            if "u" in params:
+                st.session_state['saved_email'] = params["u"]
+                # Đã xóa đoạn "if user:" gây lỗi vì biến user chưa tồn tại ở đây
 
 # --- GIAO DIỆN ĐĂNG NHẬP ---
 if not st.session_state['user_info']:
@@ -1177,10 +1171,19 @@ else:
         elif voice_method == "📤 Tải file lên":
             st.markdown("<b>Chọn file ghi âm từ máy của bạn (mp3, wav, m4a):</b>", unsafe_allow_html=True)
             uploaded_file = st.file_uploader("", type=['mp3', 'wav', 'm4a'], label_visibility="collapsed")
+            
             if uploaded_file:
-                st.session_state['temp_upload_file'] = uploaded_file
-                st.session_state['temp_upload_name'] = uploaded_file.name
-                st.success(f"Đã chọn: {uploaded_file.name}")
+                # [BẢO MẬT] Kiểm tra kích thước file (10MB = 10 * 1024 * 1024 bytes)
+                MAX_FILE_SIZE = 10 * 1024 * 1024
+                
+                if uploaded_file.size > MAX_FILE_SIZE:
+                    st.error("⚠️ File quá lớn! Vui lòng chọn file dưới 10MB.")
+                    # Xóa file khỏi bộ nhớ tạm để an toàn
+                    st.session_state['temp_upload_file'] = None
+                else:
+                    st.session_state['temp_upload_file'] = uploaded_file
+                    st.session_state['temp_upload_name'] = uploaded_file.name
+                    st.success(f"Đã chọn: {uploaded_file.name}")
 
         # CASE 3: THU ÂM TRỰC TIẾP
         elif voice_method == "🎙️ Thu âm trực tiếp": 
