@@ -31,47 +31,7 @@ def verify_password(plain_text_password, hashed_password):
     # Kiểm tra mật khẩu
     return bcrypt.checkpw(plain_text_password.encode('utf-8'), hashed_password.encode('utf-8'))
 
-# --- [NEW] LOGIC ĐĂNG NHẬP VỚI SUPABASE (ĐÃ NÂNG CẤP) ---
-def check_login(email, password):
-    try:
-        # 1. Tìm user trong Supabase
-        response = supabase.table('users').select("*").eq('email', email).execute()
-        
-        if response.data and len(response.data) > 0:
-            user_data = response.data[0]
-            stored_hash = user_data['password']
-            
-            # 2. Kiểm tra mật khẩu (Dùng bcrypt an toàn)
-            if verify_password(password, stored_hash):
-                # Đảm bảo các trường số nguyên không bị lỗi None
-                if user_data.get('quota_used') is None: user_data['quota_used'] = 0
-                if user_data.get('quota_max') is None: user_data['quota_max'] = 10
-                
-                # [Quan trọng] Logic Reset Quota theo tháng (nếu cần sau này)
-                # Hiện tại trả về user_data để đăng nhập thành công
-                return user_data
-    except Exception as e:
-        st.error(f"Lỗi hệ thống Supabase: {e}")
-    return None
 
-# --- [NEW] HÀM ĐỔI MẬT KHẨU ---
-def change_password_action(email, old_pass_input, new_pass_input):
-    try:
-        # 1. Lấy thông tin user
-        response = supabase.table('users').select("password").eq('email', email).execute()
-        if response.data:
-            stored_hash = response.data[0]['password']
-            # 2. Check pass cũ
-            if verify_password(old_pass_input, stored_hash):
-                # 3. Hash pass mới và cập nhật
-                new_hash = hash_password(new_pass_input)
-                supabase.table('users').update({"password": new_hash}).eq('email', email).execute()
-                return True, "✅ Đổi mật khẩu thành công!"
-            else:
-                return False, "❌ Mật khẩu cũ không đúng!"
-    except Exception as e:
-        return False, f"Lỗi hệ thống: {e}"
-    return False, "❌ Lỗi không xác định"
 
 # --- [NEW] CẬP NHẬT QUOTA ---
 def update_user_usage_supabase(user_id, current_used):
@@ -96,6 +56,9 @@ def check_login(email, password):
                 # Đảm bảo các trường số liệu không bị None để tránh lỗi cộng trừ sau này
                 if user_data.get('quota_used') is None: user_data['quota_used'] = 0
                 if user_data.get('quota_max') is None: user_data['quota_max'] = 10
+                
+                # [FIX] Thêm dòng này: Nếu không có stock_level thì mặc định là 1000 kết quả
+                if user_data.get('stock_level') is None: user_data['stock_level'] = 1000 
                 
                 # Trả về thông tin user để lưu vào session
                 return user_data
