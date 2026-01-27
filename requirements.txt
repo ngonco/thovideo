@@ -1,4 +1,4 @@
-streamlit
+streamlit>=1.30.0
 supabase
 bcrypt
 gspread
@@ -6,3 +6,4 @@ oauth2client
 pandas
 requests
 streamlit-mic-recorder
+
