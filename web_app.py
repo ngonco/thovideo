@@ -1,23 +1,57 @@
 # FILE: web_app.py (VERSION 7.2 - FULL SETTINGS RESTORED)
-import streamlit as st
-import gspread
-from oauth2client.service_account import ServiceAccountCredentials
-from datetime import datetime, timedelta
-import uuid
-import requests
-import json
-import pandas as pd
-# from audio_recorder_streamlit import audio_recorder 
-from streamlit_mic_recorder import mic_recorder 
+# --- [NEW] HÀM MẬT KHẨU AN TOÀN ---
+def hash_password(plain_text_password):
+    # Mã hóa mật khẩu
+    return bcrypt.hashpw(plain_text_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
-# [BẢO MẬT] Hàm chặn tiêm công thức vào Google Sheet
-def sanitize_input(text):
-    text_str = str(text)
-    # Nếu ký tự đầu tiên là =, +, -, @ (các ký tự kích hoạt công thức)
-    if text_str.startswith(("=", "+", "-", "@")):
-        # Thêm dấu nháy đơn vào trước để biến nó thành văn bản thường
-        return "'" + text_str
-    return text_str
+def verify_password(plain_text_password, hashed_password):
+    # Kiểm tra mật khẩu
+    return bcrypt.checkpw(plain_text_password.encode('utf-8'), hashed_password.encode('utf-8'))
+
+# --- [NEW] LOGIC ĐĂNG NHẬP VỚI SUPABASE ---
+def check_login(email, password):
+    try:
+        # 1. Tìm user trong Supabase
+        response = supabase.table('users').select("*").eq('email', email).execute()
+        
+        if response.data and len(response.data) > 0:
+            user_data = response.data[0]
+            stored_hash = user_data['password']
+            
+            # 2. Kiểm tra mật khẩu (So sánh pass nhập vào với mã hash)
+            if verify_password(password, stored_hash):
+                # Reset quota logic (nếu cần) có thể đặt ở đây hoặc xử lý sau
+                return user_data
+                
+    except Exception as e:
+        st.error(f"Lỗi đăng nhập: {e}")
+    return None
+
+# --- [NEW] HÀM ĐỔI MẬT KHẨU ---
+def change_password_action(email, old_pass_input, new_pass_input):
+    try:
+        # 1. Lấy thông tin user
+        response = supabase.table('users').select("password").eq('email', email).execute()
+        if response.data:
+            stored_hash = response.data[0]['password']
+            # 2. Check pass cũ
+            if verify_password(old_pass_input, stored_hash):
+                # 3. Hash pass mới và cập nhật
+                new_hash = hash_password(new_pass_input)
+                supabase.table('users').update({"password": new_hash}).eq('email', email).execute()
+                return True, "✅ Đổi mật khẩu thành công!"
+            else:
+                return False, "❌ Mật khẩu cũ không đúng!"
+    except Exception as e:
+        return False, f"Lỗi hệ thống: {e}"
+    return False, "❌ Lỗi không xác định"
+
+# --- [NEW] CẬP NHẬT QUOTA ---
+def update_user_usage_supabase(user_id, current_used):
+    try:
+        supabase.table('users').update({"quota_used": current_used + 1}).eq('id', user_id).execute()
+    except Exception as e:
+        print(f"Lỗi update quota: {e}")
 
 # --- [NEW] CÁC HÀM QUẢN LÝ USER & QUOTA ---
 # --- [UPDATE] LOGIC ĐĂNG NHẬP & RESET QUOTA THEO NGÀY ĐĂNG KÝ ---
@@ -481,35 +515,25 @@ def get_scripts_with_audio(sheet_name, stock_limit=1000):
         print(f"Lỗi load script: {e}")
         return []
 
-# [ĐÃ SỬA] Hàm tìm kiếm: Luôn quét 5000 dòng để đảm bảo tìm thấy ID gốc chính xác
+# [NEW] TÌM KIẾM TRONG DATABASE (Nhanh hơn Sheet rất nhiều)
 def search_global_library(keyword, user_stock_limit_ignored):
-    """Tìm kiếm từ khóa trong tất cả các sheet quan trọng"""
     try:
-        # Danh sách các sheet cần tìm
-        target_sheets = ["duoi_60s", "duoi_90s", "duoi_180s", "tren_180s"]
-        found_results = []
-        
         keyword = keyword.lower().strip()
         if not keyword: return []
-
-        # [QUAN TRỌNG] Luôn tìm trong 5000 dòng đầu tiên để lấy đúng Link Audio gốc (VD: 50.mp3)
-        # Nếu dùng user_stock_limit (ví dụ 10) thì dòng 50 sẽ không bao giờ được tìm thấy hoặc bị sai ID.
-        SEARCH_LIMIT = 5000 
-
-        for sheet_name in target_sheets:
-            # Gọi hàm lấy dữ liệu với giới hạn lớn
-            scripts = get_scripts_with_audio(sheet_name, SEARCH_LIMIT)
-            
-            for item in scripts:
-                # Tìm trong nội dung (Content)
-                if keyword in str(item.get('content', '')).lower():
-                    # Đánh dấu thêm nguồn để user biết
-                    item['source_sheet'] = sheet_name 
-                    found_results.append(item)
         
-        return found_results
+        # Tìm trong bảng library, cột content chứa keyword (ilike là case-insensitive)
+        response = supabase.table('library').select("*").ilike('content', f'%{keyword}%').limit(20).execute()
+        
+        results = []
+        for item in response.data:
+            results.append({
+                "content": item['content'],
+                "audio": item['audio_url'],
+                "source_sheet": item['category']
+            })
+        return results
     except Exception as e:
-        print(f"Lỗi tìm kiếm: {e}")
+        print(f"Lỗi tìm kiếm Supabase: {e}")
         return []
 
 
@@ -565,6 +589,106 @@ def upload_to_catbox(file_obj, custom_name=None):
         st.error(f"Lỗi hệ thống: {e}")
         
     return None
+
+# --- [NEW] HÀM ĐỒNG BỘ TỪ GOOGLE SHEET VỀ SUPABASE ---
+def sync_sheet_to_supabase():
+    try:
+        # Kết nối Google Sheet
+        gc = get_gspread_client()
+        sh = gc.open_by_key(LIBRARY_SHEET_ID)
+        target_sheets = ["duoi_60s", "duoi_90s", "duoi_180s", "tren_180s"]
+        
+        total_synced = 0
+        status_text = st.empty()
+        
+        # Lấy Base URL từ secrets
+        BASE_URL = st.secrets["huggingface"]["base_url"] if "huggingface" in st.secrets else ""
+
+        for sheet_name in target_sheets:
+            status_text.text(f"⏳ Đang đồng bộ sheet: {sheet_name}...")
+            try:
+                ws = sh.worksheet(sheet_name)
+                data = ws.get_all_records()
+            except: continue # Bỏ qua nếu không tìm thấy sheet
+            
+            batch_data = []
+            for i, row in enumerate(data):
+                # Tìm cột nội dung
+                content = ""
+                for k, v in row.items():
+                    if "nội dung" in k.lower() or "content" in k.lower():
+                        content = v
+                        break
+                
+                if content:
+                    # Tạo link audio giả định theo quy tắc cũ
+                    audio_link = f"{BASE_URL}{sheet_name}/{i+2}.mp3"
+                    
+                    # Chuẩn bị dữ liệu (cần khớp với cột trong Supabase)
+                    batch_data.append({
+                        "content": content,
+                        "audio_url": audio_link,
+                        "category": sheet_name,
+                        "source_index": i+2
+                    })
+            
+            # Đẩy lên Supabase (Upsert)
+            if batch_data:
+                # Chia nhỏ mỗi lần gửi 50 dòng để tránh lỗi
+                chunk_size = 50
+                for k in range(0, len(batch_data), chunk_size):
+                    supabase.table('library').upsert(batch_data[k:k+chunk_size]).execute()
+                total_synced += len(batch_data)
+
+        status_text.success(f"✅ Đã đồng bộ xong {total_synced} kịch bản vào Supabase!")
+        return True
+    except Exception as e:
+        st.error(f"Lỗi sync: {e}")
+        return False
+
+# --- [NEW] GIAO DIỆN ADMIN DASHBOARD ---
+def admin_dashboard():
+    st.markdown("---")
+    st.title("🛠️ QUẢN TRỊ VIÊN (ADMIN)")
+    
+    tab1, tab2 = st.tabs(["👥 Thêm User Mới", "🔄 Đồng bộ Kịch bản"])
+    
+    with tab1:
+        st.subheader("Tạo tài khoản khách hàng")
+        with st.form("add_user_form"):
+            new_email = st.text_input("Email khách")
+            new_pass = st.text_input("Mật khẩu", type="password")
+            col_u1, col_u2 = st.columns(2)
+            with col_u1: new_plan = st.selectbox("Gói cước", ["free", "basic", "pro", "vip"])
+            with col_u2: new_quota = st.number_input("Số video (Quota)", value=10)
+            
+            submitted = st.form_submit_button("Lưu User vào Supabase")
+            
+            if submitted:
+                if not new_email or not new_pass:
+                    st.warning("Điền thiếu thông tin!")
+                else:
+                    try:
+                        # Mã hóa mật khẩu trước khi lưu
+                        hashed = bcrypt.hashpw(new_pass.encode(), bcrypt.gensalt()).decode()
+                        
+                        data = {
+                            "email": new_email,
+                            "password": hashed,
+                            "plan": new_plan,
+                            "quota_max": new_quota,
+                            "role": "user"
+                        }
+                        supabase.table('users').insert(data).execute()
+                        st.success(f"✅ Đã tạo tài khoản: {new_email}")
+                    except Exception as e:
+                        st.error(f"Lỗi (có thể trùng email): {e}")
+
+    with tab2:
+        st.subheader("Cập nhật dữ liệu từ Google Sheet sang Supabase")
+        st.info("Bấm nút dưới đây khi bạn vừa thêm kịch bản mới vào file Google Sheet.")
+        if st.button("🚀 Bắt đầu Đồng bộ ngay"):
+            sync_sheet_to_supabase()
 
 # --- CSS GIAO DIỆN (FIXED FILE UPLOADER VISIBILITY) ---
 st.markdown("""
@@ -850,6 +974,22 @@ else:
 
     if is_out_of_quota:
         st.error("⚠️ Bạn đã hết lượt tạo video trong tháng này. Vui lòng nâng cấp gói!")
+
+    # === [NEW] KHU VỰC DÀNH RIÊNG CHO ADMIN ===
+    # Kiểm tra xem user có phải role='admin' trong Supabase không
+    if user.get('role') == 'admin':
+        if st.button("🛠️ VÀO TRANG QUẢN TRỊ (ADMIN)", type="primary", use_container_width=True):
+            st.session_state['show_admin'] = True
+            st.rerun()
+            
+    # Nếu đang bật chế độ Admin thì hiện Dashboard và DỪNG APP CHÍNH
+    if st.session_state.get('show_admin', False):
+        if st.button("⬅️ Quay lại App chính"):
+            st.session_state['show_admin'] = False
+            st.rerun()
+        admin_dashboard() # Gọi hàm hiển thị admin
+        st.stop() # Dừng không chạy code bên dưới nữa
+    # ==========================================
 
     # --- [NEW] HỘP QUẢN LÝ TÀI KHOẢN (SLIDER/EXPANDER) ---
     # Đặt nằm ngay dưới khung Quota
