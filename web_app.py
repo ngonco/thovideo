@@ -980,10 +980,7 @@ else:
         # [NEW] Cảnh báo an toàn cho người dùng (Đã chỉnh màu chữ đậm hơn)
         st.markdown("""
         <div style="background-color: #FFEBEE; color: #D32F2F; padding: 15px; border-radius: 5px; border: 2px solid #D32F2F; margin-bottom: 10px; font-weight: bold;">
-            ⛔ CẢNH BÁO QUAN TRỌNG:<br>
-            Vì mật khẩu ở đây không quan trọng nên KHÔNG ĐƯỢC BẢO MẬT.<br>
-            TUYỆT ĐỐI KHÔNG dùng mật khẩu Facebook, Gmail ... hay Ngân hàng tại đây.<br>
-            Hãy dùng mật khẩu rác (Ví dụ: 123456, abcxyz).
+            ⛔ KHÔNG NÊN DÙNG CHUNG mật khẩu Facebook, Gmail ... hay Ngân hàng tại đây.<br>
         </div>
         """, unsafe_allow_html=True)
 
