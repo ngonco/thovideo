@@ -1,3 +1,17 @@
+# --- THÊM ĐOẠN NÀY VÀO SAU CÁC DÒNG IMPORT ---
+from supabase import create_client, Client
+
+# Hàm này giúp kết nối Supabase và giữ kết nối không bị ngắt
+# Dùng cache_resource cho KẾT NỐI (Database, ML models...)
+@st.cache_resource
+def init_supabase():
+    url = st.secrets["supabase"]["url"]
+    key = st.secrets["supabase"]["key"]
+    return create_client(url, key)
+
+# Khởi tạo kết nối ngay lập tức
+supabase = init_supabase()
+
 # FILE: web_app.py (VERSION 7.2 - FULL SETTINGS RESTORED)
 # --- [NEW] HÀM MẬT KHẨU AN TOÀN ---
 def hash_password(plain_text_password):
@@ -208,7 +222,7 @@ def auto_save_callback():
 # --- [UPDATE] HÀM LẤY LỊCH SỬ TỪ SHEET ORDERS ---
 # [ĐÃ SỬA] Thêm Cache để không gọi API liên tục (ttl=300 nghĩa là lưu cache 300 giây/5 phút)
 # Sửa st.cache_data thành st.cache (để chạy được trên server cũ)
-@st.cache(ttl=300, allow_output_mutation=True)
+@st.cache_data(ttl=300)
 def get_all_orders_cached():
     try:
         gc = get_gspread_client()
@@ -451,7 +465,7 @@ def get_creds():
 
 def get_gspread_client(): return gspread.authorize(get_creds())
 
-@st.cache(ttl=3600, allow_output_mutation=True)
+@st.cache_data(ttl=3600)
 def get_library_structure():
     try:
         gc = get_gspread_client()
@@ -465,7 +479,7 @@ def get_library_structure():
     except Exception as e: return [f"Lỗi: {str(e)}"]
 
 # --- ĐÃ SỬA ĐỂ HỖ TRỢ PHÂN QUYỀN STOCK ---
-@st.cache(ttl=3600, show_spinner="Đang tải dữ liệu từ thư viện...", allow_output_mutation=True)
+@st.cache_data(ttl=3600, show_spinner="Đang tải dữ liệu từ thư viện...")
 def get_scripts_with_audio(sheet_name, stock_limit=1000):
     # [BẢO MẬT] Lấy link Hugging Face từ secrets
     if "huggingface" in st.secrets:
