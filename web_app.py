@@ -438,9 +438,9 @@ def get_scripts_with_audio(sheet_name, stock_limit=1000):
                 if content_text:
                     item = {"content": content_text}
                     
-                    # Kịch bản 176 sẽ lấy file 176.mp3 (thay vì 178.mp3)
-                    # Lưu ý: File đầu tiên (i=0) sẽ tìm file 0.mp3
-                    auto_link = f"{BASE_URL}{sheet_name}/{i}.mp3"
+                    # [ĐÃ SỬA] Cộng thêm 1 để bắt đầu từ 1.mp3 thay vì 0.mp3
+                    # Nếu file của bạn đặt theo số hàng Excel (ví dụ hàng 2 là 2.mp3), hãy sửa số 1 thành 2
+                    auto_link = f"{BASE_URL}{sheet_name}/{i + 2}.mp3"
                     item["audio"] = auto_link
                     
                     results.append(item)
@@ -566,8 +566,8 @@ def sync_sheet_to_supabase():
                 # [LOGIC MỚI] 2. Chỉ thêm nếu có nội dung VÀ nội dung đó CHƯA CÓ trong DB
                 if content and content not in existing_contents:
                     
-                    # [FIX TỪ YÊU CẦU TRƯỚC] Dùng i thay vì i+2 để khớp file audio
-                    audio_link = f"{BASE_URL}{sheet_name}/{i}.mp3"
+                    # [ĐÃ SỬA] Cộng thêm 1 để khớp với tên file (1.mp3, 2.mp3...)
+                    audio_link = f"{BASE_URL}{sheet_name}/{i + 2}.mp3"
                     
                     # Chuẩn bị dữ liệu
                     batch_data.append({
