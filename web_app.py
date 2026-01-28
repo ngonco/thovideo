@@ -438,11 +438,9 @@ def get_scripts_with_audio(sheet_name, stock_limit=1000):
                 if content_text:
                     item = {"content": content_text}
                     
-                    # [ĐÃ SỬA] Đổi thành i+2 để khớp với số dòng hiển thị trong Google Sheet
-                    # Giải thích: Dữ liệu bắt đầu từ dòng 2. i chạy từ 0.
-                    # Dòng 2 -> i=0 -> 0+2 = 2.mp3
-                    # Dòng 6 -> i=4 -> 4+2 = 6.mp3 (Đúng ý bạn)
-                    auto_link = f"{BASE_URL}{sheet_name}/{i+2}.mp3"
+                    # Kịch bản 176 sẽ lấy file 176.mp3 (thay vì 178.mp3)
+                    # Lưu ý: File đầu tiên (i=0) sẽ tìm file 0.mp3
+                    auto_link = f"{BASE_URL}{sheet_name}/{i}.mp3"
                     item["audio"] = auto_link
                     
                     results.append(item)
@@ -548,41 +546,57 @@ def sync_sheet_to_supabase():
                 data = ws.get_all_records()
             except: continue # Bỏ qua nếu không tìm thấy sheet
             
+            # [LOGIC MỚI] 1. Lấy danh sách nội dung ĐÃ CÓ trong Supabase của sheet này
+            # Mục đích: Để so sánh và loại bỏ những cái trùng lặp
+            existing_response = supabase.table('library').select("content").eq('category', sheet_name).execute()
+            
+            # Tạo một tập hợp (set) chứa các nội dung đã tồn tại để tra cứu cho nhanh
+            # Lưu ý: strip() để xóa khoảng trắng thừa đầu đuôi
+            existing_contents = {str(item['content']).strip() for item in existing_response.data}
+            
             batch_data = []
             for i, row in enumerate(data):
                 # Tìm cột nội dung
                 content = ""
                 for k, v in row.items():
                     if "nội dung" in k.lower() or "content" in k.lower():
-                        content = v
+                        content = str(v).strip() # [Fix] Luôn làm sạch chuỗi
                         break
                 
-                if content:
-                    # Tạo link audio giả định theo quy tắc cũ
-                    audio_link = f"{BASE_URL}{sheet_name}/{i+2}.mp3"
+                # [LOGIC MỚI] 2. Chỉ thêm nếu có nội dung VÀ nội dung đó CHƯA CÓ trong DB
+                if content and content not in existing_contents:
                     
-                    # Chuẩn bị dữ liệu (cần khớp với cột trong Supabase)
+                    # [FIX TỪ YÊU CẦU TRƯỚC] Dùng i thay vì i+2 để khớp file audio
+                    audio_link = f"{BASE_URL}{sheet_name}/{i}.mp3"
+                    
+                    # Chuẩn bị dữ liệu
                     batch_data.append({
                         "content": content,
                         "audio_url": audio_link,
                         "category": sheet_name,
-                        "source_index": i+2
+                        "source_index": i # Index thực tế
                     })
             
-            # Đẩy lên Supabase (Upsert)
+            # [LOGIC MỚI] 3. Dùng INSERT thay vì UPSERT
+            # Vì ta đã lọc trùng rồi, nên chỉ cần Insert cái mới thôi
             if batch_data:
-                # Chia nhỏ mỗi lần gửi 50 dòng để tránh lỗi
                 chunk_size = 50
                 for k in range(0, len(batch_data), chunk_size):
-                    supabase.table('library').upsert(batch_data[k:k+chunk_size]).execute()
+                    # Dùng insert để thêm mới (nếu lỡ vẫn còn trùng thì DB sẽ báo lỗi, nhưng ta đã lọc ở trên rồi)
+                    supabase.table('library').insert(batch_data[k:k+chunk_size]).execute()
                 total_synced += len(batch_data)
 
-        status_text.success(f"✅ Đã đồng bộ xong {total_synced} kịch bản vào Supabase!")
+        if total_synced > 0:
+            status_text.success(f"✅ Đã thêm mới {total_synced} kịch bản vào hệ thống!")
+        else:
+            status_text.info("✅ Hệ thống đã cập nhật. Không có kịch bản mới nào.")
+            
         return True
     except Exception as e:
         st.error(f"Lỗi sync: {e}")
         return False
-
+    
+    
 # --- [NEW] GIAO DIỆN ADMIN DASHBOARD ---
 def admin_dashboard():
     st.markdown("---")
