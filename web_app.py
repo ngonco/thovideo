@@ -676,12 +676,16 @@ def admin_dashboard():
         - Ngày hết hạn: **{expiry_str}**
         """)
         
+        # [FIX] Tạo key động dựa trên tên gói và thời hạn
+        # Khi user đổi gói, key thay đổi -> ô nhập liệu reset về giá trị mới
+        dynamic_key_quota = f"quota_{selected_plan_name}_{selected_duration_name}"
+
         # Ô nhập số (Tự động cập nhật giá trị theo gói đã chọn)
         final_quota = st.number_input("Tổng số video (Quota Max) - Có thể sửa tay", 
                                     value=calculated_quota,
                                     min_value=0,
                                     step=1,
-                                    key="num_new_user_quota")
+                                    key=dynamic_key_quota)
         
         # Nút Lưu (Dùng st.button thường)
         if st.button("💾 LƯU USER VÀO SUPABASE", type="primary"):
