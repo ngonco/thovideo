@@ -623,7 +623,7 @@ def admin_dashboard():
             "Free (Miễn phí)":    {"quota_per_month": 10,  "code": "free"},
             "Gói 30k (Cơ bản)":   {"quota_per_month": 30,  "code": "basic"},
             "Gói 60k (Nâng cao)": {"quota_per_month": 90,  "code": "pro"},
-            "Gói HD (Chất lượng)":{"quota_per_month": 60,  "code": "hd"}
+            "Gói huynh đệ": {"quota_per_month": 60,  "code": "huynhde"}
         }
         
         DURATION_CONFIG = {
