@@ -597,47 +597,110 @@ def sync_sheet_to_supabase():
         return False
     
     
-# --- [NEW] GIAO DIỆN ADMIN DASHBOARD ---
+# --- [UPDATE] GIAO DIỆN ADMIN DASHBOARD ---
 def admin_dashboard():
+    # [FIX] CSS MÀU CHỮ TAB CHO ADMIN (Paste đoạn này vào đây hoặc vào get_app_style đều được)
+    st.markdown("""
+    <style>
+        button[data-baseweb="tab"] div[data-testid="stMarkdownContainer"] p {
+            color: #3E2723 !important; font-size: 18px !important; font-weight: bold !important;
+        }
+        div[data-baseweb="tab-highlight"] { background-color: #8B4513 !important; }
+    </style>
+    """, unsafe_allow_html=True)
+    
     st.markdown("---")
     st.title("🛠️ QUẢN TRỊ VIÊN (ADMIN)")
     
     tab1, tab2 = st.tabs(["👥 Thêm User Mới", "🔄 Đồng bộ Kịch bản"])
     
     with tab1:
-        st.subheader("Tạo tài khoản khách hàng")
+        st.subheader("Tạo tài khoản & Gia hạn")
+        
+        # --- CẤU HÌNH CÁC GÓI CƯỚC ---
+        # Định nghĩa quota trên 1 tháng cho từng gói
+        PLAN_CONFIG = {
+            "Free (Miễn phí)":    {"quota_per_month": 10,  "code": "free"},
+            "Gói 30k (Cơ bản)":   {"quota_per_month": 30,  "code": "basic"},
+            "Gói 60k (Nâng cao)": {"quota_per_month": 90,  "code": "pro"},
+            "Gói HD (Chất lượng)":{"quota_per_month": 60,  "code": "hd"}
+        }
+        
+        DURATION_CONFIG = {
+            "1 Tháng": 1,
+            "3 Tháng": 3,
+            "6 Tháng": 6,
+            "12 Tháng (1 Năm)": 12
+        }
+
         with st.form("add_user_form"):
-            new_email = st.text_input("Email khách")
+            new_email = st.text_input("Email khách hàng", placeholder="vidu@gmail.com")
             new_pass = st.text_input("Mật khẩu", type="password")
-            col_u1, col_u2 = st.columns(2)
-            with col_u1: new_plan = st.selectbox("Gói cước", ["free", "basic", "pro", "vip"])
-            with col_u2: new_quota = st.number_input("Số video (Quota)", value=10)
             
-            submitted = st.form_submit_button("Lưu User vào Supabase")
+            st.markdown("---")
+            st.markdown("##### 📦 Chọn gói đăng ký")
+            
+            c1, c2 = st.columns(2)
+            with c1:
+                selected_plan_name = st.selectbox("Loại gói cước", list(PLAN_CONFIG.keys()))
+            with c2:
+                selected_duration_name = st.selectbox("Thời hạn đăng ký", list(DURATION_CONFIG.keys()))
+            
+            # --- LOGIC TÍNH TOÁN TỰ ĐỘNG ---
+            # 1. Lấy thông tin gói
+            plan_info = PLAN_CONFIG[selected_plan_name]
+            months = DURATION_CONFIG[selected_duration_name]
+            
+            # 2. Tính tổng quota = (Quota tháng) x (Số tháng)
+            # Ví dụ: Gói 30k (30 video) mua 3 tháng -> Tổng 90 video
+            calculated_quota = plan_info["quota_per_month"] * months
+            
+            # 3. Tính ngày hết hạn
+            expiry_date = datetime.utcnow() + timedelta(days=30 * months)
+            expiry_str = expiry_date.strftime("%d/%m/%Y")
+
+            # Hiển thị thông tin review trước khi lưu
+            st.info(f"""
+            📊 **Review Cấu hình:**
+            - **Gói:** {plan_info['code'].upper()} ({plan_info['quota_per_month']} video/tháng)
+            - **Thời hạn:** {months} tháng
+            - **Tổng Quota cấp:** {calculated_quota} video
+            - **Ngày hết hạn:** {expiry_str}
+            """)
+            
+            # Cho phép Admin sửa tay lại Quota nếu muốn bonus thêm
+            final_quota = st.number_input("Tổng số video (Quota Max) - Có thể sửa tay", value=calculated_quota)
+            
+            submitted = st.form_submit_button("💾 Lưu User vào Supabase")
             
             if submitted:
                 if not new_email or not new_pass:
-                    st.warning("Điền thiếu thông tin!")
+                    st.warning("⚠️ Vui lòng điền Email và Mật khẩu!")
                 else:
                     try:
-                        # [BẢO MẬT] Kiểm tra email trùng trước
+                        # [BẢO MẬT] Kiểm tra email trùng
                         check_exist = supabase.table('users').select("email").eq('email', new_email).execute()
                         if check_exist.data and len(check_exist.data) > 0:
-                            st.warning("⚠️ Email này đã tồn tại trong hệ thống!")
-                            st.stop() # Dừng lại, không chạy tiếp
+                            st.error(f"❌ Email '{new_email}' đã tồn tại!")
+                            st.stop()
 
-                        # Mã hóa mật khẩu trước khi lưu
+                        # Mã hóa mật khẩu
                         hashed = bcrypt.hashpw(new_pass.encode(), bcrypt.gensalt()).decode()
                         
+                        # Chuẩn bị dữ liệu insert
                         data = {
                             "email": new_email,
                             "password": hashed,
-                            "plan": new_plan,
-                            "quota_max": new_quota,
-                            "role": "user"
+                            "plan": plan_info['code'],   # free, basic, pro, hd
+                            "quota_max": final_quota,    # Tổng số video được làm
+                            "role": "user",
+                            # Lưu thêm ngày hết hạn (nếu DB của bạn có cột này, nếu chưa có thì Supabase sẽ tự bỏ qua hoặc báo lỗi tùy setting)
+                            # "expired_at": expiry_date.isoformat() 
                         }
+                        
                         supabase.table('users').insert(data).execute()
-                        st.success(f"✅ Đã tạo tài khoản: {new_email}")
+                        st.success(f"✅ Đã tạo tài khoản: {new_email} | Gói: {plan_info['code']} | Quota: {final_quota}")
+                        
                     except Exception as e:
                         st.error(f"Lỗi tạo user: {e}")
 
@@ -827,6 +890,29 @@ st.markdown("""
     /* 4. Ẩn luôn thanh trang trí 7 màu trên cùng (nếu có) */
     div[data-testid="stDecoration"] {display: none;}
     
+    /* ============================================================
+       [FIX] MÀU CHỮ TAB (ADMIN DASHBOARD)
+       ============================================================ */
+    
+    /* 1. Đổi màu chữ trong Tab sang màu nâu đậm */
+    button[data-baseweb="tab"] div[data-testid="stMarkdownContainer"] p {
+        color: #3E2723 !important; 
+        font-size: 20px !important;
+        font-weight: bold !important;
+    }
+
+    /* 2. Đổi màu thanh gạch chân (highlight) khi chọn tab */
+    div[data-baseweb="tab-highlight"] {
+        background-color: #8B4513 !important;
+        height: 4px !important; /* Làm dày thanh gạch chân */
+    }
+
+    /* 3. (Tùy chọn) Đổi màu nền tab khi di chuột vào */
+    button[data-baseweb="tab"]:hover {
+        background-color: #FFF8DC !important;
+    }
+
+
     </style>
 """, unsafe_allow_html=True)
 
