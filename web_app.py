@@ -626,6 +626,14 @@ def admin_dashboard():
     with tab1:
         st.subheader("Tạo tài khoản & Gia hạn")
         
+        # --- CẤU HÌNH CÁC GÓI CƯỚC (Đã cập nhật chuẩn) ---
+        PLAN_CONFIG = {
+            "Free (Miễn phí)":    {"quota_per_month": 10,  "code": "free"},
+            "Gói 30k (Cơ bản)":   {"quota_per_month": 30,  "code": "basic"},
+            "Gói 60k (Nâng cao)": {"quota_per_month": 90,  "code": "pro"},
+            "Gói huynh đệ":       {"quota_per_month": 60,  "code": "huynhde"}
+        }
+        
         DURATION_CONFIG = {
             "1 Tháng": 1,
             "3 Tháng": 3,
@@ -633,76 +641,80 @@ def admin_dashboard():
             "12 Tháng (1 Năm)": 12
         }
 
-        with st.form("add_user_form"):
-            new_email = st.text_input("Email khách hàng", placeholder="vidu@gmail.com")
-            new_pass = st.text_input("Mật khẩu", type="password")
-            
-            st.markdown("---")
-            st.markdown("##### 📦 Chọn gói đăng ký")
-            
-            c1, c2 = st.columns(2)
-            with c1:
-                selected_plan_name = st.selectbox("Loại gói cước", list(PLAN_CONFIG.keys()))
-            with c2:
-                selected_duration_name = st.selectbox("Thời hạn đăng ký", list(DURATION_CONFIG.keys()))
-            
-            # --- LOGIC TÍNH TOÁN TỰ ĐỘNG ---
-            # 1. Lấy thông tin gói
-            plan_info = PLAN_CONFIG[selected_plan_name]
-            months = DURATION_CONFIG[selected_duration_name]
-            
-            # 2. Tính tổng quota = (Quota tháng) x (Số tháng)
-            # Ví dụ: Gói 30k (30 video) mua 3 tháng -> Tổng 90 video
-            calculated_quota = plan_info["quota_per_month"] * months
-            
-            # 3. Tính ngày hết hạn
-            expiry_date = datetime.utcnow() + timedelta(days=30 * months)
-            expiry_str = expiry_date.strftime("%d/%m/%Y")
+        # [QUAN TRỌNG] Đã bỏ st.form để số liệu nhảy tự động
+        st.info("👇 Nhập thông tin khách hàng mới")
+        
+        new_email = st.text_input("Email khách hàng", placeholder="vidu@gmail.com")
+        new_pass = st.text_input("Mật khẩu", type="password")
+        
+        st.markdown("---")
+        st.markdown("##### 📦 Chọn gói đăng ký")
+        
+        c1, c2 = st.columns(2)
+        with c1:
+            # Chọn gói - Tự động reload trang để cập nhật số video
+            selected_plan_name = st.selectbox("Loại gói cước", list(PLAN_CONFIG.keys()), key="sb_new_user_plan")
+        with c2:
+            selected_duration_name = st.selectbox("Thời hạn đăng ký", list(DURATION_CONFIG.keys()), key="sb_new_user_duration")
+        
+        # --- LOGIC TÍNH TOÁN TỰ ĐỘNG ---
+        plan_info = PLAN_CONFIG[selected_plan_name]
+        months = DURATION_CONFIG[selected_duration_name]
+        
+        # Tính tổng quota = (Quota tháng) x (Số tháng)
+        calculated_quota = plan_info["quota_per_month"] * months
+        
+        # Tính ngày hết hạn
+        expiry_date = datetime.utcnow() + timedelta(days=30 * months)
+        expiry_str = expiry_date.strftime("%d/%m/%Y")
 
-            # Hiển thị thông tin review trước khi lưu
-            st.info(f"""
-            📊 **Review Cấu hình:**
-            - **Gói:** {plan_info['code'].upper()} ({plan_info['quota_per_month']} video/tháng)
-            - **Thời hạn:** {months} tháng
-            - **Tổng Quota cấp:** {calculated_quota} video
-            - **Ngày hết hạn:** {expiry_str}
-            """)
-            
-            # Cho phép Admin sửa tay lại Quota nếu muốn bonus thêm
-            final_quota = st.number_input("Tổng số video (Quota Max) - Có thể sửa tay", value=calculated_quota)
-            
-            submitted = st.form_submit_button("💾 Lưu User vào Supabase")
-            
-            if submitted:
-                if not new_email or not new_pass:
-                    st.warning("⚠️ Vui lòng điền Email và Mật khẩu!")
-                else:
-                    try:
-                        # [BẢO MẬT] Kiểm tra email trùng
-                        check_exist = supabase.table('users').select("email").eq('email', new_email).execute()
-                        if check_exist.data and len(check_exist.data) > 0:
-                            st.error(f"❌ Email '{new_email}' đã tồn tại!")
-                            st.stop()
+        # Hiển thị thông tin review
+        st.success(f"""
+        📊 **Review Cấu hình:**
+        - Gói: **{plan_info['code'].upper()}** ({plan_info['quota_per_month']} video/tháng)
+        - Thời hạn: **{months} tháng**
+        - Ngày hết hạn: **{expiry_str}**
+        """)
+        
+        # Ô nhập số (Tự động cập nhật giá trị theo gói đã chọn)
+        final_quota = st.number_input("Tổng số video (Quota Max) - Có thể sửa tay", 
+                                    value=calculated_quota,
+                                    min_value=0,
+                                    step=1,
+                                    key="num_new_user_quota")
+        
+        # Nút Lưu (Dùng st.button thường)
+        if st.button("💾 LƯU USER VÀO SUPABASE", type="primary"):
+            if not new_email or not new_pass:
+                st.warning("⚠️ Vui lòng điền Email và Mật khẩu!")
+            else:
+                try:
+                    # [BẢO MẬT] Kiểm tra email trùng
+                    check_exist = supabase.table('users').select("email").eq('email', new_email).execute()
+                    if check_exist.data and len(check_exist.data) > 0:
+                        st.error(f"❌ Email '{new_email}' đã tồn tại!")
+                        st.stop()
 
-                        # Mã hóa mật khẩu
-                        hashed = bcrypt.hashpw(new_pass.encode(), bcrypt.gensalt()).decode()
-                        
-                        # Chuẩn bị dữ liệu insert
-                        data = {
-                            "email": new_email,
-                            "password": hashed,
-                            "plan": plan_info['code'],   # free, basic, pro, hd
-                            "quota_max": final_quota,    # Tổng số video được làm
-                            "role": "user",
-                            # Lưu thêm ngày hết hạn (nếu DB của bạn có cột này, nếu chưa có thì Supabase sẽ tự bỏ qua hoặc báo lỗi tùy setting)
-                            # "expired_at": expiry_date.isoformat() 
-                        }
-                        
-                        supabase.table('users').insert(data).execute()
-                        st.success(f"✅ Đã tạo tài khoản: {new_email} | Gói: {plan_info['code']} | Quota: {final_quota}")
-                        
-                    except Exception as e:
-                        st.error(f"Lỗi tạo user: {e}")
+                    # Mã hóa mật khẩu
+                    hashed = bcrypt.hashpw(new_pass.encode(), bcrypt.gensalt()).decode()
+                    
+                    # Chuẩn bị dữ liệu insert
+                    data = {
+                        "email": new_email,
+                        "password": hashed,
+                        "plan": plan_info['code'],
+                        "quota_max": final_quota,
+                        "quota_used": 0,  # Khởi tạo đã dùng = 0
+                        "role": "user",
+                        "stock_level": 1000 # Mặc định stock level
+                    }
+                    
+                    supabase.table('users').insert(data).execute()
+                    st.success(f"✅ Đã tạo tài khoản thành công: {new_email}")
+                    st.balloons()
+                    
+                except Exception as e:
+                    st.error(f"Lỗi tạo user: {e}")
 
     with tab2:
         st.subheader("Cập nhật dữ liệu từ Google Sheet sang Supabase")
@@ -714,8 +726,13 @@ def admin_dashboard():
         st.subheader("🔎 Tìm và Cập nhật Gói User")
         
         # 1. Ô tìm kiếm
-        search_email = st.text_input("Nhập Email user cần tìm:", placeholder="user@gmail.com")
-        if st.button("🔍 Tìm kiếm User"):
+        c_search1, c_search2 = st.columns([3, 1])
+        with c_search1:
+            search_email = st.text_input("Nhập Email user cần tìm:", placeholder="user@gmail.com", label_visibility="collapsed")
+        with c_search2:
+            btn_find = st.button("🔍 Tìm kiếm", use_container_width=True)
+
+        if btn_find:
             try:
                 # Tìm user trong Supabase
                 res = supabase.table('users').select("*").eq('email', search_email.strip()).execute()
@@ -728,7 +745,7 @@ def admin_dashboard():
             except Exception as e:
                 st.error(f"Lỗi tìm kiếm: {e}")
 
-        # 2. Form chỉnh sửa (Chỉ hiện khi đã tìm thấy user)
+        # 2. KHU VỰC CHỈNH SỬA (ĐÃ BỎ ST.FORM ĐỂ CẬP NHẬT TỨC THÌ)
         if st.session_state.get('admin_edit_user'):
             user_edit = st.session_state['admin_edit_user']
             st.markdown("---")
@@ -740,43 +757,44 @@ def admin_dashboard():
             c2.info(f"Đã dùng: **{user_edit.get('quota_used', 0)}**")
             c3.info(f"Tổng Quota: **{user_edit.get('quota_max', 0)}**")
 
-            with st.form("edit_user_quota_form"):
-                st.markdown("##### 👇 Chọn gói mới để cập nhật")
-                
-                # Chọn gói
-                new_plan_name = st.selectbox("Chọn gói muốn đổi:", list(PLAN_CONFIG.keys()))
-                
-                # Lấy thông số gợi ý từ gói đã chọn
-                suggested_quota = PLAN_CONFIG[new_plan_name]["quota_per_month"]
-                
-                st.markdown(f"User này sẽ được set thành: **{suggested_quota} video/tháng**")
-                
-                # Cho phép Admin sửa tay con số này nếu muốn (Ví dụ khuyến mãi thêm)
-                final_quota_edit = st.number_input("Tổng Quota (Có thể sửa tay số này):", 
-                                                 value=suggested_quota, 
-                                                 min_value=0)
+            st.markdown("##### 👇 Chọn gói mới để cập nhật")
+            
+            # [QUAN TRỌNG] Logic tự động cập nhật số liệu
+            # 1. Chọn gói
+            selected_plan_name = st.selectbox("Chọn gói muốn đổi:", list(PLAN_CONFIG.keys()), key="sb_admin_plan_select")
+            
+            # 2. Lấy số video mặc định của gói đó ngay lập tức
+            suggested_quota = PLAN_CONFIG[selected_plan_name]["quota_per_month"]
+            
+            # 3. Ô nhập số (Sẽ tự đổi giá trị value theo suggested_quota)
+            final_quota_edit = st.number_input("Tổng số video (Quota Max) - Có thể sửa tay", 
+                                             value=suggested_quota, 
+                                             min_value=0,
+                                             step=1)
+            
+            st.caption(f"ℹ️ Gói **{selected_plan_name}** tương ứng **{suggested_quota}** video.")
 
-                # Nút lưu
-                if st.form_submit_button("💾 Lưu thay đổi"):
-                    try:
-                        plan_code = PLAN_CONFIG[new_plan_name]["code"]
-                        
-                        # Cập nhật vào Supabase
-                        supabase.table('users').update({
-                            "plan": plan_code,
-                            "quota_max": final_quota_edit
-                        }).eq('email', user_edit['email']).execute()
-                        
-                        st.success(f"✅ Đã cập nhật thành công cho {user_edit['email']}!")
-                        st.info(f"Gói mới: {plan_code} | Quota mới: {final_quota_edit}")
-                        
-                        # Xóa trạng thái để user tìm người khác
-                        del st.session_state['admin_edit_user']
-                        time.sleep(2)
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"Lỗi khi lưu: {e}")
-
+            # Nút lưu (Dùng st.button thường thay vì form_submit_button)
+            if st.button("💾 LƯU THAY ĐỔI NGAY", type="primary"):
+                try:
+                    plan_code = PLAN_CONFIG[selected_plan_name]["code"]
+                    
+                    # Cập nhật vào Supabase
+                    supabase.table('users').update({
+                        "plan": plan_code,
+                        "quota_max": final_quota_edit
+                    }).eq('email', user_edit['email']).execute()
+                    
+                    st.success(f"✅ Đã cập nhật thành công cho {user_edit['email']}!")
+                    st.toast(f"Đã đổi sang gói {plan_code} ({final_quota_edit} video)", icon="🎉")
+                    
+                    # Cập nhật lại thông tin hiển thị ngay lập tức
+                    st.session_state['admin_edit_user']['plan'] = plan_code
+                    st.session_state['admin_edit_user']['quota_max'] = final_quota_edit
+                    time.sleep(1)
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Lỗi khi lưu: {e}")
 # --- CSS GIAO DIỆN (FIXED FILE UPLOADER VISIBILITY) ---
 st.markdown("""
     <style>
