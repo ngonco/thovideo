@@ -612,19 +612,19 @@ def admin_dashboard():
     st.markdown("---")
     st.title("🛠️ QUẢN TRỊ VIÊN (ADMIN)")
     
-    tab1, tab2 = st.tabs(["👥 Thêm User Mới", "🔄 Đồng bộ Kịch bản"])
+    # [CẬP NHẬT] Thêm Tab thứ 3 là Quản lý User
+    tab1, tab2, tab3 = st.tabs(["👥 Thêm User Mới", "🔄 Đồng bộ Kịch bản", "✏️ Sửa/Tìm User"])
     
+    # --- CẤU HÌNH CÁC GÓI CƯỚC (Đã cập nhật theo yêu cầu) ---
+    PLAN_CONFIG = {
+        "Free (Miễn phí)":    {"quota_per_month": 10,  "code": "free"},    # 10 video
+        "Gói 30k (Cơ bản)":   {"quota_per_month": 30,  "code": "basic"},   # 30 video
+        "Gói 60k (Nâng cao)": {"quota_per_month": 90,  "code": "pro"},     # 90 video
+        "Gói huynh đệ":       {"quota_per_month": 60,  "code": "huynhde"}  # 60 video
+    }
+
     with tab1:
         st.subheader("Tạo tài khoản & Gia hạn")
-        
-        # --- CẤU HÌNH CÁC GÓI CƯỚC ---
-        # Định nghĩa quota trên 1 tháng cho từng gói
-        PLAN_CONFIG = {
-            "Free (Miễn phí)":    {"quota_per_month": 10,  "code": "free"},
-            "Gói 30k (Cơ bản)":   {"quota_per_month": 30,  "code": "basic"},
-            "Gói 60k (Nâng cao)": {"quota_per_month": 90,  "code": "pro"},
-            "Gói huynh đệ": {"quota_per_month": 60,  "code": "huynhde"}
-        }
         
         DURATION_CONFIG = {
             "1 Tháng": 1,
@@ -709,6 +709,73 @@ def admin_dashboard():
         st.info("Bấm nút dưới đây khi bạn vừa thêm kịch bản mới vào file Google Sheet.")
         if st.button("🚀 Bắt đầu Đồng bộ ngay"):
             sync_sheet_to_supabase()
+
+    with tab3:
+        st.subheader("🔎 Tìm và Cập nhật Gói User")
+        
+        # 1. Ô tìm kiếm
+        search_email = st.text_input("Nhập Email user cần tìm:", placeholder="user@gmail.com")
+        if st.button("🔍 Tìm kiếm User"):
+            try:
+                # Tìm user trong Supabase
+                res = supabase.table('users').select("*").eq('email', search_email.strip()).execute()
+                if res.data and len(res.data) > 0:
+                    st.session_state['admin_edit_user'] = res.data[0]
+                    st.success(f"✅ Đã tìm thấy: {search_email}")
+                else:
+                    st.warning("❌ Không tìm thấy user này!")
+                    st.session_state['admin_edit_user'] = None
+            except Exception as e:
+                st.error(f"Lỗi tìm kiếm: {e}")
+
+        # 2. Form chỉnh sửa (Chỉ hiện khi đã tìm thấy user)
+        if st.session_state.get('admin_edit_user'):
+            user_edit = st.session_state['admin_edit_user']
+            st.markdown("---")
+            st.markdown(f"#### 👤 Đang sửa: {user_edit['email']}")
+            
+            # Hiển thị thông số hiện tại
+            c1, c2, c3 = st.columns(3)
+            c1.info(f"Gói hiện tại: **{user_edit.get('plan', 'N/A')}**")
+            c2.info(f"Đã dùng: **{user_edit.get('quota_used', 0)}**")
+            c3.info(f"Tổng Quota: **{user_edit.get('quota_max', 0)}**")
+
+            with st.form("edit_user_quota_form"):
+                st.markdown("##### 👇 Chọn gói mới để cập nhật")
+                
+                # Chọn gói
+                new_plan_name = st.selectbox("Chọn gói muốn đổi:", list(PLAN_CONFIG.keys()))
+                
+                # Lấy thông số gợi ý từ gói đã chọn
+                suggested_quota = PLAN_CONFIG[new_plan_name]["quota_per_month"]
+                
+                st.markdown(f"User này sẽ được set thành: **{suggested_quota} video/tháng**")
+                
+                # Cho phép Admin sửa tay con số này nếu muốn (Ví dụ khuyến mãi thêm)
+                final_quota_edit = st.number_input("Tổng Quota (Có thể sửa tay số này):", 
+                                                 value=suggested_quota, 
+                                                 min_value=0)
+
+                # Nút lưu
+                if st.form_submit_button("💾 Lưu thay đổi"):
+                    try:
+                        plan_code = PLAN_CONFIG[new_plan_name]["code"]
+                        
+                        # Cập nhật vào Supabase
+                        supabase.table('users').update({
+                            "plan": plan_code,
+                            "quota_max": final_quota_edit
+                        }).eq('email', user_edit['email']).execute()
+                        
+                        st.success(f"✅ Đã cập nhật thành công cho {user_edit['email']}!")
+                        st.info(f"Gói mới: {plan_code} | Quota mới: {final_quota_edit}")
+                        
+                        # Xóa trạng thái để user tìm người khác
+                        del st.session_state['admin_edit_user']
+                        time.sleep(2)
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Lỗi khi lưu: {e}")
 
 # --- CSS GIAO DIỆN (FIXED FILE UPLOADER VISIBILITY) ---
 st.markdown("""
