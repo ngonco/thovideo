@@ -56,6 +56,15 @@ def update_user_usage_supabase(user_id, current_used):
     except Exception as e:
         print(f"Lỗi update quota: {e}")
 
+# --- [NEW] LƯU CÀI ĐẶT NGƯỜI DÙNG ---
+def save_user_settings_supabase(user_id, settings_dict):
+    try:
+        supabase.table('users').update({"settings": settings_dict}).eq('id', user_id).execute()
+        return True
+    except Exception as e:
+        st.error(f"Lỗi lưu cài đặt: {e}")
+        return False
+
 # --- [NEW] CÁC HÀM QUẢN LÝ USER & QUOTA ---
 # --- [UPDATE] LOGIC ĐĂNG NHẬP CHUẨN SUPABASE (ĐÃ XÓA BACKDOOR) ---
 def check_login(email, password):
@@ -1414,14 +1423,24 @@ else:
                     
                 st.info("👇 Nếu đã ưng ý, hãy bấm nút **'🚀 GỬI YÊU CẦU TẠO VIDEO'** bên dưới.")
         
-    # --- SETTINGS (Giữ nguyên code cũ) ---
+    # --- SETTINGS (CẬP NHẬT: TỰ ĐỘNG LOAD TỪ DATABASE) ---
     st.markdown("---")
     if 's_voice' not in st.session_state:
+        # Lấy cài đặt cũ từ database (nếu có)
+        saved_settings = user.get('settings', {})
+        
+        # Nếu chưa có cài đặt cũ thì dùng giá trị mặc định
         st.session_state.update({
-            "s_clean": True, "s_voice": 1.5, "s_music": 0.2, 
-            "s_font": "Agbalumo", "s_size": 110, 
-            "s_color": "#FFFFFF", "s_outline": "#000000", "s_border": 3,
-            "s_margin": 650, "s_offset": 0
+            "s_clean": saved_settings.get("clean_audio", True),
+            "s_voice": saved_settings.get("voice_vol", 1.5),
+            "s_music": saved_settings.get("music_vol", 0.2), 
+            "s_font": saved_settings.get("font_name", "Agbalumo"),
+            "s_size": saved_settings.get("font_size", 110), 
+            "s_color": saved_settings.get("text_color", "#FFFFFF"),
+            "s_outline": saved_settings.get("outline_color", "#000000"),
+            "s_border": saved_settings.get("border_width", 3),
+            "s_margin": saved_settings.get("margin_v", 650),
+            "s_offset": saved_settings.get("offset_x", 0)
         })
     with st.expander("⚙️ Cài đặt Âm thanh và Phụ đề", expanded=False):
         with st.form("settings_form"):
@@ -1442,7 +1461,21 @@ else:
                 st.slider("Độ dày viền", 0, 10, key="s_border")
                 st.slider("Vị trí Dọc (Y)", 0, 1500, key="s_margin")
                 st.slider("Vị trí Ngang (X)", -500, 500, key="s_offset")
-            st.form_submit_button("💾 LƯU CÀI ĐẶT")
+        
+        if st.form_submit_button("💾 LƯU CÀI ĐẶT"):
+            # Chuẩn bị dữ liệu để lưu
+            current_settings = {
+                "clean_audio": st.session_state.s_clean, "voice_vol": st.session_state.s_voice,
+                "music_vol": st.session_state.s_music, "font_name": st.session_state.s_font,
+                "font_size": st.session_state.s_size, "text_color": st.session_state.s_color,
+                "outline_color": st.session_state.s_outline, "border_width": st.session_state.s_border,
+                "margin_v": st.session_state.s_margin, "offset_x": st.session_state.s_offset
+            }
+            # Gọi hàm lưu lên Supabase
+            if save_user_settings_supabase(user['id'], current_settings):
+                st.toast("Đã lưu cài đặt vào tài khoản! ✅")
+                # Cập nhật lại session để không bị load đè dữ liệu cũ
+                st.session_state['user_info']['settings'] = current_settings
     
     settings = {
         "clean_audio": st.session_state.s_clean, "voice_vol": st.session_state.s_voice,
