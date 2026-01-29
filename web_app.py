@@ -1458,24 +1458,25 @@ else:
                 col_c1, col_c2 = st.columns(2)
                 with col_c1: st.color_picker("Màu chữ", key="s_color")
                 with col_c2: st.color_picker("Màu viền", key="s_outline")
-                st.slider("Độ dày viền", 0, 10, key="s_border")
-                st.slider("Vị trí Dọc (Y)", 0, 1500, key="s_margin")
-                st.slider("Vị trí Ngang (X)", -500, 500, key="s_offset")
+            st.slider("Độ dày viền", 0, 10, key="s_border")
+            st.slider("Vị trí Dọc (Y)", 0, 1500, key="s_margin")
+            st.slider("Vị trí Ngang (X)", -500, 500, key="s_offset")
         
-        if st.form_submit_button("💾 LƯU CÀI ĐẶT"):
-            # Chuẩn bị dữ liệu để lưu
-            current_settings = {
-                "clean_audio": st.session_state.s_clean, "voice_vol": st.session_state.s_voice,
-                "music_vol": st.session_state.s_music, "font_name": st.session_state.s_font,
-                "font_size": st.session_state.s_size, "text_color": st.session_state.s_color,
-                "outline_color": st.session_state.s_outline, "border_width": st.session_state.s_border,
-                "margin_v": st.session_state.s_margin, "offset_x": st.session_state.s_offset
-            }
-            # Gọi hàm lưu lên Supabase
-            if save_user_settings_supabase(user['id'], current_settings):
-                st.toast("Đã lưu cài đặt vào tài khoản! ✅")
-                # Cập nhật lại session để không bị load đè dữ liệu cũ
-                st.session_state['user_info']['settings'] = current_settings
+            # [ĐÃ SỬA] Thụt vào trong để nút bấm nằm TRONG form
+            if st.form_submit_button("💾 LƯU CÀI ĐẶT"):
+                # Chuẩn bị dữ liệu để lưu
+                current_settings = {
+                    "clean_audio": st.session_state.s_clean, "voice_vol": st.session_state.s_voice,
+                    "music_vol": st.session_state.s_music, "font_name": st.session_state.s_font,
+                    "font_size": st.session_state.s_size, "text_color": st.session_state.s_color,
+                    "outline_color": st.session_state.s_outline, "border_width": st.session_state.s_border,
+                    "margin_v": st.session_state.s_margin, "offset_x": st.session_state.s_offset
+                }
+                # Gọi hàm lưu lên Supabase
+                if save_user_settings_supabase(user['id'], current_settings):
+                    st.toast("Đã lưu cài đặt vào tài khoản! ✅")
+                    # Cập nhật lại session để không bị load đè dữ liệu cũ
+                    st.session_state['user_info']['settings'] = current_settings
     
     settings = {
         "clean_audio": st.session_state.s_clean, "voice_vol": st.session_state.s_voice,
