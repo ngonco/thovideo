@@ -93,6 +93,9 @@ def check_login(email, password):
                 return user_data
     except Exception as e:
         st.error(f"Lỗi hệ thống đăng nhập: {e}")
+    
+    # [BẢO MẬT] Làm chậm hacker 2 giây nếu đăng nhập thất bại
+    time.sleep(2) 
     return None
 
 # --- [NEW] HÀM ĐỔI MẬT KHẨU (SUPABASE VERSION) ---
@@ -1043,23 +1046,27 @@ if not st.session_state['user_info']:
         with st.container():
             st.markdown(f"<h2 style='text-align: center; color: #8B4513; margin-bottom: 20px;'>🔐 ĐĂNG NHẬP</h2>", unsafe_allow_html=True)
             
-            # Form nhập liệu
-            st.markdown("<br>", unsafe_allow_html=True) # Thêm khoảng trắng
-            # Lấy email đã lưu nếu có
-            default_email = st.session_state.get('saved_email', "")
-            login_email = st.text_input("📧 Nhập tên tài khoản hoặc email", value=default_email, placeholder="ví dụ: hoasen", key="login_email_unique")            
-            st.markdown("<br>", unsafe_allow_html=True) # Thêm khoảng trắng giữa email và pass
-            login_pass = st.text_input("🔑 Mật khẩu", type="password", key="login_pass_unique")
-            
-            # Checkbox Ghi nhớ & Nút
-            col_rem, col_btn = st.columns([1, 1])
-            with col_rem:
+            # Form nhập liệu (Đã thêm st.form để hỗ trợ phím Enter)
+            with st.form(key="login_form"):
+                st.markdown("<br>", unsafe_allow_html=True) 
+                
+                default_email = st.session_state.get('saved_email', "")
+                login_email = st.text_input("📧 Nhập tên tài khoản hoặc email", value=default_email, placeholder="ví dụ: hoasen", key="login_email_unique")            
+                
+                st.markdown("<br>", unsafe_allow_html=True) 
+                login_pass = st.text_input("🔑 Mật khẩu", type="password", key="login_pass_unique")
+                
+                # Checkbox Ghi nhớ
                 st.markdown("<br>", unsafe_allow_html=True)
-                # [FIX] Mặc định luôn tích chọn để không bị đăng xuất
                 remember_me = st.checkbox("Ghi nhớ đăng nhập", value=True)
-            
-            st.markdown("<br>", unsafe_allow_html=True)
-            if st.button("ĐĂNG NHẬP NGAY", use_container_width=True):
+                
+                st.markdown("<br>", unsafe_allow_html=True)
+                
+                # [QUAN TRỌNG] Đổi thành form_submit_button để nhận phím Enter
+                submitted = st.form_submit_button("ĐĂNG NHẬP NGAY", use_container_width=True)
+
+            # Xử lý logic khi bấm Enter hoặc click nút
+            if submitted:
                 user = check_login(login_email, login_pass)
                 if user:
                     st.session_state['user_info'] = user
