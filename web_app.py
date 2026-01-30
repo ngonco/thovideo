@@ -1373,7 +1373,7 @@ else:
             
             # [MỚI] Thêm ô tick chọn giọng AI
             st.markdown("<div style='margin-top: 5px;'></div>", unsafe_allow_html=True)
-            is_ai_checked = st.checkbox("🤖 Đây là giọng AI (Giữ nguyên chất lượng gốc)", 
+            is_ai_checked = st.checkbox("NHỚ TÍCH CHỌN NẾU UPLOAD GIỌNG AI", 
                                       help="Tích vào đây nếu file này tạo từ AI (ElevenLabs, Vbee...) để hệ thống KHÔNG lọc ồn, tránh làm méo giọng.",
                                       key="chk_ai_upload_flag")
 
