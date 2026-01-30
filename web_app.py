@@ -1378,17 +1378,28 @@ else:
                                       key="chk_ai_upload_flag")
 
             if uploaded_file:
-                # [BẢO MẬT] Kiểm tra kích thước file (10MB = 10 * 1024 * 1024 bytes)
-                MAX_FILE_SIZE = 10 * 1024 * 1024
+                # [BẢO MẬT] Cấu hình giới hạn
+                MAX_FILE_SIZE = 10 * 1024 * 1024 # 10MB
+                VALID_EXTS = ['mp3', 'wav', 'm4a', 'ogg', 'aac'] # Danh sách đuôi file cho phép
                 
-                if uploaded_file.size > MAX_FILE_SIZE:
+                # Lấy đuôi file (ví dụ: "nhac.mp3" -> "mp3")
+                file_ext = uploaded_file.name.split('.')[-1].lower() if '.' in uploaded_file.name else ''
+
+                # 1. Kiểm tra loại file trước (Quan trọng)
+                if file_ext not in VALID_EXTS:
+                    st.error(f"❌ Định dạng '{file_ext}' không hợp lệ! Chỉ chấp nhận: 'mp3', 'wav', 'm4a', 'ogg', 'aac'")
+                    st.session_state['temp_upload_file'] = None # Xóa ngay lập tức
+                
+                # 2. Kiểm tra kích thước file
+                elif uploaded_file.size > MAX_FILE_SIZE:
                     st.error("⚠️ File quá lớn! Vui lòng chọn file dưới 10MB.")
-                    # Xóa file khỏi bộ nhớ tạm để an toàn
                     st.session_state['temp_upload_file'] = None
+                
+                # 3. Hợp lệ -> Lưu vào session
                 else:
                     st.session_state['temp_upload_file'] = uploaded_file
                     st.session_state['temp_upload_name'] = uploaded_file.name
-                    st.success(f"Đã chọn: {uploaded_file.name}")
+                    st.success(f"✅ Đã chọn: {uploaded_file.name}")
 
         # CASE 3: THU ÂM TRỰC TIẾP
         elif voice_method == "🎙️ Thu âm trực tiếp": 
@@ -1551,7 +1562,10 @@ else:
                 # CASE 2: Dùng giọng thư viện (Mặc định luôn là AI) -> THÊM ĐOẠN NÀY
                 elif voice_method == "🎵 Sử dụng giọng nói có sẵn":
                     settings['is_ai_voice'] = True
-                    settings['clean_audio'] = False # Giọng thư viện thường đã sạch, không cần lọc
+                    settings['clean_audio'] = False 
+                    # [FIX] Đảm bảo volume đủ lớn
+                    if float(settings.get('voice_vol', 1.0)) < 1.0:
+                        settings['voice_vol'] = 1.5
                     
                 order_data = {
                     "id": order_id,
