@@ -1541,12 +1541,18 @@ else:
                 # GHI VÀO SUPABASE
                 safe_noidung = sanitize_input(noi_dung_gui)
                 
-                # [MỚI] Cập nhật settings nếu người dùng chọn giọng AI
-                # Nếu đang upload file và có tích chọn checkbox AI
+                # [MỚI] Cập nhật settings nếu người dùng chọn giọng AI (Upload hoặc Thư viện)
+                
+                # CASE 1: Upload file và có tích chọn "Là giọng AI"
                 if voice_method == "📤 Tải file lên" and st.session_state.get("chk_ai_upload_flag"):
                     settings['is_ai_voice'] = True
-                    settings['clean_audio'] = False # Tắt chế độ lọc ồn trong settings để chắc chắn
-
+                    settings['clean_audio'] = False # Tắt lọc ồn để tránh méo tiếng
+                
+                # CASE 2: Dùng giọng thư viện (Mặc định luôn là AI) -> THÊM ĐOẠN NÀY
+                elif voice_method == "🎵 Sử dụng giọng nói có sẵn":
+                    settings['is_ai_voice'] = True
+                    settings['clean_audio'] = False # Giọng thư viện thường đã sạch, không cần lọc
+                    
                 order_data = {
                     "id": order_id,
                     "created_at": datetime.utcnow().isoformat(),
