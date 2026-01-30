@@ -1371,6 +1371,12 @@ else:
             st.markdown("<b>Chọn file ghi âm từ máy của bạn (mp3, wav, m4a):</b>", unsafe_allow_html=True)
             uploaded_file = st.file_uploader("", type=['mp3', 'wav', 'm4a'], label_visibility="collapsed")
             
+            # [MỚI] Thêm ô tick chọn giọng AI
+            st.markdown("<div style='margin-top: 5px;'></div>", unsafe_allow_html=True)
+            is_ai_checked = st.checkbox("🤖 Đây là giọng AI (Giữ nguyên chất lượng gốc)", 
+                                      help="Tích vào đây nếu file này tạo từ AI (ElevenLabs, Vbee...) để hệ thống KHÔNG lọc ồn, tránh làm méo giọng.",
+                                      key="chk_ai_upload_flag")
+
             if uploaded_file:
                 # [BẢO MẬT] Kiểm tra kích thước file (10MB = 10 * 1024 * 1024 bytes)
                 MAX_FILE_SIZE = 10 * 1024 * 1024
@@ -1535,6 +1541,12 @@ else:
                 # GHI VÀO SUPABASE
                 safe_noidung = sanitize_input(noi_dung_gui)
                 
+                # [MỚI] Cập nhật settings nếu người dùng chọn giọng AI
+                # Nếu đang upload file và có tích chọn checkbox AI
+                if voice_method == "📤 Tải file lên" and st.session_state.get("chk_ai_upload_flag"):
+                    settings['is_ai_voice'] = True
+                    settings['clean_audio'] = False # Tắt chế độ lọc ồn trong settings để chắc chắn
+
                 order_data = {
                     "id": order_id,
                     "created_at": datetime.utcnow().isoformat(),
