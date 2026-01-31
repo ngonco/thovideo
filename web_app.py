@@ -1721,14 +1721,13 @@ else:
                             if "cloudinary" in str(direct_dl_link):
                                 direct_dl_link = direct_dl_link.replace("/upload/", "/upload/fl_attachment/")
                             
-                            # 3. [BUNNY CDN] Thêm tham số '?download=1'
-                            # Lưu ý: Cần cấu hình Edge Rule trên Bunny (xem hướng dẫn bên dưới)
+                            # 3. [BUNNY CDN]
+                            # [FIX] Đổi sang download=2 để né cache cũ trên điện thoại người dùng
                             elif "b-cdn.net" in str(direct_dl_link):
-                                # Kiểm tra xem link đã có dấu ? chưa để nối chuỗi cho đúng
                                 if "?" in direct_dl_link:
-                                    direct_dl_link += "&download=1"
+                                    direct_dl_link += "&download=2" # <-- Sửa số 1 thành 2
                                 else:
-                                    direct_dl_link += "?download=1"
+                                    direct_dl_link += "?download=2" # <-- Sửa số 1 thành 2
 
                             # 4. HIỆN NÚT BẤM HTML (Siêu nhẹ)
                             # Thuộc tính 'download' hỗ trợ PC
