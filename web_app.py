@@ -1729,15 +1729,19 @@ else:
                                 else:
                                     direct_dl_link += "?download=2" # <-- Sửa số 1 thành 2
 
-                            # 4. HIỆN NÚT BẤM HTML (Siêu nhẹ)
-                            # Thuộc tính 'download' hỗ trợ PC
-                            # Target '_blank' để mở tab mới trên Mobile
-                            st.markdown(f'''
-                                <a href="{direct_dl_link}" target="_blank" rel="noopener noreferrer" download
-                                   style="{btn_style} background-color: #2E7D32; color: white; border: 1px solid #1B5E20; text-decoration: none; display: block; text-align: center;">
-                                    📥 TẢI VIDEO
-                                </a>
-                            ''', unsafe_allow_html=True)
+                            # 4. HIỆN NÚT BẤM HTML THÔNG MINH (Tự đóng tab trên điện thoại)
+                            # Sử dụng JavaScript để kích hoạt tải về mà không để lại tab thừa
+                            download_script = f"""
+                            <a href="{direct_dl_link}" 
+                               onclick="setTimeout(function(){{ window.close(); }}, 500);" 
+                               target="_blank" 
+                               rel="noopener noreferrer" 
+                               download
+                               style="{btn_style} background-color: #2E7D32; color: white; border: 1px solid #1B5E20; text-decoration: none; display: block; text-align: center;">
+                                📥 TẢI VIDEO
+                            </a>
+                            """
+                            st.markdown(download_script, unsafe_allow_html=True)
                     
                     elif raw_status == "Error":
                         st.error("Video này bị lỗi xử lý.")
