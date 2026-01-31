@@ -1696,7 +1696,12 @@ else:
                 # HIỂN THỊ EXPANDER
                 with st.expander(f"{display_date} | {vn_status} | 📝 {script_preview}"):
                     # A. Nếu có link kết quả -> Hiện nút Xem & Tải
-                    if result_link and str(result_link).startswith("http"):
+                    # [FIX] Kiểm tra độ dài thay vì bắt buộc phải có http ngay từ đầu
+                    if result_link and len(str(result_link)) > 5:
+                        # Tự động thêm https:// nếu link trong database bị thiếu
+                        if not str(result_link).startswith("http"):
+                            result_link = f"https://{result_link}"
+
                         # Fix link tải cho iOS
                         dl_link = result_link.replace("/upload/", "/upload/fl_attachment/") if "cloudinary" in str(result_link) else result_link
                         
