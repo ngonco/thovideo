@@ -1711,7 +1711,42 @@ else:
                         with col_btn1:
                             st.markdown(f'<a href="{result_link}" target="_blank" style="{btn_style} background-color: #8D6E63; color: white;">▶️ XEM VIDEO</a>', unsafe_allow_html=True)
                         with col_btn2:
-                            st.markdown(f'<a href="{dl_link}" target="_self" style="{btn_style} background-color: #5D4037; color: white;">📥 TẢI VỀ MÁY</a>', unsafe_allow_html=True)
+                            # [LAZY LOAD] Cơ chế 2 bước: Bấm chuẩn bị -> Sau đó mới hiện nút tải
+                            # Giúp web chạy nhanh, không bị treo khi load danh sách
+                            
+                            # Tạo key duy nhất cho video này trong bộ nhớ tạm
+                            session_key_file = f"file_data_{order_id}"
+                            
+                            # TRƯỜNG HỢP 1: Chưa có dữ liệu -> Hiện nút "Chuẩn bị"
+                            if session_key_file not in st.session_state:
+                                if st.button("☁️ Chuẩn bị tải", key=f"btn_prep_{order_id}_{index}", use_container_width=True):
+                                    with st.spinner("Đang tải dữ liệu từ server..."):
+                                        try:
+                                            # Lúc này mới thực sự tải file về RAM (Lazy Load)
+                                            r = requests.get(dl_link, stream=True, timeout=30)
+                                            if r.status_code == 200:
+                                                # Lưu vào session để dùng cho nút tải
+                                                st.session_state[session_key_file] = r.content
+                                                st.rerun() # Load lại để hiện nút tải
+                                            else:
+                                                st.error("Lỗi link!")
+                                        except Exception as e:
+                                            st.error("Lỗi mạng!")
+                            
+                            # TRƯỜNG HỢP 2: Đã có dữ liệu (User vừa bấm xong) -> Hiện nút "Lưu File"
+                            else:
+                                st.download_button(
+                                    label="📥 LƯU VỀ MÁY NGAY",
+                                    data=st.session_state[session_key_file],
+                                    file_name=f"video_{order_id}.mp4",
+                                    mime="video/mp4",
+                                    key=f"btn_save_{order_id}_{index}",
+                                    use_container_width=True
+                                )
+                                # (Tùy chọn) Nút dọn dẹp bộ nhớ nếu muốn
+                                # if st.button("Hủy", key=f"cancel_{order_id}"):
+                                #     del st.session_state[session_key_file]
+                                #     st.rerun()
                     
                     elif raw_status == "Error":
                         st.error("Video này bị lỗi xử lý.")
