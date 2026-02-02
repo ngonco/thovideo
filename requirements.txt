@@ -6,3 +6,4 @@ oauth2client
 pandas
 requests
 streamlit-mic-recorder
+extra-streamlit-components
