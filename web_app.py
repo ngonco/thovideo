@@ -26,7 +26,7 @@ def init_supabase():
 supabase = init_supabase()
 
 # --- [NEW] QUẢN LÝ COOKIE ---
-@st.cache_resource(experimental_allow_widgets=True)
+@st.cache_resource
 def get_cookie_manager():
     return stx.CookieManager()
 
@@ -253,7 +253,7 @@ def log_history(order_id, email, link, date):
     except: pass
 
 # --- CẤU HÌNH & SETUP ---
-st.set_page_config(page_title="Thợ video", page_icon="📻", layout="centered")
+st.set_page_config(page_title="hạt bụi nhỏ - làm video", page_icon="📻", layout="centered")
 
 
 
