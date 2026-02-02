@@ -26,9 +26,10 @@ def init_supabase():
 supabase = init_supabase()
 
 # --- [NEW] QUẢN LÝ COOKIE ---
-@st.cache_resource
+# [ĐÃ SỬA] Bỏ @st.cache_resource vì CookieManager là Widget, không được cache
 def get_cookie_manager():
-    return stx.CookieManager()
+    # Thêm key="cookie_manager" để định danh duy nhất, tránh reload lỗi
+    return stx.CookieManager(key="cookie_manager")
 
 cookie_manager = get_cookie_manager()
 
