@@ -63,12 +63,14 @@ def sanitize_input(text):
     if text is None: return ""
     text = str(text).strip()
     
-    # 1. Ngăn chặn Formula Injection trong Google Sheets
-    # (Nếu người dùng nhập =, +, - hoặc @ ở đầu dòng, Sheet sẽ tưởng là công thức)
-    if text.startswith(("=", "+", "-", "@")):
-        text = "'" + text
-        
-    # 2. Mã hóa các ký tự HTML đặc biệt (<, >, &) để tránh lỗi hiển thị hoặc XSS
+    # 1. Ngăn chặn Formula Injection (Google Sheets)
+    if text.startswith(("=", "+", "-", "@", "\t", "\r", "\n")):
+         text = "'" + text
+    
+    # 2. Xóa các ký tự điều khiển nguy hiểm (Null bytes...)
+    text = text.replace('\0', '')
+    
+    # 3. Mã hóa HTML (Chống XSS)
     return html.escape(text)
 
 # --- [NEW] HÀM MẬT KHẨU AN TOÀN ---
@@ -273,7 +275,7 @@ def get_app_style():
     h1 {{
         color: #8B4513 !important; font-size: {title_size} !important; text-align: center;
         border-bottom: 2px solid #8B4513; padding-bottom: 10px; margin-bottom: 20px;
-        font-weight: bold; text-transform: uppercase;
+        font-weight: bold; /* Đã xóa text-transform: uppercase */
     }}
     
     /* 3. STEP LABEL (Nhãn bước 1, bước 2...) */
@@ -1120,7 +1122,13 @@ if not st.session_state['user_info']:
                         # 2. Lưu token vào Supabase
                         update_session_token(user['id'], new_token)
                         # 3. Lưu token vào Cookie trình duyệt (Hết hạn sau 30 ngày)
-                        cookie_manager.set("user_session_token", new_token, expires_at=datetime.now() + timedelta(days=30))
+                        # [FIX] Thêm path="/" và SameSite để hoạt động tốt trên Cloudflare/Custom Domain
+                        cookie_manager.set("user_session_token", 
+                                           new_token, 
+                                           expires_at=datetime.now() + timedelta(days=30),
+                                           path="/",             # Đảm bảo cookie có hiệu lực toàn trang
+                                           SameSite="None",      # Cho phép cookie hoạt động qua proxy/iframe
+                                           Secure=True)          # Bắt buộc khi dùng SameSite=None
                         st.toast("Đã ghi nhớ đăng nhập an toàn!", icon="🔒")
                     else:
                         # Nếu không chọn ghi nhớ, xóa token cũ (nếu có)
@@ -1142,7 +1150,7 @@ else:
     user = st.session_state['user_info']
     
     # [MODIFIED] HEADER MỚI (Chỉ còn Tiêu đề)
-    st.markdown(f"<h1 style='text-align: center; border: none; margin: 0; padding: 0;'>hạt bụi nhỏ - làm video</h1>", unsafe_allow_html=True)
+    st.markdown(f"<h1 style='text-align: center; border: none; margin: 0; padding: 0;'>hạt bụi nhỏ - làm video giùm bạn</h1>", unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True) # Tạo khoảng cách nhỏ
     # Tính toán quota
     quota_left = user['quota_max'] - user['quota_used']
