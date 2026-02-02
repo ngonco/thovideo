@@ -1122,13 +1122,9 @@ if not st.session_state['user_info']:
                         # 2. Lưu token vào Supabase
                         update_session_token(user['id'], new_token)
                         # 3. Lưu token vào Cookie trình duyệt (Hết hạn sau 30 ngày)
-                        # [FIX] Thêm path="/" và SameSite để hoạt động tốt trên Cloudflare/Custom Domain
                         cookie_manager.set("user_session_token", 
                                            new_token, 
-                                           expires_at=datetime.now() + timedelta(days=30),
-                                           path="/",             # Đảm bảo cookie có hiệu lực toàn trang
-                                           SameSite="None",      # Cho phép cookie hoạt động qua proxy/iframe
-                                           Secure=True)          # Bắt buộc khi dùng SameSite=None
+                                           expires_at=datetime.now() + timedelta(days=30))
                         st.toast("Đã ghi nhớ đăng nhập an toàn!", icon="🔒")
                     else:
                         # Nếu không chọn ghi nhớ, xóa token cũ (nếu có)
