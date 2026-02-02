@@ -9,7 +9,9 @@ import bcrypt
 import time
 import html  # <--- Thêm thư viện này để xử lý ký tự đặc biệt
 from supabase import create_client, Client
-from streamlit_mic_recorder import mic_recorder  # <--- [QUAN TRỌNG] Thêm dòng này
+from streamlit_mic_recorder import mic_recorder
+import extra_streamlit_components as stx # <--- Thư viện Cookie
+import uuid # <--- Để tạo mã Token ngẫu nhiên
 
 # --- THÊM ĐOẠN NÀY VÀO SAU CÁC DÒNG IMPORT ---
 # Hàm này giúp kết nối Supabase và giữ kết nối không bị ngắt
@@ -22,6 +24,36 @@ def init_supabase():
 
 # Khởi tạo kết nối ngay lập tức
 supabase = init_supabase()
+
+# --- [NEW] QUẢN LÝ COOKIE ---
+@st.cache_resource(experimental_allow_widgets=True)
+def get_cookie_manager():
+    return stx.CookieManager()
+
+cookie_manager = get_cookie_manager()
+
+# --- [NEW] HÀM XỬ LÝ TOKEN (AUTO LOGIN) ---
+def update_session_token(user_id, token):
+    try:
+        supabase.table('users').update({"session_token": token}).eq('id', user_id).execute()
+    except Exception as e:
+        print(f"Lỗi update token: {e}")
+
+def login_by_token():
+    # Lấy token từ cookie
+    token = cookie_manager.get(cookie="user_session_token")
+    if token:
+        try:
+            # Tìm user có token này trong DB
+            response = supabase.table('users').select("*").eq('session_token', token).execute()
+            if response.data and len(response.data) > 0:
+                user_data = response.data[0]
+                # Xóa mật khẩu khỏi session vì lý do bảo mật
+                if 'password' in user_data: del user_data['password']
+                return user_data
+        except Exception as e:
+            print(f"Lỗi auto login: {e}")
+    return None
 
 # FILE: web_app.py (VERSION 7.2 - FULL SETTINGS RESTORED)
 
@@ -1024,10 +1056,18 @@ st.markdown("""
 if 'user_info' not in st.session_state:
     st.session_state['user_info'] = None
 
-# [FIX] LOGIC TỰ ĐỘNG ĐIỀN EMAIL KHI F5
+# [NEW] TỰ ĐỘNG ĐĂNG NHẬP BẰNG COOKIE
+if not st.session_state['user_info']:
+    # Thử đăng nhập bằng token trong cookie
+    user_from_cookie = login_by_token()
+    if user_from_cookie:
+         st.session_state['user_info'] = user_from_cookie
+         st.toast(f"Chào mừng trở lại, {user_from_cookie['email']}!", icon="👋")
+         st.rerun()
+
+# [LOGIC CŨ] Tự động điền email (Giữ lại làm phương án dự phòng)
 if not st.session_state['user_info']:
     params = st.query_params
-    # Nếu có lưu email trên URL thì tự động điền vào ô nhập liệu sau này (không tự login nữa để an toàn)
     if "u" in params:
         st.session_state['saved_email'] = params["u"]
         # Đã xóa đoạn "if user:" gây lỗi vì biến user chưa tồn tại ở đây
@@ -1072,14 +1112,21 @@ if not st.session_state['user_info']:
                 user = check_login(login_email, login_pass)
                 if user:
                     st.session_state['user_info'] = user
+                    
                     if remember_me:
-                        st.query_params["u"] = login_email
-                        # [BẢO MẬT] TUYỆT ĐỐI KHÔNG LƯU MẬT KHẨU LÊN URL
-                        # st.query_params["p"] = login_pass 
-                        st.toast("Đã ghi nhớ Email (Vì an toàn, vui lòng tự nhập lại mật khẩu lần sau)", icon="🔒")
+                        # 1. Tạo token ngẫu nhiên
+                        new_token = str(uuid.uuid4())
+                        # 2. Lưu token vào Supabase
+                        update_session_token(user['id'], new_token)
+                        # 3. Lưu token vào Cookie trình duyệt (Hết hạn sau 30 ngày)
+                        cookie_manager.set("user_session_token", new_token, expires_at=datetime.now() + timedelta(days=30))
+                        st.toast("Đã ghi nhớ đăng nhập an toàn!", icon="🔒")
                     else:
+                        # Nếu không chọn ghi nhớ, xóa token cũ (nếu có)
                         st.query_params.clear()
+                    
                     st.toast("Đăng nhập thành công!", icon="🎉")
+                    time.sleep(0.5) # Đợi xíu để cookie kịp lưu
                     st.rerun()
                 else:
                     st.error("Sai Email hoặc Mật khẩu, vui lòng thử lại.")
@@ -1174,8 +1221,18 @@ else:
         # 2. Phần Đăng xuất
         st.markdown("##### 🚪 Đăng xuất khỏi tài khoản")
         if st.button("Đăng xuất ngay", key="btn_logout_inside", type="secondary", use_container_width=True):
-            st.query_params.clear() 
+            # Xóa session
             st.session_state['user_info'] = None
+            st.query_params.clear()
+            
+            # Xóa Cookie & Token trong DB
+            try:
+                # Xóa token trong cookie trình duyệt
+                cookie_manager.delete("user_session_token")
+                # (Tùy chọn) Xóa token trong DB để bảo mật tuyệt đối
+                if user: update_session_token(user['id'], None)
+            except: pass
+            
             st.rerun()
 
     # [ĐÃ SỬA] Đã xóa khoảng trắng <br> ở đây để Bước 1 đẩy lên cao hơn
