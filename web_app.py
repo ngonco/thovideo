@@ -34,47 +34,21 @@ def get_cookie_manager():
 cookie_manager = get_cookie_manager()
 
 # --- [NEW] HÀM XỬ LÝ TOKEN (AUTO LOGIN) ---
-def update_session_token(user_id, token, fingerprint=None):
+def update_session_token(user_id, token):
     try:
-        data = {"session_token": token}
-        # Nếu có vân tay thì cập nhật thêm, không thì thôi
-        if fingerprint:
-            data["browser_fingerprint"] = fingerprint
-            
-        supabase.table('users').update(data).eq('id', user_id).execute()
+        supabase.table('users').update({"session_token": token}).eq('id', user_id).execute()
     except Exception as e:
         print(f"Lỗi update token: {e}")
 
 def login_by_token():
-    # 1. Thử lấy từ Cookie trước
+    # Lấy token từ cookie
     token = cookie_manager.get(cookie="user_session_token")
-    
-    # 2. Nếu không thấy Cookie, thử lấy từ URL
-    if not token:
-        params = st.query_params
-        token = params.get("token")
-
     if token:
         try:
             # Tìm user có token này trong DB
             response = supabase.table('users').select("*").eq('session_token', token).execute()
             if response.data and len(response.data) > 0:
                 user_data = response.data[0]
-                
-                # --- [MỚI] KIỂM TRA VÂN TAY THIẾT BỊ ---
-                # Lấy vân tay hiện tại của người đang truy cập
-                current_fingerprint = st.context.headers.get("User-Agent", "unknown")
-                # Lấy vân tay đã lưu trong Database
-                saved_fingerprint = user_data.get("browser_fingerprint")
-                
-                # Nếu trong DB có lưu vân tay, và vân tay hiện tại KHÁC vân tay đã lưu
-                if saved_fingerprint and current_fingerprint != saved_fingerprint:
-                    st.toast("⚠️ Link này không chính chủ! Vui lòng đăng nhập lại.", icon="🚫")
-                    # Xóa token trên URL để tránh đăng nhập lại liên tục
-                    st.query_params.clear() 
-                    return None
-                # ---------------------------------------
-
                 # Xóa mật khẩu khỏi session vì lý do bảo mật
                 if 'password' in user_data: del user_data['password']
                 return user_data
@@ -1141,20 +1115,13 @@ if not st.session_state['user_info']:
                     st.session_state['user_info'] = user
                     
                     if remember_me:
+                        # 1. Tạo token ngẫu nhiên
                         new_token = str(uuid.uuid4())
-                        
-                        # [MỚI] Lấy thông tin sơ lược về trình duyệt (Vân tay)
-                        # Chúng ta dùng thông tin User-Agent (tên trình duyệt/thiết bị)
-                        fingerprint = st.context.headers.get("User-Agent", "unknown")
-                        
-                        # Lưu cả Token và Vân tay vào Database
-                        # Bạn cần sửa hàm update_session_token để nhận thêm fingerprint
-                        update_session_token(user['id'], new_token, fingerprint)
-                        
+                        # 2. Lưu token vào Supabase
+                        update_session_token(user['id'], new_token)
+                        # 3. Lưu token vào Cookie trình duyệt (Hết hạn sau 30 ngày)
                         cookie_manager.set("user_session_token", new_token, expires_at=datetime.now() + timedelta(days=30))
-                        st.query_params["token"] = new_token
-                        
-                        st.toast("Đã ghi nhớ đăng nhập!", icon="🔒")
+                        st.toast("Đã ghi nhớ đăng nhập an toàn!", icon="🔒")
                     else:
                         # Nếu không chọn ghi nhớ, xóa token cũ (nếu có)
                         st.query_params.clear()
@@ -1175,7 +1142,7 @@ else:
     user = st.session_state['user_info']
     
     # [MODIFIED] HEADER MỚI (Chỉ còn Tiêu đề)
-    st.markdown(f"<h1 style='text-align: center; border: none; margin: 0; padding: 0;'>📻 Thợ video</h1>", unsafe_allow_html=True)
+    st.markdown(f"<h1 style='text-align: center; border: none; margin: 0; padding: 0;'>hạt bụi nhỏ - làm video</h1>", unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True) # Tạo khoảng cách nhỏ
     # Tính toán quota
     quota_left = user['quota_max'] - user['quota_used']
