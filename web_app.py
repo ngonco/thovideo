@@ -388,7 +388,9 @@ st.markdown(get_app_style(), unsafe_allow_html=True)
 
 DB_SHEET_NAME = "VideoAutomation_DB"
 DB_WORKSHEET = "orders"
-LIBRARY_SHEET_ID = "1oTnl19oMQ1TLpaD5Tuu7seJ76JlNB9tEgnuiKwa66Uw" 
+# Lấy ID từ secrets, nếu không có thì dùng chuỗi rỗng để tránh lỗi crash
+LIBRARY_SHEET_ID = st.secrets.get("sheets", {}).get("library_id", "")
+
 
 # --- HÀM XỬ LÝ BACKEND (GIỮ NGUYÊN TUYỆT ĐỐI) ---
 def get_creds():
@@ -1451,10 +1453,12 @@ else:
     st.markdown("---")
     if 's_voice' not in st.session_state:
         # Lấy cài đặt cũ từ database (nếu có)
-        saved_settings = user.get('settings', {})
+        # [FIX] Thêm 'or {}' để nếu dữ liệu là None thì đổi thành dict rỗng
+        saved_settings = user.get('settings') or {}
         
         # Nếu chưa có cài đặt cũ thì dùng giá trị mặc định
         st.session_state.update({
+            # Lúc này saved_settings chắc chắn là Dict, lệnh .get sẽ không lỗi nữa
             "s_clean": saved_settings.get("clean_audio", True),
             "s_voice": saved_settings.get("voice_vol", 1.5),
             "s_music": saved_settings.get("music_vol", 0.2), 
