@@ -248,142 +248,165 @@ def get_app_style():
     # Định nghĩa kích thước chuẩn
     base_size = "22px"
     title_size = "18px"
-    input_height = "45px"
     
     # LƯU Ý: Trong f-string, dấu ngoặc nhọn của CSS phải nhân đôi thành {{ và }}
     return f"""
     <style>
-    /* 1. CẤU TRÚC CHUNG */
+    /* 1. CẤU TRÚC CHUNG - ĐỒNG BỘ 1 FONT DUY NHẤT */
     .stApp {{ 
         background-color: #FDF5E6; 
         color: #3E2723; 
-        font-family: 'Times New Roman', Times, serif !important; 
+        /* Dùng 1 font duy nhất cho toàn bộ App */
+        font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important; 
     }}
     
-    /* 2. TIÊU ĐỀ & GIỚI THIỆU */
+    /* 2. TIÊU ĐỀ - Bắt buộc theo font chung, chỉ khác độ đậm */
     h1, h2, h3, .intro-column, .step-label {{
-        font-family: 'Times New Roman', Times, serif !important;
+        font-family: inherit !important; /* Kế thừa font từ .stApp */
+        font-weight: bold;
+    }}
+
+    h1 {{
+        color: #8B4513 !important; font-size: {title_size} !important; text-align: center;
+        border-bottom: none !important; padding-bottom: 10px; margin-bottom: 20px;
+    }}
+
+    /* [MOBILE] Cài đặt riêng cho điện thoại */
+    @media only screen and (max-width: 600px) {{
+        h1 {{
+            font-size: 20px !important; 
+            padding-bottom: 10px !important;
+            margin-bottom: 15px !important;
+        }}
     }}
     
     /* 3. STEP LABEL */
     .step-label {{
         font-size: 22px !important; font-weight: bold; color: #5D4037;
-        background-color: #fcefe3; padding: 10px 15px; border-left: 6px solid #8B4513;
-        margin-top: 25px; margin-bottom: 15px; border-radius: 0 5px 5px 0;
+        background-color: #fcefe3; padding: 8px 15px; border-left: 6px solid #8B4513;
+        margin-top: 20px !important; 
+        margin-bottom: 20px !important; 
+        border-radius: 0 5px 5px 0;
+        display: inline-block;
     }}
     
-    /* 4. LABEL & CAPTION */
-    .stRadio label p, .stCheckbox label p, .stSlider label p, 
-    .stNumberInput label p, .stSelectbox label p, .stTextInput label p {{
-        color: #3E2723 !important; font-weight: 700 !important; 
-        font-size: 20px !important;
+    /* 4. INPUT & TEXTAREA */
+    .stTextInput input, .stNumberInput input {{
+        background-color: #FFF8DC !important; color: #3E2723 !important;
+        font-weight: 500 !important; border: 1px solid #D7CCC8; border-radius: 4px;
+        font-family: inherit !important; /* Đồng bộ font */
     }}
-    .stMarkdown p, .stCaption {{ color: #5D4037 !important; font-size: 18px !important; }}
-    
-    /* 5. EXPANDER */
-    div[data-testid="stExpander"] {{
-        margin-bottom: 20px !important;
-        border-radius: 10px !important;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    }}
-    
-    div[data-testid="stExpander"] details > summary {{
-        background-color: #FFF8DC !important; color: #3E2723 !important; 
-        font-size: 26px !important;
-        font-weight: bold; 
-        border: 2px solid #D7CCC8; border-radius: 10px;
-        min-height: 65px !important;
-        padding-top: 20px !important;
-        padding-bottom: 20px !important;
-    }}
-    div[data-testid="stExpander"] details > summary svg {{ 
-        fill: #3E2723 !important; 
-        width: 30px !important;
-        height: 30px !important;
+    .stTextArea textarea {{
+        background-color: #FFF8DC !important; color: #3E2723 !important;
+        border: 2px solid #8B4513 !important; 
+        font-size: 19px !important;
+        line-height: 1.5 !important;
+        font-family: inherit !important; /* Đồng bộ font */
     }}
     
-    /* 6. NÚT BẤM (BUTTON & LINK) - Đã cập nhật nút Zalo */
-    .stButton button, a[data-testid="stLinkButton"] {{
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
-        background-color: #8B4513 !important; 
+    /* 5. FIX DROPDOWN & ICONS */
+    div[data-baseweb="select"] > div:first-child {{
+        background-color: #FFF8DC !important; border: 1px solid #D7CCC8; color: #3E2723 !important;
+    }}
+    div[data-baseweb="select"] svg {{ fill: #3E2723 !important; }}
+    
+    /* 6. LABEL COLORS */
+    .stRadio label p, .stCheckbox label p, .stSlider label p, .stNumberInput label p, .stSelectbox label p, .stColorPicker label p {{
+        color: #3E2723 !important; font-weight: 600 !important; font-size: 16px !important;
+        font-family: inherit !important;
+    }}
+    .stMarkdown p, .stCaption {{ color: #5D4037 !important; font-family: inherit !important; }}
+    
+    /* 7. NÚT BẤM (BUTTON & LINK) - ĐỒNG BỘ 100% GIỮA NÚT LOGIN VÀ ZALO */
+    .stButton button, 
+    div[data-testid="stFormSubmitButton"] button, 
+    a[data-testid="stLinkButton"] {{
+        background-color: #8B4513 !important; /* Màu nâu đồng nhất */
         color: #FFFFFF !important; 
-        font-weight: bold !important; 
-        font-size: 18px !important;
+        font-weight: bold !important;
+        font-size: 20px !important; 
         border-radius: 8px !important; 
+        margin-top: 10px;
         border: none !important;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important;
-        padding: 10px 20px !important;
-        text-decoration: none !important;
+        box-shadow: 2px 2px 5px rgba(0,0,0,0.2) !important;
+        font-family: inherit !important;
+        
+        /* Căn chỉnh kích thước */
+        width: 100% !important; /* Ép bung full chiều ngang */
         display: flex !important;
         justify-content: center !important;
         align-items: center !important;
-        transition: all 0.3s ease !important;
+        text-decoration: none !important;
+        min-height: 48px !important; /* Đảm bảo chiều cao bằng nhau */
     }}
     
-    .stButton button:hover, a[data-testid="stLinkButton"]:hover {{
-        background-color: #5D4037 !important;
-        transform: translateY(-2px);
-        color: #FFF8DC !important;
-    }}
-
-    /* 7. INPUT FIELDS */
-    .stTextInput input, .stNumberInput input, .stSelectbox div, .stTextArea textarea {{
-        background-color: #FFF8DC !important; color: #3E2723 !important;
-        font-size: 18px !important;
+    .stButton button:hover, 
+    div[data-testid="stFormSubmitButton"] button:hover,
+    a[data-testid="stLinkButton"]:hover {{ 
+        background-color: #5D4037 !important; 
+        color: #FFFFFF !important;
+        box-shadow: none !important;
     }}
     
-    /* GIỚI THIỆU */
-    .intro-column {{
-        padding: 40px 20px;
-        border-right: 1px solid #D7CCC8;
+    /* 8. EXPANDER */
+    div[data-testid="stExpander"] details > summary {{
+        background-color: #FFF8DC !important; color: #3E2723 !important; 
+        border: 1px solid #D7CCC8 !important; border-radius: 5px;
+        padding-top: 5px !important; padding-bottom: 5px !important;
+        min-height: 40px !important; height: auto !important;
+        font-family: inherit !important;
     }}
-    .intro-item {{
-        font-size: 20px;
-        margin-bottom: 20px;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        color: #5D4037;
-    }}
-
-    /* MOBILE CSS */
-    @media only screen and (max-width: 600px) {{
-        div[data-testid="stRadio"] > div {{
-            flex-direction: column !important;
-            align-items: flex-start !important;
-        }}
-        h1 {{
-            font-size: 20px !important;
-            margin-bottom: 10px !important;
-            padding-bottom: 5px !important;
-            margin-top: -20px !important;
-        }}
-        div[data-testid="stRadio"] label {{
-            margin-bottom: 12px !important;
-            background: #FFF3E0;
-            padding: 12px;
-            border-radius: 8px;
-            width: 100%;
-        }}
-        .main .block-container {{
-            padding-top: 0.5rem !important;
-            padding-left: 1rem !important;
-            padding-right: 1rem !important;
-        }}
-        audio {{
-            height: 65px !important;
-            width: 104% !important;
-            margin-left: -2% !important;
-            margin-top: 15px !important;
-            margin-bottom: 15px !important;
-            border-radius: 15px !important;
-        }}
-        audio::-webkit-media-controls-play-button {{
-            transform: scale(1.8) !important;
-        }}
+    div[data-testid="stExpander"] details > summary svg {{ 
+        fill: #3E2723 !important; width: 18px !important; height: 18px !important;
     }}
     
-    footer {{visibility: hidden;}}
+    /* 9. FILE UPLOADER */
+    div[data-testid="stFileUploaderUploadedFiles"] > div {{
+        background-color: #FFF8DC !important; border: 1px solid #8B4513 !important; 
+        color: #3E2723 !important;
+        width: fit-content !important; min-width: 150px !important; padding-right: 10px !important;
+    }}
+    div[data-testid="stFileUploaderUploadedFiles"] div[data-testid="stMarkdownContainer"] p {{
+        color: #3E2723 !important; font-weight: bold !important;
+    }}
+    div[data-testid="stFileUploaderUploadedFiles"] svg {{ fill: #3E2723 !important; }}
+    div[data-testid="stFileUploaderDeleteBtn"] svg {{ fill: #D32F2F !important; stroke: #D32F2F !important; }}
+            
+    /* 10. AUDIO PLAYER */
+    audio {{
+        height: 55px !important; width: 100% !important;
+        border-radius: 30px !important; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        background-color: #F1F8E9; margin: 10px 0;
+    }}
+    audio::-webkit-media-controls-panel {{
+        background-color: #D7CCC8 !important; border: 2px solid #8B4513 !important;
+    }}
+    audio::-webkit-media-controls-play-button,
+    audio::-webkit-media-controls-mute-button {{
+        background-color: #8B4513 !important; border-radius: 50%;
+        box-shadow: 1px 1px 4px rgba(0,0,0,0.2) !important; transform: scale(1.1);
+    }}
+    audio::-webkit-media-controls-current-time-display,
+    audio::-webkit-media-controls-time-remaining-display {{
+        color: #3E2723 !important; font-weight: bold;
+    }}
+    
+    /* ẨN GIAO DIỆN HỆ THỐNG */
+    #MainMenu {{visibility: hidden; display: none;}}
+    header {{visibility: hidden; display: none;}}
+    footer {{visibility: hidden !important;}}
+    div[class*="viewerBadge"] {{display: none !important;}}
+    div[data-testid="stDecoration"] {{display: none;}}
+    
+    /* TAB ADMIN */
+    button[data-baseweb="tab"] div[data-testid="stMarkdownContainer"] p {{
+        color: #3E2723 !important; font-size: 20px !important; font-weight: bold !important;
+        font-family: inherit !important;
+    }}
+    div[data-baseweb="tab-highlight"] {{
+        background-color: #8B4513 !important; height: 4px !important;
+    }}
+    button[data-baseweb="tab"]:hover {{ background-color: #FFF8DC !important; }}
     </style>
     """
 
@@ -1109,11 +1132,11 @@ if not st.session_state['user_info']:
                 with col_sub2:
                     # Tăng font-size lên 17px và gán link Zalo
                     st.markdown("""
-                        <div style='text-align: right; font-size: 14px; padding-top: 5px;'>
+                        <div style='text-align: right; font-size: 15px; padding-top: 5px;'>
                             <a href='https://zalo.me/g/ivgedj736' target='_blank' style='color: #8B4513; text-decoration: none; font-weight: bold;'>
                                 Quên mật khẩu?
                             </a>
-                        </div>adfasdf
+                        </div>
                     """, unsafe_allow_html=True)
 
                 submitted = st.form_submit_button("ĐĂNG NHẬP NGAY", use_container_width=True)
