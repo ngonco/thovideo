@@ -221,8 +221,8 @@ def auto_save_callback():
 def get_user_history(email):
     try:
         # Gọi trực tiếp Supabase, chỉ lấy dữ liệu của user đó (Bảo mật hơn)
-        response = supabase.table('orders').select("*").eq('email', email).order('created_at', desc=True).execute()
-        
+        # Chỉ lấy tối đa 15 video gần nhất để đảm bảo tốc độ tải trang
+        response = supabase.table('orders').select("*").eq('email', email).order('created_at', desc=True).limit(15).execute()        
         if response.data:
             df = pd.DataFrame(response.data)
             # Đổi tên cột cho khớp với giao diện hiển thị
@@ -450,63 +450,29 @@ def get_library_structure():
     except Exception as e: return [f"Lỗi: {str(e)}"]
 
 # --- ĐÃ SỬA ĐỂ HỖ TRỢ PHÂN QUYỀN STOCK ---
-@st.cache_data(ttl=3600, show_spinner="Đang tải dữ liệu từ thư viện...")
-def get_scripts_with_audio(sheet_name, stock_limit=1000):
-    # [BẢO MẬT] Lấy link Hugging Face từ secrets
-    if "huggingface" in st.secrets:
-        BASE_URL = st.secrets["huggingface"]["base_url"]
-    else:
-        # Fallback nếu quên cấu hình secrets (giữ link cũ làm dự phòng hoặc để trống)
-        BASE_URL = "nothing"    
+@st.cache_data(ttl=600) # Chỉ giữ cache 10 phút để tiết kiệm RAM
+def get_scripts_from_supabase_by_category(category_name, limit=50):
     try:
-        gc = get_gspread_client()
-        sh = gc.open_by_key(LIBRARY_SHEET_ID)
-        ws = sh.worksheet(sheet_name)
-        data = ws.get_all_records()
-        
-        # [ĐÃ SỬA] Logic mới: Duyệt trực tiếp danh sách gốc để đảm bảo thứ tự file (1.mp3, 2.mp3...) chuẩn xác
-        results = []
-        
-        if data:
-            # 1. Xác định tên cột nội dung từ dòng đầu tiên
-            first_row = data[0]
-            # Tìm key nào có chứa chữ "nội dung" hoặc "content"
-            content_col = next((k for k in first_row.keys() if "nội dung" in k.lower() or "content" in k.lower()), None)
-            
-            # Nếu không tìm thấy thì lấy cột đầu tiên làm mặc định
-            if not content_col: 
-                content_col = list(first_row.keys())[0]
-
-            # 2. Duyệt qua danh sách gốc và đếm số thứ tự (i)
-            for i, row in enumerate(data):
-                # Nếu đã lấy đủ số lượng giới hạn (stock_limit) thì dừng lại
-                if i >= stock_limit:
-                    break
-                
-                content_text = row.get(content_col, "")
-                if content_text:
-                    item = {"content": content_text}
-                    
-                    # [ĐÃ SỬA] Cộng thêm 1 để bắt đầu từ 1.mp3 thay vì 0.mp3
-                    # Nếu file của bạn đặt theo số hàng Excel (ví dụ hàng 2 là 2.mp3), hãy sửa số 1 thành 2
-                    auto_link = f"{BASE_URL}{sheet_name}/{i + 2}.mp3"
-                    item["audio"] = auto_link
-                    
-                    results.append(item)
-                    
-        return results
-    except Exception as e: 
-        print(f"Lỗi load script: {e}")
+        # Chỉ lấy 50 bản ghi thay vì 1000 để giảm tải RAM cho Streamlit
+        response = supabase.table('library').select("*").eq('category', category_name).limit(limit).execute()
+        return response.data
+    except Exception as e:
+        print(f"Lỗi load kịch bản: {e}")
         return []
 
 # [NEW] TÌM KIẾM TRONG DATABASE (Nhanh hơn Sheet rất nhiều)
-def search_global_library(keyword, user_stock_limit_ignored):
+def search_global_library(keyword):
     try:
-        keyword = keyword.lower().strip()
+        keyword = keyword.strip()
         if not keyword: return []
         
-        # Tìm trong bảng library, cột content chứa keyword (ilike là case-insensitive)
-        response = supabase.table('library').select("*").ilike('content', f'%{keyword}%').limit(20).execute()
+        # TỐI ƯU: Chỉ lấy các cột cần thiết để nhẹ dung lượng truyền tải
+        # Sử dụng .or_ để tìm cả trong nội dung và danh mục
+        response = supabase.table('library') \
+            .select("content, audio_url, category") \
+            .ilike('content', f'%{keyword}%') \
+            .limit(20) \
+            .execute()
         
         results = []
         for item in response.data:
@@ -517,7 +483,7 @@ def search_global_library(keyword, user_stock_limit_ignored):
             })
         return results
     except Exception as e:
-        print(f"Lỗi tìm kiếm Supabase: {e}")
+        st.error(f"Lỗi tìm kiếm: {e}")
         return []
 
 
@@ -1284,57 +1250,44 @@ else:
     selected_library_audio = None 
 
     # 1.1 LOGIC TÌM KIẾM TRONG THƯ VIỆN
+    # 1.1 LOGIC TÌM KIẾM TRONG THƯ VIỆN (CHẠY TRỰC TIẾP TRÊN SUPABASE)
     if source_opt == "📂 Tìm trong Thư viện":
-        st.info("💡 Nhập từ khóa để tìm kịch bản phù hợp.")
+        st.info("💡 Tìm kiếm thần tốc từ kho kịch bản AI.")
         
-        # [FIX] Dùng st.form để hỗ trợ nhấn Enter là tự tìm kiếm
         with st.form(key="search_form"):
             c_search1, c_search2 = st.columns([3, 1], vertical_alignment="center")
-            
             with c_search1:
-                search_kw = st.text_input("", label_visibility="collapsed", placeholder="Ví dụ: Đức Phật, từ bi...")
+                search_kw = st.text_input("", label_visibility="collapsed", placeholder="Nhập từ khóa (Ví dụ: Nhân quả, chữa lành...)")
             with c_search2:
-                # Đổi button thường thành form_submit_button
-                btn_search = st.form_submit_button("🔍 Tìm kiếm", use_container_width=True)
+                btn_search = st.form_submit_button("🔍 TÌM NGAY", use_container_width=True)
 
-        # Logic cũ vẫn giữ nguyên, nhưng giờ nhấn Enter btn_search cũng sẽ là True
         if btn_search and search_kw:
-            st.session_state['search_results'] = search_global_library(search_kw, user['stock_level'])
-            st.session_state['has_searched'] = True
-            
-            # [FIX] QUAN TRỌNG: Xóa ký ức về lần chọn trước
-            # Giúp máy nhận diện được kết quả mới dù chỉ có 1 bài (index 0)
-            if 'last_picked_idx' in st.session_state:
-                del st.session_state['last_picked_idx']
-            
-        # ... (Giữ nguyên logic hiển thị Selectbox) ...
+            with st.spinner("Đang lục tìm trong kho dữ liệu..."):
+                # Gửi lệnh cho Supabase tự tìm
+                st.session_state['search_results'] = search_global_library(search_kw)
+                st.session_state['has_searched'] = True
+                if 'last_picked_idx' in st.session_state:
+                    del st.session_state['last_picked_idx']
+
         if st.session_state.get('has_searched'):
             results = st.session_state.get('search_results', [])
             if results:
-                # ... (Code selectbox cũ giữ nguyên) ...
-                preview_options = [f"({item['source_sheet']}) {str(item['content'])[:60]}..." for item in results]
-                selected_idx = st.selectbox("Chọn kịch bản:", range(len(results)), format_func=lambda x: preview_options[x], key="sb_search_select")
+                preview_options = [f"[{item['source_sheet']}] {item['content'][:60]}..." for item in results]
+                selected_idx = st.selectbox("Chọn kịch bản phù hợp:", range(len(results)), 
+                                            format_func=lambda x: preview_options[x], key="sb_search_select")
                 
                 chosen_content = results[selected_idx]['content']
                 selected_library_audio = results[selected_idx].get('audio')
 
-                # Kiểm tra nếu người dùng chọn kịch bản KHÁC với lần trước
-                if 'last_picked_idx' not in st.session_state or st.session_state['last_picked_idx'] != selected_idx:
+                # Cập nhật vào vùng soạn thảo nếu có thay đổi
+                if st.session_state.get('last_picked_idx') != selected_idx:
                     st.session_state['main_content_area'] = chosen_content
                     st.session_state['last_picked_idx'] = selected_idx
-                    
-                    # [FIX] Xóa trạng thái của nút chọn giọng đọc để nó tự reset lại theo kịch bản mới
-                    if "radio_voice_method" in st.session_state:
-                        del st.session_state["radio_voice_method"]
-                    
                     st.rerun()
-                final_script_content = chosen_content
                 
-                # [ĐÃ XÓA] Đã bỏ phần nghe thử ở Bước 1 theo yêu cầu.
-                # Biến selected_library_audio vẫn được giữ để dùng cho Bước 2.
-
+                final_script_content = chosen_content
             else:
-                st.warning("⚠️ Không tìm thấy kịch bản nào.")
+                st.warning("⚠️ Không tìm thấy kết quả nào. Hãy thử từ khóa khác!")
 
     elif source_opt == "✍️ Tự viết mới":
         st.caption("Nhập nội dung kịch bản của bạn vào bên dưới:")
@@ -1674,6 +1627,14 @@ else:
                 
                 # Insert vào bảng orders
                 supabase.table('orders').insert(order_data).execute()
+
+                # --- GIẢI PHÓNG RAM NGAY LẬP TỨC ---
+                # Xóa dữ liệu file nặng sau khi đã gửi lên Cloudinary và lưu DB thành công
+                if 'temp_record_file' in st.session_state:
+                    st.session_state['temp_record_file'] = None
+                if 'temp_upload_file' in st.session_state:
+                    st.session_state['temp_upload_file'] = None
+                # ----------------------------------
                 
                 # [NEW] Trừ Quota (Đã chuyển sang Supabase)
                 # update_user_usage_supabase đã được định nghĩa ở đầu file
