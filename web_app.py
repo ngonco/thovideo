@@ -402,18 +402,22 @@ def check_link_exists(url):
 # Inject CSS ngay lập tức (Không cần tham số nữa)
 st.markdown(get_app_style(), unsafe_allow_html=True)
 
-# Hiển thị thông báo hỗ trợ lên đầu trang (Đã bỏ thông báo trùng và làm nhạt viền)
+# Thông báo có gắn link Group Zalo
 st.markdown("""
-    <div style="background-color: #FCF7E6; 
-                color: #8B4513; 
-                padding: 12px; 
-                border-radius: 8px; 
-                text-align: center; 
-                font-weight: bold; 
-                border: 1px solid #D7CCC8;
-                margin-bottom: 20px;">
-        📢 Đăng ký tài khoản mới hoặc báo lỗi kỹ thuật: 0981/362/561 (zalo)
-    </div>
+    <a href="https://zalo.me/g/ivgedj736" target="_blank" style="text-decoration: none;">
+        <div style="background-color: #FCF7E6; 
+                    color: #8B4513; 
+                    padding: 12px; 
+                    border-radius: 8px; 
+                    text-align: center; 
+                    font-weight: bold; 
+                    border: 1px solid #D7CCC8;
+                    margin-bottom: 20px;
+                    cursor: pointer;
+                    transition: 0.3s;">
+            📢 Đăng ký tài khoản và tham gia nhóm hỗ trợ Zalo. 
+        </div>
+    </a>
 """, unsafe_allow_html=True)
 
 DB_SHEET_NAME = "VideoAutomation_DB"
