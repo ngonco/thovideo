@@ -246,64 +246,63 @@ st.set_page_config(page_title="hạt bụi nhỏ - làm video", page_icon="📻"
 
 def get_app_style():
     # Định nghĩa kích thước chuẩn
-    base_size = "22px"  # [ĐÃ TĂNG] Cỡ chữ chung to hơn (cũ là 16px)
-    title_size = "18px" # [ĐÃ GIẢM] Tiêu đề chính nhỏ lại (cũ là 38px)
+    base_size = "22px"
+    title_size = "18px"
     input_height = "45px"
     
+    # LƯU Ý: Trong f-string, dấu ngoặc nhọn của CSS phải nhân đôi thành {{ và }}
     return f"""
     <style>
-    /* 1. CẤU TRÚC CHUNG - Sử dụng Font hệ thống chống lỗi dấu */
-    .stApp { 
+    /* 1. CẤU TRÚC CHUNG */
+    .stApp {{ 
         background-color: #FDF5E6; 
         color: #3E2723; 
         font-family: 'Times New Roman', Times, serif !important; 
-    }
+    }}
     
     /* 2. TIÊU ĐỀ & GIỚI THIỆU */
-    h1, h2, h3, .intro-column, .step-label {
+    h1, h2, h3, .intro-column, .step-label {{
         font-family: 'Times New Roman', Times, serif !important;
-    }
+    }}
     
-    /* 3. STEP LABEL (Nhãn bước 1, bước 2...) */
+    /* 3. STEP LABEL */
     .step-label {{
         font-size: 22px !important; font-weight: bold; color: #5D4037;
         background-color: #fcefe3; padding: 10px 15px; border-left: 6px solid #8B4513;
         margin-top: 25px; margin-bottom: 15px; border-radius: 0 5px 5px 0;
     }}
     
-    /* 4. LABEL & CAPTION (Tăng kích thước các câu hỏi/tiêu đề con) */
+    /* 4. LABEL & CAPTION */
     .stRadio label p, .stCheckbox label p, .stSlider label p, 
     .stNumberInput label p, .stSelectbox label p, .stTextInput label p {{
         color: #3E2723 !important; font-weight: 700 !important; 
-        font-size: 20px !important; /* [ĐÃ TĂNG] Chữ to rõ hơn */
+        font-size: 20px !important;
     }}
     .stMarkdown p, .stCaption {{ color: #5D4037 !important; font-size: 18px !important; }}
     
-    /* 5. EXPANDER (Cài đặt & Lịch sử - Đã Phóng to & Cách xa) */
-    /* Chỉnh khoảng cách giữa các dòng lịch sử */
+    /* 5. EXPANDER */
     div[data-testid="stExpander"] {{
-        margin-bottom: 20px !important; /* Cách nhau 20px cho dễ bấm */
+        margin-bottom: 20px !important;
         border-radius: 10px !important;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05); /* Đổ bóng nhẹ cho đẹp */
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     }}
     
-    /* Chỉnh kích thước thanh tiêu đề (Cài đặt, Dòng lịch sử) */
     div[data-testid="stExpander"] details > summary {{
         background-color: #FFF8DC !important; color: #3E2723 !important; 
-        font-size: 26px !important;  /* [ĐÃ TĂNG] Chữ to hơn nữa (24px) */
+        font-size: 26px !important;
         font-weight: bold; 
         border: 2px solid #D7CCC8; border-radius: 10px;
-        min-height: 65px !important; /* [ĐÃ TĂNG] Chiều cao tối thiểu 70px cho dễ bấm */
-        padding-top: 20px !important; /* Căn giữa chữ theo chiều dọc */
+        min-height: 65px !important;
+        padding-top: 20px !important;
         padding-bottom: 20px !important;
     }}
     div[data-testid="stExpander"] details > summary svg {{ 
         fill: #3E2723 !important; 
-        width: 30px !important; /* Phóng to mũi tên */
+        width: 30px !important;
         height: 30px !important;
     }}
     
-    /* 6. NÚT BẤM (Sử dụng font không chân hiện đại) */
+    /* 6. NÚT BẤM (BUTTON & LINK) - Đã cập nhật nút Zalo */
     .stButton button, a[data-testid="stLinkButton"] {{
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
         background-color: #8B4513 !important; 
@@ -324,9 +323,16 @@ def get_app_style():
     .stButton button:hover, a[data-testid="stLinkButton"]:hover {{
         background-color: #5D4037 !important;
         transform: translateY(-2px);
+        color: #FFF8DC !important;
     }}
 
-    /* KIỂU CHO DÒNG GIỚI THIỆU */
+    /* 7. INPUT FIELDS */
+    .stTextInput input, .stNumberInput input, .stSelectbox div, .stTextArea textarea {{
+        background-color: #FFF8DC !important; color: #3E2723 !important;
+        font-size: 18px !important;
+    }}
+    
+    /* GIỚI THIỆU */
     .intro-column {{
         padding: 40px 20px;
         border-right: 1px solid #D7CCC8;
@@ -339,73 +345,42 @@ def get_app_style():
         gap: 10px;
         color: #5D4037;
     }}
-    /* Hiệu ứng khi di chuột vào nút Zalo */
-    a[data-testid="stLinkButton"]:hover {{
-        background-color: #5D4037 !important;
-        color: #FFF8DC !important;
-        transform: translateY(-2px);
-    }}
 
-    /* 7. INPUT FIELDS */
-    .stTextInput input, .stNumberInput input, .stSelectbox div, .stTextArea textarea {{
-        background-color: #FFF8DC !important; color: #3E2723 !important;
-        font-size: 18px !important;
-    }}
-
-    /* ============================================================
-       QUAN TRỌNG: CSS RIÊNG CHO ĐIỆN THOẠI (Màn hình nhỏ)
-       ============================================================ */
+    /* MOBILE CSS */
     @media only screen and (max-width: 600px) {{
-        
-        /* 1. Ép các lựa chọn Radio (Nguồn, Giọng đọc) xuống dòng */
         div[data-testid="stRadio"] > div {{
-            flex-direction: column !important; /* Xếp dọc */
+            flex-direction: column !important;
             align-items: flex-start !important;
         }}
-
-        /* 1. Thu nhỏ tiêu đề */
         h1 {{
-            font-size: 20px !important; /* [ĐÃ SỬA] Giảm xuống 20px cho đồng bộ */
+            font-size: 20px !important;
             margin-bottom: 10px !important;
             padding-bottom: 5px !important;
+            margin-top: -20px !important;
         }}
-        
-        /* 2. Tăng khoảng cách giữa các lựa chọn để dễ bấm */
         div[data-testid="stRadio"] label {{
             margin-bottom: 12px !important;
             background: #FFF3E0;
             padding: 12px;
             border-radius: 8px;
-            width: 100%; /* Full chiều ngang */
+            width: 100%;
         }}
-
-        /* 3. Canh lề lại cho gọn và giảm khoảng trống trên cùng */
         .main .block-container {{
-            padding-top: 0.5rem !important; /* Giảm từ 2rem xuống 0.5rem */
+            padding-top: 0.5rem !important;
             padding-left: 1rem !important;
             padding-right: 1rem !important;
         }}
-        
-        /* Ẩn bớt khoảng trắng thừa của tiêu đề trên mobile */
-        h1 {{
-            margin-top: -20px !important;
-        }}
-
-        /* 4. [FIX] PHÓNG TO AUDIO PLAYER CHO ĐIỆN THOẠI */
         audio {{
-            height: 65px !important;    /* Tăng chiều cao lên 65px */
-            width: 104% !important;     /* Rộng hơn khung màn hình */
+            height: 65px !important;
+            width: 104% !important;
             margin-left: -2% !important;
             margin-top: 15px !important;
             margin-bottom: 15px !important;
             border-radius: 15px !important;
         }}
-        
-        /* Phóng to nút bấm Play/Pause bên trong */
         audio::-webkit-media-controls-play-button {{
             transform: scale(1.8) !important;
         }}
-
     }}
     
     footer {{visibility: hidden;}}
@@ -1138,7 +1113,7 @@ if not st.session_state['user_info']:
                             <a href='https://zalo.me/g/ivgedj736' target='_blank' style='color: #8B4513; text-decoration: none; font-weight: bold;'>
                                 Quên mật khẩu?
                             </a>
-                        </div>
+                        </div>adfasdf
                     """, unsafe_allow_html=True)
 
                 submitted = st.form_submit_button("ĐĂNG NHẬP NGAY", use_container_width=True)
