@@ -393,14 +393,21 @@ def get_app_style():
 
         /* 3. Canh lề lại cho gọn và giảm khoảng trống trên cùng */
         .main .block-container {{
-            padding-top: 0.5rem !important; /* Giảm từ 2rem xuống 0.5rem */
+            padding-top: 0rem !important; /* Đưa hẳn về 0 */
             padding-left: 1rem !important;
             padding-right: 1rem !important;
         }}
         
-        /* Ẩn bớt khoảng trắng thừa của tiêu đề trên mobile */
-        h1 {{
-            margin-top: -20px !important;
+        /* Triệt tiêu hoàn toàn khoảng trống phía trên tiêu đề H1 */
+        h1 {{}
+            margin-top: -45px !important; /* Đẩy tiêu đề lên cao hơn nữa */
+            padding-top: 0px !important;
+        }}
+
+        /* Giảm khoảng cách giữa logo và form đăng nhập trên mobile */
+        .intro-column {{
+            padding-top: 10px !important;
+            padding-bottom: 10px !important;
         }}
 
         /* 4. [FIX] PHÓNG TO AUDIO PLAYER CHO ĐIỆN THOẠI */
@@ -1151,11 +1158,14 @@ if not st.session_state['user_info']:
                     st.error("Sai Email hoặc Mật khẩu, vui lòng thử lại.")
 
             st.markdown("---")
-            # Thay nút bấm bằng dòng text dẫn link đơn giản
+            # Tăng cỡ chữ lên 20px và làm nổi bật link Đăng ký
             st.markdown("""
-                <div style='text-align: center; font-size: 16px; color: #5D4037;'>
+                <div style='text-align: center; font-size: 20px; color: #3E2723; line-height: 1.6;'>
                     Chưa có tài khoản?<br>
-                    <a href='https://zalo.me/g/ivgedj736' target='_blank' style='color: #8B4513; font-weight: bold; text-decoration: underline; display: inline-block; margin-top: 5px;'>
+                    <a href='https://zalo.me/g/ivgedj736' target='_blank' 
+                       style='color: #8B4513; font-weight: 800; text-decoration: underline; 
+                              display: block; margin-top: 10px; background-color: #FFF3E0; 
+                              padding: 10px; border-radius: 8px; border: 1px dashed #8B4513;'>
                         👉 Đăng ký mới qua Zalo tại đây
                     </a>
                 </div>
