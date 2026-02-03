@@ -127,7 +127,9 @@ def check_login(email, password):
                 # Trả về thông tin user để lưu vào session
                 return user_data
     except Exception as e:
-        st.error(f"Lỗi hệ thống đăng nhập: {e}")
+        # Chỉ in lỗi ra console cho Admin xem, không hiện chi tiết cho User thấy
+        print(f"DEBUG LOGIN ERROR: {e}") 
+        st.error("Đã xảy ra lỗi kết nối. Vui lòng thử lại sau.")st.error(f"Lỗi hệ thống đăng nhập: {e}")
     
     # [BẢO MẬT] Làm chậm hacker 2 giây nếu đăng nhập thất bại
     time.sleep(2) 
@@ -298,12 +300,33 @@ def get_app_style():
         height: 30px !important;
     }}
     
-    /* 6. BUTTON (Nút bấm) */
-    .stButton button {{
+    /* 6. BUTTON (Nút bấm Đăng nhập) */
+    .stButton button {
         background-color: #8B4513 !important; color: #FFFFFF !important; 
-        font-weight: bold !important; font-size: 20px !important; 
+        font-weight: bold !important; font-size: 18px !important; /* [CHỈNH] Giảm xuống 18px cho thanh thoát */
         border-radius: 8px !important; margin-top: 10px; border: none !important;
-        box-shadow: 2px 2px 5px rgba(0,0,0,0.2) !important;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important;
+        padding-top: 10px !important; padding-bottom: 10px !important;
+    }
+
+    /* [MỚI] Nút Link (Đăng ký Zalo) - Chỉnh cho giống hệt nút Đăng nhập */
+    a[data-testid="stLinkButton"] {{
+        background-color: #8B4513 !important; 
+        color: #FFFFFF !important; 
+        font-weight: bold !important;
+        font-size: 18px !important;
+        border-radius: 8px !important;
+        border: none !important;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important;
+        text-align: center !important;
+        display: block !important;
+        transition: all 0.3s ease !important;
+    }}
+    /* Hiệu ứng khi di chuột vào nút Zalo */
+    a[data-testid="stLinkButton"]:hover {{
+        background-color: #5D4037 !important;
+        color: #FFF8DC !important;
+        transform: translateY(-2px);
     }}
 
     /* 7. INPUT FIELDS */
@@ -1049,8 +1072,8 @@ if not st.session_state['user_info']:
     """, unsafe_allow_html=True)
 
     # 2. KHUNG ĐĂNG NHẬP (Dùng cột để căn giữa màn hình)
-    # Tỷ lệ [1, 5, 1] trên mobile, [1, 2, 1] trên PC giúp form không bị quá to bè
-    c1, c2, c3 = st.columns([1, 8, 1]) if st.session_state.get('is_mobile') else st.columns([1, 1.2, 1])
+    # [ĐÃ SỬA] Tăng độ rộng cột giữa lên 1.5 để form thoáng hơn
+    c1, c2, c3 = st.columns([1, 10, 1]) if st.session_state.get('is_mobile') else st.columns([1, 1.5, 1])
 
     with c2:
         # Tạo container nhìn giống cái thẻ bài
@@ -1098,8 +1121,8 @@ if not st.session_state['user_info']:
             st.markdown("---")
             st.markdown("<div style='text-align: center; font-size: 14px;'>Chưa có tài khoản?</div>", unsafe_allow_html=True)
             
-            # Dùng st.link_button dạng 'tertiary' (không viền) hoặc 'secondary' cho đỡ rối
-            st.link_button("👉 Đăng ký qua Zalo (Hỗ trợ nhanh)", "https://zalo.me/g/ivgedj736", use_container_width=True)
+            # [ĐÃ SỬA] Nút này giờ sẽ nhận CSS màu Nâu chúng ta vừa viết ở Bước 1
+            st.link_button("👉 Đăng ký mới qua Zalo", "https://zalo.me/g/ivgedj736", use_container_width=True)
             
 
 
