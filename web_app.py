@@ -255,7 +255,7 @@ def get_app_style():
        ==================================================================== */
     
     /* 1. Áp dụng cho toàn bộ ứng dụng */
-    html, body, [class*="css"], .stApp {{
+    html, body, .stApp {{
         font-family: 'Arial', 'Helvetica', sans-serif !important;
         color: #3E2723;
     }}
