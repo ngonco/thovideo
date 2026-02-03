@@ -382,7 +382,7 @@ def get_app_style():
     }}
     
     /* 9. EXPANDER (TRẢ VỀ MẶC ĐỊNH - KHẮC PHỤC LỖI ICON) */
-    div[data-testid="stExpander"] details > summary {{}
+    div[data-testid="stExpander"] details > summary {{
         /* Giữ lại màu sắc theo giao diện của bạn */
         background-color: #FFF8DC !important; 
         color: #3E2723 !important; 
