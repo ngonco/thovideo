@@ -1040,43 +1040,43 @@ if not st.session_state['user_info']:
     # --- [NEW] GIỚI THIỆU & QUẢNG CÁO APP ---
     # Đoạn code mới giúp nút bấm mượt mà và chuẩn theo ảnh mẫu
     st.markdown("""
-        <style>
-            .zalo-button:hover {
-                transform: scale(1.05);
-                filter: brightness(1.1);
-            }
-        </style>
-        <div style="text-align: center; padding: 25px; background-color: #FFF3E0; border-radius: 15px; border: 2px dashed #8B4513; margin-bottom: 30px; margin-top: 10px;">
-            <h2 style="color: #8B4513; margin: 0; font-size: 24px;">📻 hạt bụi nhỏ - làm video tự động</h2>
-            <p style="font-size: 16px; color: #5D4037; margin-top: 10px; line-height: 1.5;">
-                ✨ <b>Biến kịch bản thành video</b> có giọng đọc AI cảm xúc, nhạc nền du dương chỉ trong 1 nốt nhạc.<br>
-                ✨ <b>Tự động chèn phụ đề chính xác 100% </b>, minh họa bằng video nền hợp nội dung.<br>
-                ✨ <b>Phù hợp nhất cho:</b> Kênh Phật giáo, Chữa lành, Kể chuyện, Podcast...
-            </p>
-            
-            <hr style="border-top: 1px solid #D7CCC8; border-bottom: none; margin: 20px 0;">
-            
-            <a href="https://zalo.me/g/ivgedj736" target="_blank" rel="noopener noreferrer" style="text-decoration: none;">
-                <div class="zalo-button" style="
-                    background: linear-gradient(45deg, #2E7D32, #43A047); 
-                    color: white; 
-                    padding: 15px 30px; 
-                    border-radius: 50px; 
-                    display: inline-block; 
-                    font-weight: bold; 
-                    font-size: 18px; 
-                    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-                    transition: all 0.3s ease;
-                    cursor: pointer;
-                ">
-                    👉 ĐĂNG KÝ TÀI KHOẢN (QUA ZALO)
-                </div>
-            </a>
-            <p style="font-size: 14px; color: #888; margin-top: 12px; font-style: italic;">
-                (Hỗ trợ kích hoạt tài khoản 0981/./362/./561 qua Zalo)
-            </p>
+<style>
+    .zalo-button:hover {
+        transform: scale(1.05);
+        filter: brightness(1.1);
+    }
+</style>
+<div style="text-align: center; padding: 25px; background-color: #FFF3E0; border-radius: 15px; border: 2px dashed #8B4513; margin-bottom: 30px; margin-top: 10px;">
+    <h2 style="color: #8B4513; margin: 0; font-size: 24px;">📻 hạt bụi nhỏ - làm video tự động</h2>
+    <p style="font-size: 16px; color: #5D4037; margin-top: 10px; line-height: 1.5;">
+        ✨ <b>Biến kịch bản thành video</b> có giọng đọc AI cảm xúc, nhạc nền du dương chỉ trong 1 nốt nhạc.<br>
+        ✨ <b>Tự động chèn phụ đề chính xác 100% </b>, minh họa bằng video nền hợp nội dung.<br>
+        ✨ <b>Phù hợp nhất cho:</b> Kênh Phật giáo, Chữa lành, Kể chuyện, Podcast...
+    </p>
+    
+    <hr style="border-top: 1px solid #D7CCC8; border-bottom: none; margin: 20px 0;">
+    
+    <a href="https://zalo.me/g/ivgedj736" target="_blank" rel="noopener noreferrer" style="text-decoration: none;">
+        <div class="zalo-button" style="
+            background: linear-gradient(45deg, #2E7D32, #43A047); 
+            color: white; 
+            padding: 15px 30px; 
+            border-radius: 50px; 
+            display: inline-block; 
+            font-weight: bold; 
+            font-size: 18px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        ">
+            👉 ĐĂNG KÝ TÀI KHOẢN (QUA ZALO)
         </div>
-    """, unsafe_allow_html=True)
+    </a>
+    <p style="font-size: 14px; color: #888; margin-top: 12px; font-style: italic;">
+        (Hỗ trợ tạo tài khoản 0981/./362/./561 qua Zalo)
+    </p>
+</div>
+""", unsafe_allow_html=True)
 
     
     
