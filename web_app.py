@@ -381,15 +381,34 @@ def get_app_style():
         box-shadow: none !important;
     }}
     
-    /* 9. EXPANDER */
+    /* 9. EXPANDER (ĐÃ SỬA LỖI CHỒNG CHỮ) */
     div[data-testid="stExpander"] details > summary {{
-        background-color: #FFF8DC !important; color: #3E2723 !important; 
-        border: 1px solid #D7CCC8 !important; border-radius: 5px;
-        padding-top: 5px !important; padding-bottom: 5px !important;
-        min-height: 40px !important;
+        background-color: #FFF8DC !important; 
+        border: 1px solid #D7CCC8 !important; 
+        color: #3E2723 !important;
+        border-radius: 5px;
+        
+        /* [QUAN TRỌNG] Dùng Flexbox để căn giữa icon và chữ */
+        display: flex !important;
+        align-items: center !important; 
+        
+        padding: 10px !important; /* Tăng khoảng đệm cho thoáng */
+        min-height: auto !important; /* Để chiều cao tự động, không ép nhỏ */
     }}
-    div[data-testid="stExpander"] details > summary svg {{ 
-        fill: #3E2723 !important; width: 18px !important; height: 18px !important;
+
+    /* Chỉnh icon mũi tên và tạo khoảng cách */
+    div[data-testid="stExpander"] details > summary svg {{
+        fill: #3E2723 !important; 
+        width: 20px !important;
+        height: 20px !important;
+        margin-right: 15px !important; /* [QUAN TRỌNG] Đẩy chữ ra xa khỏi icon 15px */
+        flex-shrink: 0 !important; /* Không cho icon bị méo khi màn hình nhỏ */
+    }}
+    
+    /* Đảm bảo chữ bên trong được căn chỉnh đúng */
+    div[data-testid="stExpander"] details > summary p {{
+        margin-bottom: 0px !important; /* Xóa khoảng trắng thừa dưới chân chữ */
+        display: inline-block !important;
     }}
     
     /* 10. CÁC THÀNH PHẦN KHÁC */
