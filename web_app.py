@@ -1180,24 +1180,28 @@ else:
     # ==========================================
     user = st.session_state['user_info']
 
-    # --- [NEW] NÚT HỖ TRỢ KỸ THUẬT (GÓC TRÊN CÙNG) ---
+    # --- [NEW] NÚT HỖ TRỢ KỸ THUẬT (FLOATING BAR - GÓC DƯỚI TRÁI) ---
     st.markdown("""
-        <div style="display: flex; justify-content: flex-end; margin-bottom: -10px;">
-            <a href="https://zalo.me/g/ivgedj736" target="_blank" rel="noopener noreferrer" style="text-decoration: none;">
-                <div style="
-                    background-color: #E0F2F1; 
-                    color: #00695C; 
-                    padding: 6px 15px; 
-                    border-radius: 20px; 
-                    border: 1px solid #004D40; 
-                    font-weight: bold; 
-                    font-size: 14px;
-                    display: flex; align-items: center; gap: 5px;
-                ">
-                    🛠️ Hỗ trợ kỹ thuật (Zalo)
-                </div>
-            </a>
-        </div>
+        <a href="https://zalo.me/g/ivgedj736" target="_blank" rel="noopener noreferrer" style="text-decoration: none;">
+            <div style="
+                position: fixed;
+                bottom: 20px;
+                left: 20px;
+                z-index: 99999;
+                background-color: #00695C; 
+                color: white; 
+                padding: 12px 25px; 
+                border-radius: 50px; 
+                box-shadow: 2px 2px 10px rgba(0,0,0,0.3);
+                font-weight: bold; 
+                font-size: 16px;
+                display: flex; align-items: center; gap: 10px;
+                border: 2px solid #E0F2F1;
+                transition: transform 0.2s ease-in-out;
+            " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                💬 Hỗ trợ kỹ thuật (Zalo)
+            </div>
+        </a>
     """, unsafe_allow_html=True)
     
     # [MODIFIED] HEADER MỚI (Chỉ còn Tiêu đề)
