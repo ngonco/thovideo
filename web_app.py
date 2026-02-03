@@ -1037,8 +1037,7 @@ st.markdown("""
         font-size: 14px;
         z-index: 999999;
     }
-    </style>
-    """
+    
     
     /* 3. QUAN TRỌNG: Ẩn thanh 'Hosted with Streamlit' màu đỏ và Avatar */
     /* Lệnh này tìm mọi thành phần có tên chứa chữ 'viewerBadge' để ẩn đi */
