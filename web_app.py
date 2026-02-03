@@ -407,38 +407,8 @@ def check_link_exists(url):
 # Inject CSS ngay lập tức (Không cần tham số nữa)
 st.markdown(get_app_style(), unsafe_allow_html=True)
 
-# Thông báo có gắn link Group Zalo (Đã tối ưu hiển thị mobile)
-st.markdown("""
-    <a href="https://zalo.me/g/ivgedj736" target="_blank" style="text-decoration: none;">
-        <div class="zalo-notice">
-            Đăng ký tài khoản & tham gia nhóm Zalo 👆
-        </div>
-    </a>
-    <style>
-    .zalo-notice {
-        background-color: #FCF7E6; 
-        color: #8B4513; 
-        padding: 12px; 
-        border-radius: 8px; 
-        text-align: center; 
-        font-weight: bold; 
-        border: 1px solid #D7CCC8;
-        margin-bottom: 20px;
-        cursor: pointer;
-        font-size: 16px;
-    }
-    /* Tối ưu riêng cho điện thoại */
-    @media only screen and (max-width: 600px) {
-        .zalo-notice {
-            font-size: 14px !important; /* Giảm nhẹ cỡ chữ để không rớt dòng */
-            padding: 10px 5px !important;
-            white-space: nowrap; /* Ép chữ nằm trên 1 dòng */
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-    }
-    </style>
-""", unsafe_allow_html=True)
+# [ĐÃ XÓA LINK ZALO CŨ ĐỂ CHUYỂN VÀO TỪNG MÀN HÌNH CỤ THỂ]
+pass
 
 DB_SHEET_NAME = "VideoAutomation_DB"
 DB_WORKSHEET = "orders"
@@ -1066,11 +1036,45 @@ if not st.session_state['user_info']:
 
 # --- GIAO DIỆN ĐĂNG NHẬP ---
 if not st.session_state['user_info']:
+    
+    # --- [NEW] GIỚI THIỆU & QUẢNG CÁO APP ---
+    st.markdown("""
+        <div style="text-align: center; padding: 25px; background-color: #FFF3E0; border-radius: 15px; border: 2px dashed #8B4513; margin-bottom: 30px; margin-top: 10px;">
+            <h2 style="color: #8B4513; margin: 0; font-size: 24px;">📻 HẠT BỤI NHỎ - LÀM VIDEO TỰ ĐỘNG</h2>
+            <p style="font-size: 16px; color: #5D4037; margin-top: 10px; line-height: 1.5;">
+                ✨ <b>Biến kịch bản thành video</b> có giọng đọc AI cảm xúc, nhạc nền du dương chỉ trong 1 nốt nhạc.<br>
+                ✨ <b>Tự động chèn phụ đề</b> (karaoke), ghép ảnh/video nền chuyên nghiệp.<br>
+                ✨ <b>Phù hợp nhất cho:</b> Kênh Phật giáo, Chữa lành, Kể chuyện, Podcast...
+            </p>
+            
+            <hr style="border-top: 1px solid #D7CCC8; margin: 15px 0;">
+            
+            <a href="https://zalo.me/g/ivgedj736" target="_blank" rel="noopener noreferrer" style="text-decoration: none;">
+                <div style="
+                    background: linear-gradient(45deg, #2E7D32, #43A047); 
+                    color: white; 
+                    padding: 12px 20px; 
+                    border-radius: 50px; 
+                    display: inline-block; 
+                    font-weight: bold; 
+                    font-size: 18px; 
+                    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+                    transition: transform 0.2s;
+                ">
+                    👉 ĐĂNG KÝ TÀI KHOẢN (QUA ZALO)
+                </div>
+            </a>
+            <p style="font-size: 14px; color: #888; margin-top: 8px; font-style: italic;">
+                (Hỗ trợ kích hoạt tài khoản nhanh chóng)
+            </p>
+        </div>
+    """, unsafe_allow_html=True)
+
     # --- GIAO DIỆN ĐĂNG NHẬP (CARD STYLE) ---
-    st.markdown("<br>", unsafe_allow_html=True)
+    # st.markdown("<br>", unsafe_allow_html=True) # <-- Đã bỏ dòng này cho gọn
     
     # Bỏ hoàn toàn Toggle
-    st.markdown("<br>", unsafe_allow_html=True)
+    # st.markdown("<br>", unsafe_allow_html=True) # <-- Đã bỏ dòng này cho gọn
     
     # Luôn sử dụng tỷ lệ cột rộng cho người lớn tuổi
     c1, c2, c3 = st.columns([1, 10, 1])
@@ -1133,6 +1137,26 @@ else:
     # KHI ĐÃ ĐĂNG NHẬP THÀNH CÔNG -> HIỆN UI CŨ
     # ==========================================
     user = st.session_state['user_info']
+
+    # --- [NEW] NÚT HỖ TRỢ KỸ THUẬT (GÓC TRÊN CÙNG) ---
+    st.markdown("""
+        <div style="display: flex; justify-content: flex-end; margin-bottom: -10px;">
+            <a href="https://zalo.me/g/ivgedj736" target="_blank" rel="noopener noreferrer" style="text-decoration: none;">
+                <div style="
+                    background-color: #E0F2F1; 
+                    color: #00695C; 
+                    padding: 6px 15px; 
+                    border-radius: 20px; 
+                    border: 1px solid #004D40; 
+                    font-weight: bold; 
+                    font-size: 14px;
+                    display: flex; align-items: center; gap: 5px;
+                ">
+                    🛠️ Hỗ trợ kỹ thuật (Zalo)
+                </div>
+            </a>
+        </div>
+    """, unsafe_allow_html=True)
     
     # [MODIFIED] HEADER MỚI (Chỉ còn Tiêu đề)
     st.markdown(f"<h1 style='text-align: center; border: none; margin: 0; padding: 0;'>hạt bụi nhỏ - làm video giùm bạn</h1>", unsafe_allow_html=True)
