@@ -1127,7 +1127,8 @@ if not st.session_state['user_info']:
                 with col_sub1:
                     remember_me = st.checkbox("Ghi nhớ", value=True)
                 with col_sub2:
-                    st.markdown("<div style='text-align: right; font-size: 14px; padding-top: 5px;'><a href='#' style='color: #8B4513; text-decoration: none;'>Quên mật khẩu?</a></div>", unsafe_allow_html=True)
+    # Cập nhật link dẫn đến nhóm Zalo hỗ trợ
+    st.markdown("<div style='text-align: right; font-size: 14px; padding-top: 5px;'><a href='https://zalo.me/g/ivgedj736' target='_blank' style='color: #8B4513; text-decoration: none;'>Quên mật khẩu?</a></div>", unsafe_allow_html=True)st.markdown("<div style='text-align: right; font-size: 14px; padding-top: 5px;'><a href='#' style='color: #8B4513; text-decoration: none;'>Quên mật khẩu?</a></div>", unsafe_allow_html=True)
 
                 submitted = st.form_submit_button("ĐĂNG NHẬP NGAY", use_container_width=True)
 
@@ -1151,11 +1152,15 @@ if not st.session_state['user_info']:
                     st.error("Sai Email hoặc Mật khẩu, vui lòng thử lại.")
 
             st.markdown("---")
-            st.markdown("<div style='text-align: center; margin-bottom:10px;'>Chưa có tài khoản?</div>", unsafe_allow_html=True)
-            # Thêm ID 'zalo-btn' để ép màu nâu
-            st.markdown('<div id="zalo-btn-wrapper">', unsafe_allow_html=True)
-            st.link_button("👉 Đăng ký mới qua Zalo", "https://zalo.me/g/ivgedj736", use_container_width=True)
-            st.markdown('</div>', unsafe_allow_html=True)
+            # Thay nút bấm bằng dòng text dẫn link đơn giản
+            st.markdown("""
+                <div style='text-align: center; font-size: 16px; color: #5D4037;'>
+                    Chưa có tài khoản? 
+                    <a href='https://zalo.me/g/ivgedj736' target='_blank' style='color: #8B4513; font-weight: bold; text-decoration: underline;'>
+                        👉 Đăng ký mới qua Zalo tại đây
+                    </a>
+                </div>
+            """, unsafe_allow_html=True)
             
 
 
