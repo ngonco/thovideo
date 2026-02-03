@@ -1180,28 +1180,24 @@ else:
     # ==========================================
     user = st.session_state['user_info']
 
-    # --- [NEW] NÚT HỖ TRỢ KỸ THUẬT (COMPACT - BOTTOM LEFT) ---
+    # --- [NEW] NÚT HỖ TRỢ KỸ THUẬT (FLOATING BAR - GÓC DƯỚI TRÁI) ---
     st.markdown("""
         <a href="https://zalo.me/g/ivgedj736" target="_blank" rel="noopener noreferrer" style="text-decoration: none;">
             <div style="
                 position: fixed;
-                bottom: 10px;           /* [SỬA] Hạ thấp xuống sát đáy (cũ là 20px) */
-                left: 10px;             /* [SỬA] Dịch sát vào lề trái (cũ là 20px) */
+                bottom: 3px;
+                left: 3px;
                 z-index: 99999;
                 background-color: #00695C; 
                 color: white; 
-                
-                /* [QUAN TRỌNG] Thu gọn nút bằng cách giảm padding */
-                padding: 8px 12px;      /* Cũ là 12px 25px -> Nút sẽ gọn gàng hơn nhiều */
-                
+                padding: 10px 15px; 
                 border-radius: 50px; 
-                box-shadow: 1px 1px 5px rgba(0,0,0,0.3);
+                box-shadow: 2px 2px 10px rgba(0,0,0,0.3);
                 font-weight: bold; 
-                font-size: 16px;        /* Giữ nguyên cỡ chữ */
-                display: flex; align-items: center; 
-                gap: 5px;               /* Thu hẹp khoảng cách giữa icon và chữ */
+                font-size: 16px;
+                display: flex; align-items: center; gap: 10px;
                 border: 2px solid #E0F2F1;
-                transition: all 0.2s ease-in-out;
+                transition: transform 0.2s ease-in-out;
             " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
                 💬 Hỗ trợ
             </div>
