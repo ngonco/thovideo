@@ -381,34 +381,33 @@ def get_app_style():
         box-shadow: none !important;
     }}
     
-    /* 9. EXPANDER (ĐÃ SỬA LỖI CHỒNG CHỮ) */
-    div[data-testid="stExpander"] details > summary {{
+    /* 9. EXPANDER (TRẢ VỀ MẶC ĐỊNH - KHẮC PHỤC LỖI ICON) */
+    div[data-testid="stExpander"] details > summary {{}
+        /* Giữ lại màu sắc theo giao diện của bạn */
         background-color: #FFF8DC !important; 
+        color: #3E2723 !important; 
         border: 1px solid #D7CCC8 !important; 
-        color: #3E2723 !important;
         border-radius: 5px;
+        padding-top: 5px !important; 
+        padding-bottom: 5px !important;
+        min-height: 40px !important;
         
-        /* [QUAN TRỌNG] Dùng Flexbox để căn giữa icon và chữ */
-        display: flex !important;
-        align-items: center !important; 
-        
-        padding: 10px !important; /* Tăng khoảng đệm cho thoáng */
-        min-height: auto !important; /* Để chiều cao tự động, không ép nhỏ */
-    }}
-
-    /* Chỉnh icon mũi tên và tạo khoảng cách */
-    div[data-testid="stExpander"] details > summary svg {{
-        fill: #3E2723 !important; 
-        width: 20px !important;
-        height: 20px !important;
-        margin-right: 15px !important; /* [QUAN TRỌNG] Đẩy chữ ra xa khỏi icon 15px */
-        flex-shrink: 0 !important; /* Không cho icon bị méo khi màn hình nhỏ */
+        /* [QUAN TRỌNG] Dòng này hủy bỏ lệnh ép font Arial, trả về font mặc định của hệ thống */
+        /* Giúp icon mũi tên hiển thị đúng */
+        font-family: sans-serif !important; 
     }}
     
-    /* Đảm bảo chữ bên trong được căn chỉnh đúng */
+    /* Chỉnh màu icon mũi tên cho đồng bộ (nhưng không ép font) */
+    div[data-testid="stExpander"] details > summary svg {{
+        fill: #3E2723 !important; 
+        width: 18px !important; 
+        height: 18px !important;
+    }}
+    
+    /* [TÙY CHỌN] Nếu muốn chữ tiêu đề bên trong vẫn là Arial (chỉ trừ cái icon ra) */
     div[data-testid="stExpander"] details > summary p {{
-        margin-bottom: 0px !important; /* Xóa khoảng trắng thừa dưới chân chữ */
-        display: inline-block !important;
+        font-family: 'Arial', sans-serif !important;
+        font-weight: bold !important;
     }}
     
     /* 10. CÁC THÀNH PHẦN KHÁC */
