@@ -301,27 +301,40 @@ def get_app_style():
         height: 30px !important;
     }}
     
-    /* 6. BUTTON (Nút bấm Đăng nhập) */
-    .stButton button {{
-        background-color: #8B4513 !important; color: #FFFFFF !important; 
-        font-weight: bold !important; font-size: 18px !important; /* [CHỈNH] Giảm xuống 18px cho thanh thoát */
-        border-radius: 8px !important; margin-top: 10px; border: none !important;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important;
-        padding-top: 10px !important; padding-bottom: 10px !important;
-    }}
-
-    /* [MỚI] Nút Link (Đăng ký Zalo) - Chỉnh cho giống hệt nút Đăng nhập */
-    a[data-testid="stLinkButton"] {{
+    /* 6. NÚT BẤM (Đăng nhập & Zalo đồng nhất) */
+    .stButton button, a[data-testid="stLinkButton"] {{
         background-color: #8B4513 !important; 
         color: #FFFFFF !important; 
-        font-weight: bold !important;
+        font-weight: bold !important; 
         font-size: 18px !important;
-        border-radius: 8px !important;
+        border-radius: 8px !important; 
         border: none !important;
         box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important;
-        text-align: center !important;
-        display: block !important;
+        padding: 10px 20px !important;
+        text-decoration: none !important;
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
         transition: all 0.3s ease !important;
+    }}
+    
+    .stButton button:hover, a[data-testid="stLinkButton"]:hover {{
+        background-color: #5D4037 !important;
+        transform: translateY(-2px);
+    }}
+
+    /* KIỂU CHO DÒNG GIỚI THIỆU */
+    .intro-column {{
+        padding: 40px 20px;
+        border-right: 1px solid #D7CCC8;
+    }}
+    .intro-item {{
+        font-size: 20px;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: #5D4037;
     }}
     /* Hiệu ứng khi di chuột vào nút Zalo */
     a[data-testid="stLinkButton"]:hover {{
@@ -1072,17 +1085,47 @@ if not st.session_state['user_info']:
     </div>
     """, unsafe_allow_html=True)
 
-    # 2. KHUNG ĐĂNG NHẬP (Dùng cột để căn giữa màn hình)
-    # [ĐÃ SỬA] Tăng độ rộng cột giữa lên 1.5 để form thoáng hơn
-    c1, c2, c3 = st.columns([1, 10, 1]) if st.session_state.get('is_mobile') else st.columns([1, 1.5, 1])
+    # 2. KHUNG ĐĂNG NHẬP CHIA 2 CỘT (PC)
+    if st.session_state.get('is_mobile'):
+        display_cols = st.columns([1])
+        is_pc = False
+    else:
+        display_cols = st.columns([1, 1], gap="large")
+        is_pc = True
 
-    with c2:
-        # Tạo container nhìn giống cái thẻ bài
+    # --- CỘT 1: GIỚI THIỆU (Chỉ hiện trên PC hoặc hiện trên cùng mobile) ---
+    with display_cols[0]:
+        st.markdown(f"<h1>📻 hạt bụi nhỏ</h1>", unsafe_allow_html=True)
+        st.markdown("""
+        <div class="intro-column">
+            <div class="intro-item">✨ Giọng đọc AI cảm xúc</div>
+            <div class="intro-item">🎞️ Video nền tự động</div>
+            <div class="intro-item">🎵 Nhạc thiền êm dịu</div>
+            <div class="intro-item">🍃 Chữa lành tâm hồn</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # --- CỘT 2: FORM ĐĂNG NHẬP ---
+    target_col = display_cols[1] if is_pc else display_cols[0]
+    with target_col:
         with st.container(border=True):
             st.markdown("<h3 style='text-align: center; color: #5D4037; margin-bottom: 20px;'>🔐 Đăng Nhập</h3>", unsafe_allow_html=True)
-            
-            # Form nhập liệu
             with st.form(key="login_form"):
+                login_email = st.text_input("Email", placeholder="vidu@gmail.com", key="login_email_unique")            
+                login_pass = st.text_input("Mật khẩu", type="password", placeholder="••••••", key="login_pass_unique")
+                remember_me = st.checkbox("Ghi nhớ đăng nhập", value=True)
+                submitted = st.form_submit_button("ĐĂNG NHẬP NGAY", use_container_width=True)
+
+            if submitted:
+                user = check_login(login_email, login_pass)
+                if user:
+                    st.session_state['user_info'] = user
+                    # ... (giữ nguyên logic xử lý token cũ của bạn ở đây)
+                    st.rerun()
+
+            st.markdown("---")
+            st.markdown("<div style='text-align: center; margin-bottom:10px;'>Chưa có tài khoản?</div>", unsafe_allow_html=True)
+            st.link_button("👉 Đăng ký mới qua Zalo", "https://zalo.me/g/ivgedj736", use_container_width=True)
                 default_email = st.session_state.get('saved_email', "")
                 login_email = st.text_input("Email", value=default_email, placeholder="nhập email của bạn...", key="login_email_unique")            
                 
