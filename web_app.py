@@ -1111,61 +1111,41 @@ if not st.session_state['user_info']:
         with st.container(border=True):
             st.markdown("<h3 style='text-align: center; color: #5D4037; margin-bottom: 20px;'>🔐 Đăng Nhập</h3>", unsafe_allow_html=True)
             with st.form(key="login_form"):
-                login_email = st.text_input("Email", placeholder="vidu@gmail.com", key="login_email_unique")            
-                login_pass = st.text_input("Mật khẩu", type="password", placeholder="••••••", key="login_pass_unique")
-                remember_me = st.checkbox("Ghi nhớ đăng nhập", value=True)
-                submitted = st.form_submit_button("ĐĂNG NHẬP NGAY", use_container_width=True)
-
-            if submitted:
-                user = check_login(login_email, login_pass)
-                if user:
-                    st.session_state['user_info'] = user
-                    # ... (giữ nguyên logic xử lý token cũ của bạn ở đây)
-                    st.rerun()
-
-            st.markdown("---")
-            st.markdown("<div style='text-align: center; margin-bottom:10px;'>Chưa có tài khoản?</div>", unsafe_allow_html=True)
-            st.link_button("👉 Đăng ký mới qua Zalo", "https://zalo.me/g/ivgedj736", use_container_width=True)
+                # Tự động điền email nếu đã lưu trước đó
                 default_email = st.session_state.get('saved_email', "")
-                login_email = st.text_input("Email", value=default_email, placeholder="nhập email của bạn...", key="login_email_unique")            
-                
+                login_email = st.text_input("Email", value=default_email, placeholder="vidu@gmail.com", key="login_email_unique")            
                 login_pass = st.text_input("Mật khẩu", type="password", placeholder="••••••", key="login_pass_unique")
                 
-                # Checkbox và Nút quên mật khẩu trên cùng 1 hàng cho gọn
+                # Checkbox và Link quên mật khẩu
                 col_sub1, col_sub2 = st.columns(2)
                 with col_sub1:
                     remember_me = st.checkbox("Ghi nhớ", value=True)
                 with col_sub2:
                     st.markdown("<div style='text-align: right; font-size: 14px; padding-top: 5px;'><a href='#' style='color: #8B4513; text-decoration: none;'>Quên mật khẩu?</a></div>", unsafe_allow_html=True)
-                
-                st.markdown("<br>", unsafe_allow_html=True)
-                
-                # Nút Submit to rõ
+
                 submitted = st.form_submit_button("ĐĂNG NHẬP NGAY", use_container_width=True)
 
-            # Xử lý logic đăng nhập
             if submitted:
                 user = check_login(login_email, login_pass)
                 if user:
                     st.session_state['user_info'] = user
+                    
+                    # [FIX] Logic ghi nhớ đăng nhập (Token)
                     if remember_me:
                         new_token = str(uuid.uuid4())
+                        # Lưu token vào database
                         update_session_token(user['id'], new_token)
+                        # Lưu token vào cookie trình duyệt (30 ngày)
                         cookie_manager.set("user_session_token", new_token, expires_at=datetime.now() + timedelta(days=30))
-                    else:
-                        st.query_params.clear()
                     
                     st.toast("Đăng nhập thành công!", icon="🎉")
                     time.sleep(0.5)
                     st.rerun()
                 else:
                     st.error("Sai Email hoặc Mật khẩu, vui lòng thử lại.")
-            
-            # 3. DÒNG ĐĂNG KÝ (Tách riêng bên dưới nút đăng nhập)
+
             st.markdown("---")
-            st.markdown("<div style='text-align: center; font-size: 14px;'>Chưa có tài khoản?</div>", unsafe_allow_html=True)
-            
-            # [ĐÃ SỬA] Nút này giờ sẽ nhận CSS màu Nâu chúng ta vừa viết ở Bước 1
+            st.markdown("<div style='text-align: center; margin-bottom:10px;'>Chưa có tài khoản?</div>", unsafe_allow_html=True)
             st.link_button("👉 Đăng ký mới qua Zalo", "https://zalo.me/g/ivgedj736", use_container_width=True)
             
 
