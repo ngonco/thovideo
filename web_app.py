@@ -399,7 +399,7 @@ def get_app_style():
         }}
         
         /* Triệt tiêu hoàn toàn khoảng trống phía trên tiêu đề H1 */
-        h1 {{}
+        h1 {{
             margin-top: -45px !important; /* Đẩy tiêu đề lên cao hơn nữa */
             padding-top: 0px !important;
         }}
