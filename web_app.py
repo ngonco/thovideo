@@ -302,13 +302,13 @@ def get_app_style():
     }}
     
     /* 6. BUTTON (Nút bấm Đăng nhập) */
-    .stButton button {
+    .stButton button {{
         background-color: #8B4513 !important; color: #FFFFFF !important; 
         font-weight: bold !important; font-size: 18px !important; /* [CHỈNH] Giảm xuống 18px cho thanh thoát */
         border-radius: 8px !important; margin-top: 10px; border: none !important;
         box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important;
         padding-top: 10px !important; padding-bottom: 10px !important;
-    }
+    }}
 
     /* [MỚI] Nút Link (Đăng ký Zalo) - Chỉnh cho giống hệt nút Đăng nhập */
     a[data-testid="stLinkButton"] {{
