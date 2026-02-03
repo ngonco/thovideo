@@ -1018,8 +1018,27 @@ st.markdown("""
     #MainMenu {visibility: hidden; display: none;}
     header {visibility: hidden; display: none;}
     
-    /* 2. Ẩn footer mặc định */
-    footer {visibility: hidden; display: none;}
+    /* Ẩn hoàn toàn footer mặc định */
+    footer {visibility: hidden !important;}
+    header {visibility: hidden !important;}
+
+    /* Tạo thanh bar màu nâu trang trí đè lên chân trang */
+    .stApp::after {
+        content: "© 2026 hạt bụi nhỏ làm video tự động bằng AI";
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 40px;
+        background-color: #8B4513; /* Cùng màu nâu với nút bấm của bạn */
+        color: #FDF5E6;
+        text-align: center;
+        line-height: 40px;
+        font-size: 14px;
+        z-index: 999999;
+    }
+    </style>
+    """
     
     /* 3. QUAN TRỌNG: Ẩn thanh 'Hosted with Streamlit' màu đỏ và Avatar */
     /* Lệnh này tìm mọi thành phần có tên chứa chữ 'viewerBadge' để ẩn đi */
