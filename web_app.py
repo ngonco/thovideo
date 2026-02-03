@@ -402,6 +402,27 @@ def check_link_exists(url):
 # Inject CSS ngay lập tức (Không cần tham số nữa)
 st.markdown(get_app_style(), unsafe_allow_html=True)
 
+# Hiển thị thông báo hỗ trợ lên đầu trang với màu nền kem và chữ nâu nút bấm
+st.markdown("""
+    <div style="background-color: #FCF7E6; 
+                color: #8B4513; 
+                padding: 12px; 
+                border-radius: 8px; 
+                text-align: center; 
+                font-weight: bold; 
+                border: 1px solid #8B4513;
+                margin-bottom: 20px;">
+        📢 Đăng ký tài khoản mới hoặc lỗi kỹ thuật: 0981/362/561 (zalo)
+    </div>
+""", unsafe_allow_html=True)
+
+# Hiển thị thông báo hỗ trợ lên đầu trang
+st.markdown("""
+    <div style="background-color: #8B4513; color: #FFFFFF; padding: 10px; border-radius: 5px; text-align: center; font-weight: bold; margin-bottom: 20px;">
+        📢 Đăng ký tài khoản mới hoặc lỗi kỹ thuật: 0981/362/561 (zalo)
+    </div>
+""", unsafe_allow_html=True)
+
 DB_SHEET_NAME = "VideoAutomation_DB"
 DB_WORKSHEET = "orders"
 # Lấy ID từ secrets, nếu không có thì dùng chuỗi rỗng để tránh lỗi crash
@@ -969,23 +990,7 @@ st.markdown("""
     footer {visibility: hidden !important;}
     header {visibility: hidden !important;}
 
-    /* Tạo thanh bar trang trí đè lên chân trang */
-    .stApp::after {
-        content: "Đăng ký tài khoản mới hoặc lỗi kỹ thuật: 0981/362/561 (zalo)";
-        font-family: 'Arial', sans-serif;
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        width: 100%;
-        height: 40px;
-        background-color: #FDF5E6; /* [ĐÃ ĐỔI] Màu nền trùng với nền web */
-        color: #8B4513;            /* [ĐÃ ĐỔI] Màu chữ trùng với màu nút bấm */
-        text-align: center;
-        line-height: 40px;
-        font-size: 14px;
-        z-index: 999999;
-        border-top: 1px solid #8B4513; /* [TÙY CHỌN] Thêm đường kẻ mỏng bên trên cho đẹp */
-    }
+    
     
     
     /* 3. QUAN TRỌNG: Ẩn thanh 'Hosted with Streamlit' màu đỏ và Avatar */
