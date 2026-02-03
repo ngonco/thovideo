@@ -127,7 +127,10 @@ def check_login(email, password):
                 # Trả về thông tin user để lưu vào session
                 return user_data
     except Exception as e:
-        st.error(f"Lỗi hệ thống đăng nhập: {e}")
+        # In lỗi ra màn hình đen (console) để admin sửa
+        print(f"DEBUG LOGIN ERROR: {e}") 
+        # Chỉ báo lỗi chung chung cho người dùng để bảo mật
+        st.error("Đã xảy ra lỗi kết nối. Vui lòng thử lại sau.")
     
     # [BẢO MẬT] Làm chậm hacker 2 giây nếu đăng nhập thất bại
     time.sleep(2) 
@@ -255,8 +258,8 @@ def get_app_style():
     /* 2. TIÊU ĐỀ CHÍNH (Đã giảm kích thước) */
     h1 {{
         color: #8B4513 !important; font-size: {title_size} !important; text-align: center;
-        border-bottom: 2px solid #8B4513; padding-bottom: 10px; margin-bottom: 20px;
-        font-weight: bold; /* Đã xóa text-transform: uppercase */
+        border-bottom: none !important; padding-bottom: 10px; margin-bottom: 20px;
+        font-weight: bold; 
     }}
     
     /* 3. STEP LABEL (Nhãn bước 1, bước 2...) */
@@ -298,12 +301,61 @@ def get_app_style():
         height: 30px !important;
     }}
     
-    /* 6. BUTTON (Nút bấm) */
-    .stButton button {{
-        background-color: #8B4513 !important; color: #FFFFFF !important; 
-        font-weight: bold !important; font-size: 20px !important; 
-        border-radius: 8px !important; margin-top: 10px; border: none !important;
-        box-shadow: 2px 2px 5px rgba(0,0,0,0.2) !important;
+    /* 6. NÚT BẤM (Đăng nhập & Zalo đồng nhất) */
+    .stButton button, a[data-testid="stLinkButton"] {{
+        background-color: #8B4513 !important; 
+        color: #FFFFFF !important; 
+        font-weight: bold !important; 
+        font-size: 18px !important;
+        border-radius: 8px !important; 
+        border: none !important;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important;
+        padding: 10px 20px !important;
+        text-decoration: none !important;
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        transition: all 0.3s ease !important;
+    }}
+    
+    .stButton button:hover, a[data-testid="stLinkButton"]:hover {{
+        background-color: #5D4037 !important;
+        transform: translateY(-2px);
+    }}
+
+    /* SỬA LỖI NÚT HIỆN MẬT KHẨU (EYE ICON) BỊ ĐEN */
+    button[aria-label="Show password"] {{
+        background-color: transparent !important; /* Xóa nền đen */
+        color: #8B4513 !important; /* Đổi icon sang màu nâu */
+        border: none !important;
+        box-shadow: none !important;
+    }}
+    
+    /* ĐỔI MÀU NÚT ZALO SANG NÂU */
+    .zalo-button-container a[data-testid="stLinkButton"] {{
+        background-color: #8B4513 !important;
+        color: white !important;
+        border: 1px solid #5D4037 !important;
+    }}
+
+    /* KIỂU CHO DÒNG GIỚI THIỆU */
+    .intro-column {{
+        padding: 40px 20px;
+        border-right: 1px solid #D7CCC8;
+    }}
+    .intro-item {{
+        font-size: 20px;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: #5D4037;
+    }}
+    /* Hiệu ứng khi di chuột vào nút Zalo */
+    a[data-testid="stLinkButton"]:hover {{
+        background-color: #5D4037 !important;
+        color: #FFF8DC !important;
+        transform: translateY(-2px);
     }}
 
     /* 7. INPUT FIELDS */
@@ -407,38 +459,8 @@ def check_link_exists(url):
 # Inject CSS ngay lập tức (Không cần tham số nữa)
 st.markdown(get_app_style(), unsafe_allow_html=True)
 
-# Thông báo có gắn link Group Zalo (Đã tối ưu hiển thị mobile)
-st.markdown("""
-    <a href="https://zalo.me/g/ivgedj736" target="_blank" style="text-decoration: none;">
-        <div class="zalo-notice">
-            Đăng ký tài khoản & tham gia nhóm Zalo 👆
-        </div>
-    </a>
-    <style>
-    .zalo-notice {
-        background-color: #FCF7E6; 
-        color: #8B4513; 
-        padding: 12px; 
-        border-radius: 8px; 
-        text-align: center; 
-        font-weight: bold; 
-        border: 1px solid #D7CCC8;
-        margin-bottom: 20px;
-        cursor: pointer;
-        font-size: 16px;
-    }
-    /* Tối ưu riêng cho điện thoại */
-    @media only screen and (max-width: 600px) {
-        .zalo-notice {
-            font-size: 14px !important; /* Giảm nhẹ cỡ chữ để không rớt dòng */
-            padding: 10px 5px !important;
-            white-space: nowrap; /* Ép chữ nằm trên 1 dòng */
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-    }
-    </style>
-""", unsafe_allow_html=True)
+# [ĐÃ XÓA LINK ZALO CŨ ĐỂ CHUYỂN VÀO TỪNG MÀN HÌNH CỤ THỂ]
+pass
 
 DB_SHEET_NAME = "VideoAutomation_DB"
 DB_WORKSHEET = "orders"
@@ -1064,66 +1086,76 @@ if not st.session_state['user_info']:
         st.session_state['saved_email'] = params["u"]
         # Đã xóa đoạn "if user:" gây lỗi vì biến user chưa tồn tại ở đây
 
-# --- GIAO DIỆN ĐĂNG NHẬP ---
+# --- GIAO DIỆN ĐĂNG NHẬP MỚI (CLEAN DESIGN) ---
 if not st.session_state['user_info']:
-    # --- GIAO DIỆN ĐĂNG NHẬP (CARD STYLE) ---
-    st.markdown("<br>", unsafe_allow_html=True)
     
-    # Bỏ hoàn toàn Toggle
-    st.markdown("<br>", unsafe_allow_html=True)
-    
-    # Luôn sử dụng tỷ lệ cột rộng cho người lớn tuổi
-    c1, c2, c3 = st.columns([1, 10, 1])
+    st.markdown("<br>", unsafe_allow_html=True) # Chỉ giữ lại 1 dòng khoảng trắng cho thoáng
 
-    with c2:
-        # Tạo khung card bao quanh form
-        with st.container():
-            st.markdown(f"<h2 style='text-align: center; color: #8B4513; margin-bottom: 20px;'>🔐 ĐĂNG NHẬP</h2>", unsafe_allow_html=True)
-            
-            # Form nhập liệu (Đã thêm st.form để hỗ trợ phím Enter)
+    # 2. KHUNG ĐĂNG NHẬP CHIA 2 CỘT (PC)
+    if st.session_state.get('is_mobile'):
+        display_cols = st.columns([1])
+        is_pc = False
+    else:
+        display_cols = st.columns([1, 1], gap="large")
+        is_pc = True
+
+    # --- CỘT 1: GIỚI THIỆU (Chỉ hiện trên PC hoặc hiện trên cùng mobile) ---
+    with display_cols[0]:
+        st.markdown(f"<h1>📻 hạt bụi nhỏ</h1>", unsafe_allow_html=True)
+        st.markdown("""
+        <div class="intro-column">
+            <div class="intro-item">🍃 Biến kịch bản thành video trong 1 nốt nhạc</div>
+            <div class="intro-item">🍃 Phụ đề chính xác 100%</div>
+            <div class="intro-item">🍃 Chuyên nội dung đạo lý, chữa lành, Phật pháp..</div>
+            <div class="intro-item">🍃 AI lựa chọn minh họa phù hợp nội dung</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # --- CỘT 2: FORM ĐĂNG NHẬP ---
+    target_col = display_cols[1] if is_pc else display_cols[0]
+    with target_col:
+        with st.container(border=True):
+            st.markdown("<h3 style='text-align: center; color: #5D4037; margin-bottom: 20px;'>🔐 Đăng Nhập</h3>", unsafe_allow_html=True)
             with st.form(key="login_form"):
-                st.markdown("<br>", unsafe_allow_html=True) 
-                
+                # Tự động điền email nếu đã lưu trước đó
                 default_email = st.session_state.get('saved_email', "")
-                login_email = st.text_input("📧 Nhập tên tài khoản hoặc email", value=default_email, placeholder="ví dụ: hoasen", key="login_email_unique")            
+                login_email = st.text_input("Email", value=default_email, placeholder="vidu@gmail.com", key="login_email_unique")            
+                login_pass = st.text_input("Mật khẩu", type="password", placeholder="••••••", key="login_pass_unique")
                 
-                st.markdown("<br>", unsafe_allow_html=True) 
-                login_pass = st.text_input("🔑 Mật khẩu", type="password", key="login_pass_unique")
-                
-                # Checkbox Ghi nhớ
-                st.markdown("<br>", unsafe_allow_html=True)
-                remember_me = st.checkbox("Ghi nhớ đăng nhập", value=True)
-                
-                st.markdown("<br>", unsafe_allow_html=True)
-                
-                # [QUAN TRỌNG] Đổi thành form_submit_button để nhận phím Enter
+                # Checkbox và Link quên mật khẩu
+                col_sub1, col_sub2 = st.columns(2)
+                with col_sub1:
+                    remember_me = st.checkbox("Ghi nhớ", value=True)
+                with col_sub2:
+                    st.markdown("<div style='text-align: right; font-size: 14px; padding-top: 5px;'><a href='#' style='color: #8B4513; text-decoration: none;'>Quên mật khẩu?</a></div>", unsafe_allow_html=True)
+
                 submitted = st.form_submit_button("ĐĂNG NHẬP NGAY", use_container_width=True)
 
-            # Xử lý logic khi bấm Enter hoặc click nút
             if submitted:
                 user = check_login(login_email, login_pass)
                 if user:
                     st.session_state['user_info'] = user
                     
+                    # [FIX] Logic ghi nhớ đăng nhập (Token)
                     if remember_me:
-                        # 1. Tạo token ngẫu nhiên
                         new_token = str(uuid.uuid4())
-                        # 2. Lưu token vào Supabase
+                        # Lưu token vào database
                         update_session_token(user['id'], new_token)
-                        # 3. Lưu token vào Cookie trình duyệt (Hết hạn sau 30 ngày)
-                        cookie_manager.set("user_session_token", 
-                                           new_token, 
-                                           expires_at=datetime.now() + timedelta(days=30))
-                        st.toast("Đã ghi nhớ đăng nhập an toàn!", icon="🔒")
-                    else:
-                        # Nếu không chọn ghi nhớ, xóa token cũ (nếu có)
-                        st.query_params.clear()
+                        # Lưu token vào cookie trình duyệt (30 ngày)
+                        cookie_manager.set("user_session_token", new_token, expires_at=datetime.now() + timedelta(days=30))
                     
                     st.toast("Đăng nhập thành công!", icon="🎉")
-                    time.sleep(0.5) # Đợi xíu để cookie kịp lưu
+                    time.sleep(0.5)
                     st.rerun()
                 else:
                     st.error("Sai Email hoặc Mật khẩu, vui lòng thử lại.")
+
+            st.markdown("---")
+            st.markdown("<div style='text-align: center; margin-bottom:10px;'>Chưa có tài khoản?</div>", unsafe_allow_html=True)
+            # Thêm ID 'zalo-btn' để ép màu nâu
+            st.markdown('<div id="zalo-btn-wrapper">', unsafe_allow_html=True)
+            st.link_button("👉 Đăng ký mới qua Zalo", "https://zalo.me/g/ivgedj736", use_container_width=True)
+            st.markdown('</div>', unsafe_allow_html=True)
             
 
 
@@ -1133,6 +1165,26 @@ else:
     # KHI ĐÃ ĐĂNG NHẬP THÀNH CÔNG -> HIỆN UI CŨ
     # ==========================================
     user = st.session_state['user_info']
+
+    # --- [NEW] NÚT HỖ TRỢ KỸ THUẬT (GÓC TRÊN CÙNG) ---
+    st.markdown("""
+        <div style="display: flex; justify-content: flex-end; margin-bottom: -10px;">
+            <a href="https://zalo.me/g/ivgedj736" target="_blank" rel="noopener noreferrer" style="text-decoration: none;">
+                <div style="
+                    background-color: #E0F2F1; 
+                    color: #00695C; 
+                    padding: 6px 15px; 
+                    border-radius: 20px; 
+                    border: 1px solid #004D40; 
+                    font-weight: bold; 
+                    font-size: 14px;
+                    display: flex; align-items: center; gap: 5px;
+                ">
+                    🛠️ Hỗ trợ kỹ thuật (Zalo)
+                </div>
+            </a>
+        </div>
+    """, unsafe_allow_html=True)
     
     # [MODIFIED] HEADER MỚI (Chỉ còn Tiêu đề)
     st.markdown(f"<h1 style='text-align: center; border: none; margin: 0; padding: 0;'>hạt bụi nhỏ - làm video giùm bạn</h1>", unsafe_allow_html=True)
