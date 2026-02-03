@@ -258,8 +258,8 @@ def get_app_style():
     /* 2. TIÊU ĐỀ CHÍNH (Đã giảm kích thước) */
     h1 {{
         color: #8B4513 !important; font-size: {title_size} !important; text-align: center;
-        border-bottom: 2px solid #8B4513; padding-bottom: 10px; margin-bottom: 20px;
-        font-weight: bold; /* Đã xóa text-transform: uppercase */
+        border-bottom: none !important; padding-bottom: 10px; margin-bottom: 20px;
+        font-weight: bold; 
     }}
     
     /* 3. STEP LABEL (Nhãn bước 1, bước 2...) */
@@ -1074,16 +1074,7 @@ if not st.session_state['user_info']:
 # --- GIAO DIỆN ĐĂNG NHẬP MỚI (CLEAN DESIGN) ---
 if not st.session_state['user_info']:
     
-    # 1. PHẦN HEADER & GIỚI THIỆU (Nằm ngoài form để thoáng mắt)
-    st.markdown("<br>", unsafe_allow_html=True) # Khoảng trắng trên cùng
-    st.markdown(f"<h1 style='text-align: center;'>📻 hạt bụi nhỏ</h1>", unsafe_allow_html=True)
-    
-    st.markdown("""
-    <div class="intro-text">
-        <i>"Biến kịch bản thành video bình an & chữa lành"</i><br><br>
-        ✨ Giọng đọc AI cảm xúc &nbsp;|&nbsp; 🎞️ Video nền tự động &nbsp;|&nbsp; 🎵 Nhạc thiền êm dịu
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown("<br>", unsafe_allow_html=True) # Chỉ giữ lại 1 dòng khoảng trắng cho thoáng
 
     # 2. KHUNG ĐĂNG NHẬP CHIA 2 CỘT (PC)
     if st.session_state.get('is_mobile'):
@@ -1098,10 +1089,10 @@ if not st.session_state['user_info']:
         st.markdown(f"<h1>📻 hạt bụi nhỏ</h1>", unsafe_allow_html=True)
         st.markdown("""
         <div class="intro-column">
-            <div class="intro-item">✨ Giọng đọc AI cảm xúc</div>
-            <div class="intro-item">🎞️ Video nền tự động</div>
-            <div class="intro-item">🎵 Nhạc thiền êm dịu</div>
-            <div class="intro-item">🍃 Chữa lành tâm hồn</div>
+            <div class="intro-item">🍃 Biến kịch bản thành video trong 1 nốt nhạc</div>
+            <div class="intro-item">🍃 Phụ đề chính xác 100%</div>
+            <div class="intro-item">🍃 Chuyên nội dung đạo lý, chữa lành, Phật pháp..</div>
+            <div class="intro-item">🍃 AI lựa chọn minh họa phù hợp nội dung</div>
         </div>
         """, unsafe_allow_html=True)
 
