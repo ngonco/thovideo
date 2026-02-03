@@ -402,7 +402,7 @@ def check_link_exists(url):
 # Inject CSS ngay lập tức (Không cần tham số nữa)
 st.markdown(get_app_style(), unsafe_allow_html=True)
 
-# Hiển thị thông báo hỗ trợ lên đầu trang với màu nền kem và chữ nâu nút bấm
+# Hiển thị thông báo hỗ trợ lên đầu trang (Đã bỏ thông báo trùng và làm nhạt viền)
 st.markdown("""
     <div style="background-color: #FCF7E6; 
                 color: #8B4513; 
@@ -410,16 +410,9 @@ st.markdown("""
                 border-radius: 8px; 
                 text-align: center; 
                 font-weight: bold; 
-                border: 1px solid #8B4513;
+                border: 1px solid #D7CCC8;
                 margin-bottom: 20px;">
-        📢 Đăng ký tài khoản mới hoặc lỗi kỹ thuật: 0981/362/561 (zalo)
-    </div>
-""", unsafe_allow_html=True)
-
-# Hiển thị thông báo hỗ trợ lên đầu trang
-st.markdown("""
-    <div style="background-color: #8B4513; color: #FFFFFF; padding: 10px; border-radius: 5px; text-align: center; font-weight: bold; margin-bottom: 20px;">
-        📢 Đăng ký tài khoản mới hoặc lỗi kỹ thuật: 0981/362/561 (zalo)
+        📢 Đăng ký tài khoản mới hoặc báo lỗi kỹ thuật: 0981/362/561 (zalo)
     </div>
 """, unsafe_allow_html=True)
 
