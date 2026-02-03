@@ -1037,46 +1037,30 @@ if not st.session_state['user_info']:
 # --- GIAO DIỆN ĐĂNG NHẬP ---
 if not st.session_state['user_info']:
     
-    # --- [NEW] GIỚI THIỆU & QUẢNG CÁO APP ---
-    # Đoạn code mới giúp nút bấm mượt mà và chuẩn theo ảnh mẫu
+    # --- PHẦN GIỚI THIỆU (Dùng Markdown thường) ---
+with st.container(border=True): # Tạo cái khung viền bao quanh
     st.markdown("""
-<style>
-.zalo-button:hover {
-    transform: scale(1.05);
-    filter: brightness(1.1);
-}
-</style>
-<div style="text-align: center; padding: 25px; background-color: #FFF3E0; border-radius: 15px; border: 2px dashed #8B4513; margin-bottom: 30px; margin-top: 10px;">
-    <h2 style="color: #8B4513; margin: 0; font-size: 24px;">📻 hạt bụi nhỏ - làm video tự động</h2>
-    <p style="font-size: 16px; color: #5D4037; margin-top: 10px; line-height: 1.5;">
-        ✨ <b>Biến kịch bản thành video</b> có giọng đọc AI cảm xúc, nhạc nền du dương chỉ trong 1 nốt nhạc.<br>
-        ✨ <b>Tự động chèn phụ đề chính xác 100% </b>, minh họa bằng video nền hợp nội dung.<br>
-        ✨ <b>Phù hợp nhất cho:</b> Kênh Phật giáo, Chữa lành, Kể chuyện, Podcast...
-    </p>
+    <h3 style='text-align: center; color: #8B4513;'>📻 hạt bụi nhỏ - làm video tự động</h3>
+    """, unsafe_allow_html=True)
     
-    <hr style="border-top: 1px solid #D7CCC8; border-bottom: none; margin: 20px 0;">
+    st.info("""
+    ✨ **Biến kịch bản thành video** có giọng đọc AI cảm xúc, nhạc nền.  
+    ✨ **Tự động chèn phụ đề**, minh họa bằng video nền hợp nội dung.  
+    ✨ **Phù hợp nhất cho:** Kênh Phật giáo, Chữa lành, Kể chuyện...
+    """)
     
-    <a href="https://zalo.me/g/ivgedj736" target="_blank" rel="noopener noreferrer" style="text-decoration: none;">
-        <div class="zalo-button" style="
-            background: linear-gradient(45deg, #2E7D32, #43A047); 
-            color: white; 
-            padding: 15px 30px; 
-            border-radius: 50px; 
-            display: inline-block; 
-            font-weight: bold; 
-            font-size: 18px; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            transition: all 0.3s ease;
-            cursor: pointer;
-        ">
-            👉 ĐĂNG KÝ TÀI KHOẢN (QUA ZALO)
-        </div>
-    </a>
-    <p style="font-size: 14px; color: #888; margin-top: 12px; font-style: italic;">
-        (Hỗ trợ tạo tài khoản 0981/./362/./561 qua Zalo)
-    </p>
-</div>
-""", unsafe_allow_html=True)
+    # --- PHẦN NÚT BẤM (Dùng st.link_button chuẩn của Streamlit) ---
+    # Chia 3 cột để cái nút nằm giữa cho đẹp (cột giữa to hơn)
+    c1, c2, c3 = st.columns([1, 2, 1]) 
+    with c2:
+        st.link_button(
+            label="👉 ĐĂNG KÝ TÀI KHOẢN (QUA ZALO)", 
+            url="https://zalo.me/g/ivgedj736", 
+            type="primary",  # Nút màu nổi bật
+            use_container_width=True # Nút giãn full chiều ngang cột
+        )
+    
+    st.markdown("<div style='text-align: center; color: grey; font-size: 13px;'>(Hỗ trợ tạo tài khoản 0981.362.561 qua Zalo)</div>", unsafe_allow_html=True)
 
     
     
