@@ -1185,12 +1185,12 @@ else:
         <a href="https://zalo.me/g/ivgedj736" target="_blank" rel="noopener noreferrer" style="text-decoration: none;">
             <div style="
                 position: fixed;
-                bottom: 3px;
-                left: 3px;
+                bottom: 1px;
+                left: 1px;
                 z-index: 99999;
                 background-color: #00695C; 
                 color: white; 
-                padding: 10px 15px; 
+                padding: 8px 15px; 
                 border-radius: 50px; 
                 box-shadow: 2px 2px 10px rgba(0,0,0,0.3);
                 font-weight: bold; 
@@ -1199,7 +1199,7 @@ else:
                 border: 2px solid #E0F2F1;
                 transition: transform 0.2s ease-in-out;
             " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
-                💬 Hỗ trợ
+                Hỗ trợ
             </div>
         </a>
     """, unsafe_allow_html=True)
