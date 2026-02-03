@@ -1038,10 +1038,11 @@ if not st.session_state['user_info']:
 if not st.session_state['user_info']:
     
     # --- PHẦN GIỚI THIỆU (Dùng Markdown thường) ---
-with st.container(border=True): # Tạo cái khung viền bao quanh
-    st.markdown("""
-    <h3 style='text-align: center; color: #8B4513;'>📻 hạt bụi nhỏ - làm video tự động</h3>
-    """, unsafe_allow_html=True)
+    # [SỬA LỖI] Đã thêm khoảng trắng (thụt đầu dòng) ở các dòng dưới
+    with st.container(border=True): # Tạo cái khung viền bao quanh
+        st.markdown("""
+        <h3 style='text-align: center; color: #8B4513;'>📻 hạt bụi nhỏ - làm video tự động</h3>
+        """, unsafe_allow_html=True)
     
     st.info("""
     ✨ **Biến kịch bản thành video** có giọng đọc AI cảm xúc, nhạc nền.  
