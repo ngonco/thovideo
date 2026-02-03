@@ -127,10 +127,10 @@ def check_login(email, password):
                 # Trả về thông tin user để lưu vào session
                 return user_data
     except Exception as e:
-        # Chỉ log nội dung lỗi ngắn gọn, không kèm stack trace chi tiết ra console nếu không cần thiết
-        import logging
-        logging.error("Lỗi đăng nhập hệ thống.")
-        st.error("Dịch vụ tạm thời gián đoạn. Vui lòng quay lại sau.")
+        # In lỗi ra màn hình đen (console) để admin sửa
+        print(f"DEBUG LOGIN ERROR: {e}") 
+        # Chỉ báo lỗi chung chung cho người dùng để bảo mật
+        st.error("Đã xảy ra lỗi kết nối. Vui lòng thử lại sau.")
     
     # [BẢO MẬT] Làm chậm hacker 2 giây nếu đăng nhập thất bại
     time.sleep(2) 
@@ -246,207 +246,166 @@ st.set_page_config(page_title="hạt bụi nhỏ - làm video", page_icon="📻"
 
 def get_app_style():
     # Định nghĩa kích thước chuẩn
-    title_size = "18px"
+    base_size = "22px"  # [ĐÃ TĂNG] Cỡ chữ chung to hơn (cũ là 16px)
+    title_size = "18px" # [ĐÃ GIẢM] Tiêu đề chính nhỏ lại (cũ là 38px)
+    input_height = "45px"
     
     return f"""
     <style>
-    /* ====================================================================
-       FORCE FONT: ÉP TOÀN BỘ WEB DÙNG FONT KHÔNG CHÂN (ARIAL)
-       ==================================================================== */
+    /* 1. CẤU TRÚC CHUNG */
+    .stApp {{ background-color: #FDF5E6; color: #3E2723; font-family: 'Georgia', serif; }}
     
-    /* 1. Áp dụng cho toàn bộ ứng dụng */
-    html, body, .stApp {{
-        font-family: 'Arial', 'Helvetica', sans-serif !important;
-        color: #3E2723;
-    }}
-    
-    /* 2. Ép font cho Tiêu đề, Nút, Input, Label... (Ghi đè mọi thứ khác) */
-    h1, h2, h3, h4, h5, h6, 
-    div, p, span, label,
-    button, input, textarea, select, 
-    .intro-column, .step-label, .stMarkdown, .stCaption {{
-        font-family: 'Arial', 'Helvetica', sans-serif !important;
-    }}
-
-    /* 3. NỀN & MÀU CHỮ CHÍNH */
-    .stApp {{ 
-        background-color: #FDF5E6; 
-    }}
-
-    /* 4. CHỈNH TIÊU ĐỀ H1 */
+    /* 2. TIÊU ĐỀ CHÍNH (Đã giảm kích thước) */
     h1 {{
-        color: #8B4513 !important; 
-        font-size: {title_size} !important; 
-        text-align: center;
-        border-bottom: none !important; 
-        padding-bottom: 10px; margin-bottom: 20px;
-        font-weight: bold !important;
-    }}
-
-    /* [MOBILE] */
-    @media only screen and (max-width: 600px) {{
-        h1 {{
-            font-size: 20px !important; 
-            padding-bottom: 10px !important;
-            margin-bottom: 15px !important;
-        }}
+        color: #8B4513 !important; font-size: {title_size} !important; text-align: center;
+        border-bottom: none !important; padding-bottom: 10px; margin-bottom: 20px;
+        font-weight: bold; 
     }}
     
-    /* 5. STEP LABEL (KHUNG BƯỚC 1, BƯỚC 2...) */
+    /* 3. STEP LABEL (Nhãn bước 1, bước 2...) */
     .step-label {{
-        font-size: 22px !important; 
-        font-weight: bold !important; 
-        color: #5D4037;
-        background-color: #fcefe3; 
-        padding: 8px 15px; 
-        border-left: 6px solid #8B4513;
-        margin-top: 20px !important; 
-        margin-bottom: 20px !important; 
-        border-radius: 0 5px 5px 0;
-        display: inline-block;
+        font-size: 22px !important; font-weight: bold; color: #5D4037;
+        background-color: #fcefe3; padding: 10px 15px; border-left: 6px solid #8B4513;
+        margin-top: 25px; margin-bottom: 15px; border-radius: 0 5px 5px 0;
     }}
     
-    /* 6. INPUT & TEXTAREA (Ô NHẬP LIỆU) */
-    .stTextInput input, .stNumberInput input {{
-        background-color: #FFF8DC !important; 
-        color: #3E2723 !important;
-        font-weight: 500 !important; 
-        border: 1px solid #D7CCC8; 
-        border-radius: 4px;
-    }}
-    .stTextArea textarea {{
-        background-color: #FFF8DC !important; 
-        color: #3E2723 !important;
-        border: 2px solid #8B4513 !important; 
-        font-size: 19px !important;
-        line-height: 1.5 !important;
-    }}
-    
-    /* 7. LABEL COLORS (MÀU CHỮ NHÃN) */
+    /* 4. LABEL & CAPTION (Tăng kích thước các câu hỏi/tiêu đề con) */
     .stRadio label p, .stCheckbox label p, .stSlider label p, 
-    .stNumberInput label p, .stSelectbox label p, .stColorPicker label p {{
-        color: #3E2723 !important; 
-        font-weight: 600 !important; 
-        font-size: 16px !important;
+    .stNumberInput label p, .stSelectbox label p, .stTextInput label p {{
+        color: #3E2723 !important; font-weight: 700 !important; 
+        font-size: 20px !important; /* [ĐÃ TĂNG] Chữ to rõ hơn */
+    }}
+    .stMarkdown p, .stCaption {{ color: #5D4037 !important; font-size: 18px !important; }}
+    
+    /* 5. EXPANDER (Cài đặt & Lịch sử - Đã Phóng to & Cách xa) */
+    /* Chỉnh khoảng cách giữa các dòng lịch sử */
+    div[data-testid="stExpander"] {{
+        margin-bottom: 20px !important; /* Cách nhau 20px cho dễ bấm */
+        border-radius: 10px !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05); /* Đổ bóng nhẹ cho đẹp */
     }}
     
-    /* 8. NÚT BẤM CHUNG (MÀU NÂU, CHỮ TRẮNG) */
-    .stButton button, 
-    div[data-testid="stFormSubmitButton"] button {{
+    /* Chỉnh kích thước thanh tiêu đề (Cài đặt, Dòng lịch sử) */
+    div[data-testid="stExpander"] details > summary {{
+        background-color: #FFF8DC !important; color: #3E2723 !important; 
+        font-size: 26px !important;  /* [ĐÃ TĂNG] Chữ to hơn nữa (24px) */
+        font-weight: bold; 
+        border: 2px solid #D7CCC8; border-radius: 10px;
+        min-height: 65px !important; /* [ĐÃ TĂNG] Chiều cao tối thiểu 70px cho dễ bấm */
+        padding-top: 20px !important; /* Căn giữa chữ theo chiều dọc */
+        padding-bottom: 20px !important;
+    }}
+    div[data-testid="stExpander"] details > summary svg {{ 
+        fill: #3E2723 !important; 
+        width: 30px !important; /* Phóng to mũi tên */
+        height: 30px !important;
+    }}
+    
+    /* 6. NÚT BẤM (Đăng nhập & Zalo đồng nhất) */
+    .stButton button, a[data-testid="stLinkButton"] {{
         background-color: #8B4513 !important; 
         color: #FFFFFF !important; 
-        font-weight: bold !important;
-        font-size: 20px !important; 
+        font-weight: bold !important; 
+        font-size: 18px !important;
         border-radius: 8px !important; 
-        margin-top: 10px;
         border: none !important;
-        box-shadow: 2px 2px 5px rgba(0,0,0,0.2) !important;
-        width: 100% !important; 
-        min-height: 48px !important;
-    }}
-    
-    .stButton button:hover, 
-    div[data-testid="stFormSubmitButton"] button:hover {{
-        background-color: #5D4037 !important; 
-        color: #FFFFFF !important;
-        box-shadow: none !important;
-    }}
-
-    /* [MỚI] NÚT ZALO (MÀU KEM, CHỮ NÂU - GIỐNG ẢNH) */
-    a[data-testid="stLinkButton"] {{
-        background-color: #FFF8DC !important; /* Màu kem */
-        color: #8B4513 !important; /* Chữ nâu */
-        font-weight: bold !important;
-        font-size: 20px !important;
-        border-radius: 8px !important;
-        margin-top: 10px;
-        
-        /* Thêm viền nâu để nút nổi bật trên nền kem */
-        border: 2px solid #8B4513 !important; 
-        box-shadow: 2px 2px 5px rgba(0,0,0,0.1) !important;
-        
-        /* Cấu hình kích thước */
-        width: 100% !important;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important;
+        padding: 10px 20px !important;
+        text-decoration: none !important;
         display: flex !important;
         justify-content: center !important;
         align-items: center !important;
-        text-decoration: none !important;
-        min-height: 48px !important;
+        transition: all 0.3s ease !important;
+    }}
+    
+    .stButton button:hover, a[data-testid="stLinkButton"]:hover {{
+        background-color: #5D4037 !important;
+        transform: translateY(-2px);
     }}
 
+    /* KIỂU CHO DÒNG GIỚI THIỆU */
+    .intro-column {{
+        padding: 40px 20px;
+        border-right: 1px solid #D7CCC8;
+    }}
+    .intro-item {{
+        font-size: 20px;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: #5D4037;
+    }}
+    /* Hiệu ứng khi di chuột vào nút Zalo */
     a[data-testid="stLinkButton"]:hover {{
-        background-color: #FFE4C4 !important; /* Đậm hơn chút khi di chuột */
-        color: #8B4513 !important;
-        border-color: #5D4037 !important;
-        box-shadow: none !important;
+        background-color: #5D4037 !important;
+        color: #FFF8DC !important;
+        transform: translateY(-2px);
     }}
-    
-    /* 9. EXPANDER (TRẢ VỀ MẶC ĐỊNH - KHẮC PHỤC LỖI ICON) */
-    div[data-testid="stExpander"] details > summary {{
-        /* Giữ lại màu sắc theo giao diện của bạn */
-        background-color: #FFF8DC !important; 
-        color: #3E2723 !important; 
-        border: 1px solid #D7CCC8 !important; 
-        border-radius: 5px;
-        padding-top: 5px !important; 
-        padding-bottom: 5px !important;
-        min-height: 40px !important;
+
+    /* 7. INPUT FIELDS */
+    .stTextInput input, .stNumberInput input, .stSelectbox div, .stTextArea textarea {{
+        background-color: #FFF8DC !important; color: #3E2723 !important;
+        font-size: 18px !important;
+    }}
+
+    /* ============================================================
+       QUAN TRỌNG: CSS RIÊNG CHO ĐIỆN THOẠI (Màn hình nhỏ)
+       ============================================================ */
+    @media only screen and (max-width: 600px) {{
         
-        /* [QUAN TRỌNG] Dòng này hủy bỏ lệnh ép font Arial, trả về font mặc định của hệ thống */
-        /* Giúp icon mũi tên hiển thị đúng */
-        font-family: sans-serif !important; 
+        /* 1. Ép các lựa chọn Radio (Nguồn, Giọng đọc) xuống dòng */
+        div[data-testid="stRadio"] > div {{
+            flex-direction: column !important; /* Xếp dọc */
+            align-items: flex-start !important;
+        }}
+
+        /* 1. Thu nhỏ tiêu đề */
+        h1 {{
+            font-size: 20px !important; /* [ĐÃ SỬA] Giảm xuống 20px cho đồng bộ */
+            margin-bottom: 10px !important;
+            padding-bottom: 5px !important;
+        }}
+        
+        /* 2. Tăng khoảng cách giữa các lựa chọn để dễ bấm */
+        div[data-testid="stRadio"] label {{
+            margin-bottom: 12px !important;
+            background: #FFF3E0;
+            padding: 12px;
+            border-radius: 8px;
+            width: 100%; /* Full chiều ngang */
+        }}
+
+        /* 3. Canh lề lại cho gọn và giảm khoảng trống trên cùng */
+        .main .block-container {{
+            padding-top: 0.5rem !important; /* Giảm từ 2rem xuống 0.5rem */
+            padding-left: 1rem !important;
+            padding-right: 1rem !important;
+        }}
+        
+        /* Ẩn bớt khoảng trắng thừa của tiêu đề trên mobile */
+        h1 {{
+            margin-top: -20px !important;
+        }}
+
+        /* 4. [FIX] PHÓNG TO AUDIO PLAYER CHO ĐIỆN THOẠI */
+        audio {{
+            height: 65px !important;    /* Tăng chiều cao lên 65px */
+            width: 104% !important;     /* Rộng hơn khung màn hình */
+            margin-left: -2% !important;
+            margin-top: 15px !important;
+            margin-bottom: 15px !important;
+            border-radius: 15px !important;
+        }}
+        
+        /* Phóng to nút bấm Play/Pause bên trong */
+        audio::-webkit-media-controls-play-button {{
+            transform: scale(1.8) !important;
+        }}
+
     }}
     
-    /* Chỉnh màu icon mũi tên cho đồng bộ (nhưng không ép font) */
-    div[data-testid="stExpander"] details > summary svg {{
-        fill: #3E2723 !important; 
-        width: 18px !important; 
-        height: 18px !important;
-    }}
-    
-    /* [TÙY CHỌN] Nếu muốn chữ tiêu đề bên trong vẫn là Arial (chỉ trừ cái icon ra) */
-    div[data-testid="stExpander"] details > summary p {{
-        font-family: 'Arial', sans-serif !important;
-        font-weight: bold !important;
-    }}
-    
-    /* 10. CÁC THÀNH PHẦN KHÁC */
-    div[data-testid="stFileUploaderUploadedFiles"] > div {{
-        background-color: #FFF8DC !important; border: 1px solid #8B4513 !important; 
-        color: #3E2723 !important;
-    }}
-    
-    audio {{
-        height: 55px !important; width: 100% !important;
-        border-radius: 30px !important; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        background-color: #F1F8E9; margin: 10px 0;
-    }}
-    audio::-webkit-media-controls-panel {{
-        background-color: #D7CCC8 !important; border: 2px solid #8B4513 !important;
-    }}
-    audio::-webkit-media-controls-play-button,
-    audio::-webkit-media-controls-mute-button {{
-        background-color: #8B4513 !important; border-radius: 50%;
-    }}
-    audio::-webkit-media-controls-current-time-display,
-    audio::-webkit-media-controls-time-remaining-display {{
-        color: #3E2723 !important; font-weight: bold;
-    }}
-    
-    /* ẨN UI HỆ THỐNG */
-    #MainMenu {{visibility: hidden; display: none;}}
-    header {{visibility: hidden; display: none;}}
-    footer {{visibility: hidden !important;}}
-    div[class*="viewerBadge"] {{display: none !important;}}
-    div[data-testid="stDecoration"] {{display: none;}}
-    
-    /* TAB ADMIN */
-    button[data-baseweb="tab"] div[data-testid="stMarkdownContainer"] p {{
-        color: #3E2723 !important; font-size: 20px !important; font-weight: bold !important;
-    }}
-    div[data-baseweb="tab-highlight"] {{
-        background-color: #8B4513 !important; height: 4px !important;
-    }}
+    footer {{visibility: hidden;}}
     </style>
     """
 
@@ -884,22 +843,15 @@ def admin_dashboard():
 # --- CSS GIAO DIỆN (FIXED FILE UPLOADER VISIBILITY) ---
 st.markdown("""
     <style>
-    /* 1. CẤU TRÚC CHUNG - Đồng bộ Font toàn app */
-    .stApp { 
-        background-color: #FDF5E6; 
-        color: #3E2723; 
-        font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important; 
-    }
+    /* 1. CẤU TRÚC CHUNG */
+    .stApp { background-color: #FDF5E6; color: #3E2723; font-family: 'Georgia', serif; }
     
-    /* 2. TIÊU ĐỀ & NỘI DUNG NGHỆ THUẬT - Dùng font Georgia */
-    h1, h2, h3, .intro-column, .step-label {
-        font-family: 'Georgia', serif !important;
-    }
-
+    /* 2. TIÊU ĐỀ (ĐÃ CHỈNH SỬA KÍCH THƯỚC) */
     h1 {
-        color: #8B4513 !important; font-size: {title_size} !important; text-align: center;
-        border-bottom: none !important; padding-bottom: 10px; margin-bottom: 20px;
-        font-weight: bold; 
+        color: #8B4513 !important; 
+        font-size: 25px !important;  /* <-- [PC] Chỉnh số này để thay đổi cỡ chữ trên Máy Tính */
+        text-align: center;
+        border-bottom: 3px double #8B4513; padding-bottom: 15px; margin-bottom: 25px;
     }
 
     /* [MOBILE] Cài đặt riêng cho điện thoại */
@@ -949,8 +901,7 @@ st.markdown("""
     .stMarkdown p, .stCaption { color: #5D4037 !important; }
     
     /* 7. BUTTON (NÚT BẤM CHUNG) */
-    /* [ĐÃ SỬA] Thêm a[data-testid="stLinkButton"] để nút Link (Zalo) giống hệt nút Đăng nhập */
-    .stButton button, div[data-testid="stFormSubmitButton"] button, a[data-testid="stLinkButton"] {
+    .stButton button, div[data-testid="stFormSubmitButton"] button {
         background-color: #8B4513 !important; 
         color: #FFFFFF !important; 
         font-weight: bold !important;
@@ -959,21 +910,12 @@ st.markdown("""
         margin-top: 10px;
         border: none !important;
         box-shadow: 2px 2px 5px rgba(0,0,0,0.2) !important;
-        
-        /* Căn giữa chữ cho thẻ a (Link button) */
-        display: flex !important;
-        justify-content: center !important;
-        align-items: center !important;
-        text-decoration: none !important;
     }
-    
     .stButton button:hover, .stButton button:active, .stButton button:focus,
     div[data-testid="stFormSubmitButton"] button:hover,
     div[data-testid="stFormSubmitButton"] button:active,
-    div[data-testid="stFormSubmitButton"] button:focus,
-    a[data-testid="stLinkButton"]:hover { 
-        background-color: #5D4037 !important; /* Màu nâu đậm hơn khi di chuột */
-        color: #FFFFFF !important;
+    div[data-testid="stFormSubmitButton"] button:focus { 
+        background-color: #8B4513 !important; color: #FFFFFF !important;
         box-shadow: none !important; border: none !important;
     }
     
@@ -1165,19 +1107,12 @@ if not st.session_state['user_info']:
                 login_email = st.text_input("Email", value=default_email, placeholder="vidu@gmail.com", key="login_email_unique")            
                 login_pass = st.text_input("Mật khẩu", type="password", placeholder="••••••", key="login_pass_unique")
                 
-                # Checkbox và Link quên mật khẩu (Đã tăng kích thước và gán link Zalo)
+                # Checkbox và Link quên mật khẩu
                 col_sub1, col_sub2 = st.columns(2)
                 with col_sub1:
                     remember_me = st.checkbox("Ghi nhớ", value=True)
                 with col_sub2:
-                    # Tăng font-size lên 17px và gán link Zalo
-                    st.markdown("""
-                        <div style='text-align: right; font-size: 15px; padding-top: 5px;'>
-                            <a href='https://zalo.me/g/ivgedj736' target='_blank' style='color: #8B4513; text-decoration: none; font-weight: bold;'>
-                                Quên mật khẩu?
-                            </a>
-                        </div>
-                    """, unsafe_allow_html=True)
+                    st.markdown("<div style='text-align: right; font-size: 14px; padding-top: 5px;'><a href='#' style='color: #8B4513; text-decoration: none;'>Quên mật khẩu?</a></div>", unsafe_allow_html=True)
 
                 submitted = st.form_submit_button("ĐĂNG NHẬP NGAY", use_container_width=True)
 
@@ -1201,11 +1136,8 @@ if not st.session_state['user_info']:
                     st.error("Sai Email hoặc Mật khẩu, vui lòng thử lại.")
 
             st.markdown("---")
-            # Tăng kích thước chữ "Chưa có tài khoản"
-            st.markdown("<div style='text-align: center; margin-bottom:15px; font-size: 18px; font-weight: 500;'>Chưa có tài khoản?</div>", unsafe_allow_html=True)
-            
-            # Nút đăng ký mới đồng nhất màu nâu với nút đăng nhập
-            st.link_button("👉 ĐĂNG KÝ MỚI QUA ZALO", "https://zalo.me/g/ivgedj736", use_container_width=True, type="primary")
+            st.markdown("<div style='text-align: center; margin-bottom:10px;'>Chưa có tài khoản?</div>", unsafe_allow_html=True)
+            st.link_button("👉 Đăng ký mới qua Zalo", "https://zalo.me/g/ivgedj736", use_container_width=True)
             
 
 
