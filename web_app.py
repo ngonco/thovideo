@@ -1041,10 +1041,10 @@ if not st.session_state['user_info']:
     # Đoạn code mới giúp nút bấm mượt mà và chuẩn theo ảnh mẫu
     st.markdown("""
 <style>
-    .zalo-button:hover {
-        transform: scale(1.05);
-        filter: brightness(1.1);
-    }
+.zalo-button:hover {
+    transform: scale(1.05);
+    filter: brightness(1.1);
+}
 </style>
 <div style="text-align: center; padding: 25px; background-color: #FFF3E0; border-radius: 15px; border: 2px dashed #8B4513; margin-bottom: 30px; margin-top: 10px;">
     <h2 style="color: #8B4513; margin: 0; font-size: 24px;">📻 hạt bụi nhỏ - làm video tự động</h2>
