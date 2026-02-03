@@ -339,11 +339,16 @@ def get_app_style():
             width: 100%; /* Full chiều ngang */
         }}
 
-        /* 3. Canh lề lại cho gọn */
+        /* 3. Canh lề lại cho gọn và giảm khoảng trống trên cùng */
         .main .block-container {{
-            padding-top: 2rem !important; 
+            padding-top: 0.5rem !important; /* Giảm từ 2rem xuống 0.5rem */
             padding-left: 1rem !important;
             padding-right: 1rem !important;
+        }}
+        
+        /* Ẩn bớt khoảng trắng thừa của tiêu đề trên mobile */
+        h1 {{
+            margin-top: -20px !important;
         }}
 
         /* 4. [FIX] PHÓNG TO AUDIO PLAYER CHO ĐIỆN THOẠI */
@@ -402,22 +407,37 @@ def check_link_exists(url):
 # Inject CSS ngay lập tức (Không cần tham số nữa)
 st.markdown(get_app_style(), unsafe_allow_html=True)
 
-# Thông báo có gắn link Group Zalo
+# Thông báo có gắn link Group Zalo (Đã tối ưu hiển thị mobile)
 st.markdown("""
     <a href="https://zalo.me/g/ivgedj736" target="_blank" style="text-decoration: none;">
-        <div style="background-color: #FCF7E6; 
-                    color: #8B4513; 
-                    padding: 12px; 
-                    border-radius: 8px; 
-                    text-align: center; 
-                    font-weight: bold; 
-                    border: 1px solid #D7CCC8;
-                    margin-bottom: 20px;
-                    cursor: pointer;
-                    transition: 0.3s;">
-            📢 Đăng ký tài khoản và tham gia nhóm hỗ trợ Zalo. 
+        <div class="zalo-notice">
+            Đăng ký & tham gia nhóm hỗ trợ Zalo 👆
         </div>
     </a>
+    <style>
+    .zalo-notice {
+        background-color: #FCF7E6; 
+        color: #8B4513; 
+        padding: 12px; 
+        border-radius: 8px; 
+        text-align: center; 
+        font-weight: bold; 
+        border: 1px solid #D7CCC8;
+        margin-bottom: 20px;
+        cursor: pointer;
+        font-size: 16px;
+    }
+    /* Tối ưu riêng cho điện thoại */
+    @media only screen and (max-width: 600px) {
+        .zalo-notice {
+            font-size: 14px !important; /* Giảm nhẹ cỡ chữ để không rớt dòng */
+            padding: 10px 5px !important;
+            white-space: nowrap; /* Ép chữ nằm trên 1 dòng */
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+    }
+    </style>
 """, unsafe_allow_html=True)
 
 DB_SHEET_NAME = "VideoAutomation_DB"
