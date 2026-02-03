@@ -252,15 +252,17 @@ def get_app_style():
     
     return f"""
     <style>
-    /* 1. CẤU TRÚC CHUNG */
-    .stApp {{ background-color: #FDF5E6; color: #3E2723; font-family: 'Georgia', serif; }}
+    /* 1. CẤU TRÚC CHUNG - Sử dụng Font hệ thống chống lỗi dấu */
+    .stApp { 
+        background-color: #FDF5E6; 
+        color: #3E2723; 
+        font-family: 'Times New Roman', Times, serif !important; 
+    }
     
-    /* 2. TIÊU ĐỀ CHÍNH (Đã giảm kích thước) */
-    h1 {{
-        color: #8B4513 !important; font-size: {title_size} !important; text-align: center;
-        border-bottom: none !important; padding-bottom: 10px; margin-bottom: 20px;
-        font-weight: bold; 
-    }}
+    /* 2. TIÊU ĐỀ & GIỚI THIỆU */
+    h1, h2, h3, .intro-column, .step-label {
+        font-family: 'Times New Roman', Times, serif !important;
+    }
     
     /* 3. STEP LABEL (Nhãn bước 1, bước 2...) */
     .step-label {{
@@ -909,7 +911,8 @@ st.markdown("""
     .stMarkdown p, .stCaption { color: #5D4037 !important; }
     
     /* 7. BUTTON (NÚT BẤM CHUNG) */
-    .stButton button, div[data-testid="stFormSubmitButton"] button {
+    /* [ĐÃ SỬA] Thêm a[data-testid="stLinkButton"] để nút Link (Zalo) giống hệt nút Đăng nhập */
+    .stButton button, div[data-testid="stFormSubmitButton"] button, a[data-testid="stLinkButton"] {
         background-color: #8B4513 !important; 
         color: #FFFFFF !important; 
         font-weight: bold !important;
@@ -918,12 +921,21 @@ st.markdown("""
         margin-top: 10px;
         border: none !important;
         box-shadow: 2px 2px 5px rgba(0,0,0,0.2) !important;
+        
+        /* Căn giữa chữ cho thẻ a (Link button) */
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        text-decoration: none !important;
     }
+    
     .stButton button:hover, .stButton button:active, .stButton button:focus,
     div[data-testid="stFormSubmitButton"] button:hover,
     div[data-testid="stFormSubmitButton"] button:active,
-    div[data-testid="stFormSubmitButton"] button:focus { 
-        background-color: #8B4513 !important; color: #FFFFFF !important;
+    div[data-testid="stFormSubmitButton"] button:focus,
+    a[data-testid="stLinkButton"]:hover { 
+        background-color: #5D4037 !important; /* Màu nâu đậm hơn khi di chuột */
+        color: #FFFFFF !important;
         box-shadow: none !important; border: none !important;
     }
     
@@ -1122,7 +1134,7 @@ if not st.session_state['user_info']:
                 with col_sub2:
                     # Tăng font-size lên 17px và gán link Zalo
                     st.markdown("""
-                        <div style='text-align: right; font-size: 17px; padding-top: 5px;'>
+                        <div style='text-align: right; font-size: 14px; padding-top: 5px;'>
                             <a href='https://zalo.me/g/ivgedj736' target='_blank' style='color: #8B4513; text-decoration: none; font-weight: bold;'>
                                 Quên mật khẩu?
                             </a>
