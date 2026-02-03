@@ -411,7 +411,7 @@ st.markdown(get_app_style(), unsafe_allow_html=True)
 st.markdown("""
     <a href="https://zalo.me/g/ivgedj736" target="_blank" style="text-decoration: none;">
         <div class="zalo-notice">
-            Đăng ký & tham gia nhóm hỗ trợ Zalo 👆
+            Đăng ký tài khoản & tham gia nhóm Zalo 👆
         </div>
     </a>
     <style>
