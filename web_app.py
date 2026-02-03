@@ -158,47 +158,28 @@ def change_password_action(email, old_pass_input, new_pass_input):
 
 
 # --- [NEW] HÀM LƯU VÀ TẢI BẢN NHÁP (SUPABASE VERSION) ---
-def save_draft_to_sheet(email, content):
+def save_draft_to_supabase(email, content):
     try:
-        # [BẢO MẬT] Làm sạch nội dung trước khi lưu
         safe_content = sanitize_input(content)
-        
-        # Upsert: Nếu có email rồi thì update, chưa có thì insert
         data = {
             "email": email,
             "content": safe_content,
             "updated_at": datetime.utcnow().isoformat()
         }
-        # Lưu vào bảng 'drafts'
+        # Lưu thẳng vào Supabase, cực nhanh
         supabase.table('drafts').upsert(data).execute()
         return True
     except Exception as e:
-        print(f"Lỗi save draft Supabase: {e}")
+        st.error(f"Lỗi lưu nháp: {e}")
         return False
 
-def load_draft_from_sheet(email):
+def load_draft_from_supabase(email):
     try:
-        # Lấy nội dung từ bảng 'drafts'
         response = supabase.table('drafts').select("content").eq('email', email).execute()
-        if response.data and len(response.data) > 0:
+        if response.data:
             return response.data[0]['content']
-    except Exception as e:
-        print(f"Lỗi load draft Supabase: {e}")
-    return ""
-
-def load_draft_from_sheet(email):
-    try:
-        gc = get_gspread_client()
-        ws = gc.open(DB_SHEET_NAME).worksheet("drafts")
-        
-        # [OPTIMIZED] Lấy hết về 1 lần thay vì tìm và gọi cell lẻ tẻ
-        all_drafts = ws.get_all_values()
-        
-        for row in all_drafts:
-            # Nếu tìm thấy email ở cột đầu tiên (index 0)
-            if len(row) >= 2 and str(row[0]).strip().lower() == str(email).strip().lower():
-                return row[1] # Trả về cột Content (index 1)
-    except: pass
+    except:
+        pass
     return ""
 
 # --- [NEW] HÀM CALLBACK ĐỂ AUTO-SAVE ---
@@ -990,7 +971,7 @@ st.markdown("""
 
     /* Tạo thanh bar trang trí đè lên chân trang */
     .stApp::after {
-        content: "© 2026 hạt bụi nhỏ làm video tự động bằng AI";
+        content: "Đăng ký tài khoản mới hoặc lỗi kỹ thuật: 0981/362/561 (zalo)";
         font-family: 'Arial', sans-serif;
         position: fixed;
         bottom: 0;
@@ -1252,7 +1233,7 @@ else:
     # 1.1 LOGIC TÌM KIẾM TRONG THƯ VIỆN
     # 1.1 LOGIC TÌM KIẾM TRONG THƯ VIỆN (CHẠY TRỰC TIẾP TRÊN SUPABASE)
     if source_opt == "📂 Tìm trong Thư viện":
-        st.info("💡 Tìm kiếm thần tốc từ kho kịch bản AI.")
+        st.info("💡Nhập tâm trạng hoặc từ khóa để tìm kịch bản phù hợp")
         
         with st.form(key="search_form"):
             c_search1, c_search2 = st.columns([3, 1], vertical_alignment="center")
