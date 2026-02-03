@@ -127,10 +127,10 @@ def check_login(email, password):
                 # Trả về thông tin user để lưu vào session
                 return user_data
     except Exception as e:
-        # In lỗi ra màn hình đen (console) để admin sửa
-        print(f"DEBUG LOGIN ERROR: {e}") 
-        # Chỉ báo lỗi chung chung cho người dùng để bảo mật
-        st.error("Đã xảy ra lỗi kết nối. Vui lòng thử lại sau.")
+        # Chỉ log nội dung lỗi ngắn gọn, không kèm stack trace chi tiết ra console nếu không cần thiết
+        import logging
+        logging.error("Lỗi đăng nhập hệ thống.")
+        st.error("Dịch vụ tạm thời gián đoạn. Vui lòng quay lại sau.")
     
     # [BẢO MẬT] Làm chậm hacker 2 giây nếu đăng nhập thất bại
     time.sleep(2) 
@@ -301,8 +301,9 @@ def get_app_style():
         height: 30px !important;
     }}
     
-    /* 6. NÚT BẤM (Đăng nhập & Zalo đồng nhất) */
+    /* 6. NÚT BẤM (Sử dụng font không chân hiện đại) */
     .stButton button, a[data-testid="stLinkButton"] {{
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
         background-color: #8B4513 !important; 
         color: #FFFFFF !important; 
         font-weight: bold !important; 
@@ -843,15 +844,22 @@ def admin_dashboard():
 # --- CSS GIAO DIỆN (FIXED FILE UPLOADER VISIBILITY) ---
 st.markdown("""
     <style>
-    /* 1. CẤU TRÚC CHUNG */
-    .stApp { background-color: #FDF5E6; color: #3E2723; font-family: 'Georgia', serif; }
+    /* 1. CẤU TRÚC CHUNG - Đồng bộ Font toàn app */
+    .stApp { 
+        background-color: #FDF5E6; 
+        color: #3E2723; 
+        font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important; 
+    }
     
-    /* 2. TIÊU ĐỀ (ĐÃ CHỈNH SỬA KÍCH THƯỚC) */
+    /* 2. TIÊU ĐỀ & NỘI DUNG NGHỆ THUẬT - Dùng font Georgia */
+    h1, h2, h3, .intro-column, .step-label {
+        font-family: 'Georgia', serif !important;
+    }
+
     h1 {
-        color: #8B4513 !important; 
-        font-size: 25px !important;  /* <-- [PC] Chỉnh số này để thay đổi cỡ chữ trên Máy Tính */
-        text-align: center;
-        border-bottom: 3px double #8B4513; padding-bottom: 15px; margin-bottom: 25px;
+        color: #8B4513 !important; font-size: {title_size} !important; text-align: center;
+        border-bottom: none !important; padding-bottom: 10px; margin-bottom: 20px;
+        font-weight: bold; 
     }
 
     /* [MOBILE] Cài đặt riêng cho điện thoại */
@@ -1107,12 +1115,19 @@ if not st.session_state['user_info']:
                 login_email = st.text_input("Email", value=default_email, placeholder="vidu@gmail.com", key="login_email_unique")            
                 login_pass = st.text_input("Mật khẩu", type="password", placeholder="••••••", key="login_pass_unique")
                 
-                # Checkbox và Link quên mật khẩu
+                # Checkbox và Link quên mật khẩu (Đã tăng kích thước và gán link Zalo)
                 col_sub1, col_sub2 = st.columns(2)
                 with col_sub1:
                     remember_me = st.checkbox("Ghi nhớ", value=True)
                 with col_sub2:
-                    st.markdown("<div style='text-align: right; font-size: 14px; padding-top: 5px;'><a href='#' style='color: #8B4513; text-decoration: none;'>Quên mật khẩu?</a></div>", unsafe_allow_html=True)
+                    # Tăng font-size lên 17px và gán link Zalo
+                    st.markdown("""
+                        <div style='text-align: right; font-size: 17px; padding-top: 5px;'>
+                            <a href='https://zalo.me/g/ivgedj736' target='_blank' style='color: #8B4513; text-decoration: none; font-weight: bold;'>
+                                Quên mật khẩu?
+                            </a>
+                        </div>
+                    """, unsafe_allow_html=True)
 
                 submitted = st.form_submit_button("ĐĂNG NHẬP NGAY", use_container_width=True)
 
@@ -1136,8 +1151,11 @@ if not st.session_state['user_info']:
                     st.error("Sai Email hoặc Mật khẩu, vui lòng thử lại.")
 
             st.markdown("---")
-            st.markdown("<div style='text-align: center; margin-bottom:10px;'>Chưa có tài khoản?</div>", unsafe_allow_html=True)
-            st.link_button("👉 Đăng ký mới qua Zalo", "https://zalo.me/g/ivgedj736", use_container_width=True)
+            # Tăng kích thước chữ "Chưa có tài khoản"
+            st.markdown("<div style='text-align: center; margin-bottom:15px; font-size: 18px; font-weight: 500;'>Chưa có tài khoản?</div>", unsafe_allow_html=True)
+            
+            # Nút đăng ký mới đồng nhất màu nâu với nút đăng nhập
+            st.link_button("👉 ĐĂNG KÝ MỚI QUA ZALO", "https://zalo.me/g/ivgedj736", use_container_width=True, type="primary")
             
 
 
