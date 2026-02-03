@@ -1022,20 +1022,22 @@ st.markdown("""
     footer {visibility: hidden !important;}
     header {visibility: hidden !important;}
 
-    /* Tạo thanh bar màu nâu trang trí đè lên chân trang */
+    /* Tạo thanh bar trang trí đè lên chân trang */
     .stApp::after {
         content: "© 2026 hạt bụi nhỏ làm video tự động bằng AI";
+        font-family: 'Arial', sans-serif;
         position: fixed;
         bottom: 0;
         left: 0;
         width: 100%;
         height: 40px;
-        background-color: #8B4513; /* Cùng màu nâu với nút bấm của bạn */
-        color: #FDF5E6;
+        background-color: #FDF5E6; /* [ĐÃ ĐỔI] Màu nền trùng với nền web */
+        color: #8B4513;            /* [ĐÃ ĐỔI] Màu chữ trùng với màu nút bấm */
         text-align: center;
         line-height: 40px;
         font-size: 14px;
         z-index: 999999;
+        border-top: 1px solid #8B4513; /* [TÙY CHỌN] Thêm đường kẻ mỏng bên trên cho đẹp */
     }
     
     
