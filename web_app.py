@@ -1034,89 +1034,72 @@ if not st.session_state['user_info']:
         st.session_state['saved_email'] = params["u"]
         # Đã xóa đoạn "if user:" gây lỗi vì biến user chưa tồn tại ở đây
 
-# --- GIAO DIỆN ĐĂNG NHẬP ---
+# --- GIAO DIỆN ĐĂNG NHẬP MỚI (CLEAN DESIGN) ---
 if not st.session_state['user_info']:
     
-    # --- PHẦN GIỚI THIỆU (Dùng Markdown thường) ---
-    # [SỬA LỖI] Đã thêm khoảng trắng (thụt đầu dòng) ở các dòng dưới
-    with st.container(border=True): # Tạo cái khung viền bao quanh
-        st.markdown("""
-        <h3 style='text-align: center; color: #8B4513;'>📻 hạt bụi nhỏ - làm video tự động</h3>
-        """, unsafe_allow_html=True)
+    # 1. PHẦN HEADER & GIỚI THIỆU (Nằm ngoài form để thoáng mắt)
+    st.markdown("<br>", unsafe_allow_html=True) # Khoảng trắng trên cùng
+    st.markdown(f"<h1 style='text-align: center;'>📻 hạt bụi nhỏ</h1>", unsafe_allow_html=True)
     
-    st.info("""
-    ✨ **Biến kịch bản thành video** có giọng đọc AI cảm xúc, nhạc nền.  
-    ✨ **Tự động chèn phụ đề**, minh họa bằng video nền hợp nội dung.  
-    ✨ **Phù hợp nhất cho:** Kênh Phật giáo, Chữa lành, Kể chuyện...
-    """)
-    
-    # --- PHẦN NÚT BẤM (Dùng st.link_button chuẩn của Streamlit) ---
-    # Chia 3 cột để cái nút nằm giữa cho đẹp (cột giữa to hơn)
-    c1, c2, c3 = st.columns([1, 2, 1]) 
-    with c2:
-        st.link_button(
-            label="👉 ĐĂNG KÝ TÀI KHOẢN (QUA ZALO)", 
-            url="https://zalo.me/g/ivgedj736", 
-            type="primary",  # Nút màu nổi bật
-            use_container_width=True # Nút giãn full chiều ngang cột
-        )
-    
-    st.markdown("<div style='text-align: center; color: grey; font-size: 13px;'>(Hỗ trợ tạo tài khoản 0981.362.561 qua Zalo)</div>", unsafe_allow_html=True)
+    st.markdown("""
+    <div class="intro-text">
+        <i>"Biến kịch bản thành video bình an & chữa lành"</i><br><br>
+        ✨ Giọng đọc AI cảm xúc &nbsp;|&nbsp; 🎞️ Video nền tự động &nbsp;|&nbsp; 🎵 Nhạc thiền êm dịu
+    </div>
+    """, unsafe_allow_html=True)
 
-    
-    
-    # Luôn sử dụng tỷ lệ cột rộng cho người lớn tuổi
-    c1, c2, c3 = st.columns([1, 10, 1])
+    # 2. KHUNG ĐĂNG NHẬP (Dùng cột để căn giữa màn hình)
+    # Tỷ lệ [1, 5, 1] trên mobile, [1, 2, 1] trên PC giúp form không bị quá to bè
+    c1, c2, c3 = st.columns([1, 8, 1]) if st.session_state.get('is_mobile') else st.columns([1, 1.2, 1])
 
     with c2:
-        # Tạo khung card bao quanh form
-        with st.container():
-            st.markdown(f"<h2 style='text-align: center; color: #8B4513; margin-bottom: 20px;'>🔐 ĐĂNG NHẬP</h2>", unsafe_allow_html=True)
+        # Tạo container nhìn giống cái thẻ bài
+        with st.container(border=True):
+            st.markdown("<h3 style='text-align: center; color: #5D4037; margin-bottom: 20px;'>🔐 Đăng Nhập</h3>", unsafe_allow_html=True)
             
-            # Form nhập liệu (Đã thêm st.form để hỗ trợ phím Enter)
+            # Form nhập liệu
             with st.form(key="login_form"):
-                st.markdown("<br>", unsafe_allow_html=True) 
-                
                 default_email = st.session_state.get('saved_email', "")
-                login_email = st.text_input("📧 Nhập tên tài khoản hoặc email", value=default_email, placeholder="ví dụ: hoasen", key="login_email_unique")            
+                login_email = st.text_input("Email", value=default_email, placeholder="nhập email của bạn...", key="login_email_unique")            
                 
-                st.markdown("<br>", unsafe_allow_html=True) 
-                login_pass = st.text_input("🔑 Mật khẩu", type="password", key="login_pass_unique")
+                login_pass = st.text_input("Mật khẩu", type="password", placeholder="••••••", key="login_pass_unique")
                 
-                # Checkbox Ghi nhớ
+                # Checkbox và Nút quên mật khẩu trên cùng 1 hàng cho gọn
+                col_sub1, col_sub2 = st.columns(2)
+                with col_sub1:
+                    remember_me = st.checkbox("Ghi nhớ", value=True)
+                with col_sub2:
+                    st.markdown("<div style='text-align: right; font-size: 14px; padding-top: 5px;'><a href='#' style='color: #8B4513; text-decoration: none;'>Quên mật khẩu?</a></div>", unsafe_allow_html=True)
+                
                 st.markdown("<br>", unsafe_allow_html=True)
-                remember_me = st.checkbox("Ghi nhớ đăng nhập", value=True)
                 
-                st.markdown("<br>", unsafe_allow_html=True)
-                
-                # [QUAN TRỌNG] Đổi thành form_submit_button để nhận phím Enter
+                # Nút Submit to rõ
                 submitted = st.form_submit_button("ĐĂNG NHẬP NGAY", use_container_width=True)
 
-            # Xử lý logic khi bấm Enter hoặc click nút
+            # Xử lý logic đăng nhập
             if submitted:
                 user = check_login(login_email, login_pass)
                 if user:
                     st.session_state['user_info'] = user
-                    
                     if remember_me:
-                        # 1. Tạo token ngẫu nhiên
                         new_token = str(uuid.uuid4())
-                        # 2. Lưu token vào Supabase
                         update_session_token(user['id'], new_token)
-                        # 3. Lưu token vào Cookie trình duyệt (Hết hạn sau 30 ngày)
-                        cookie_manager.set("user_session_token", 
-                                           new_token, 
-                                           expires_at=datetime.now() + timedelta(days=30))
-                        st.toast("Đã ghi nhớ đăng nhập an toàn!", icon="🔒")
+                        cookie_manager.set("user_session_token", new_token, expires_at=datetime.now() + timedelta(days=30))
                     else:
-                        # Nếu không chọn ghi nhớ, xóa token cũ (nếu có)
                         st.query_params.clear()
                     
                     st.toast("Đăng nhập thành công!", icon="🎉")
-                    time.sleep(0.5) # Đợi xíu để cookie kịp lưu
+                    time.sleep(0.5)
                     st.rerun()
                 else:
                     st.error("Sai Email hoặc Mật khẩu, vui lòng thử lại.")
+            
+            # 3. DÒNG ĐĂNG KÝ (Tách riêng bên dưới nút đăng nhập)
+            st.markdown("---")
+            st.markdown("<div style='text-align: center; font-size: 14px;'>Chưa có tài khoản?</div>", unsafe_allow_html=True)
+            
+            # Dùng st.link_button dạng 'tertiary' (không viền) hoặc 'secondary' cho đỡ rối
+            st.link_button("👉 Đăng ký qua Zalo (Hỗ trợ nhanh)", "https://zalo.me/g/ivgedj736", use_container_width=True)
             
 
 
