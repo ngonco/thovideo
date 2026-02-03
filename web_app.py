@@ -246,32 +246,44 @@ st.set_page_config(page_title="hạt bụi nhỏ - làm video", page_icon="📻"
 
 def get_app_style():
     # Định nghĩa kích thước chuẩn
-    base_size = "22px"
     title_size = "18px"
     
-    # LƯU Ý: Trong f-string, dấu ngoặc nhọn của CSS phải nhân đôi thành {{ và }}
     return f"""
     <style>
-    /* 1. CẤU TRÚC CHUNG - ĐỒNG BỘ 1 FONT DUY NHẤT */
-    .stApp {{ 
-        background-color: #FDF5E6; 
-        color: #3E2723; 
-        /* Dùng 1 font duy nhất cho toàn bộ App */
-        font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important; 
+    /* ====================================================================
+       FORCE FONT: ÉP TOÀN BỘ WEB DÙNG FONT KHÔNG CHÂN (ARIAL)
+       ==================================================================== */
+    
+    /* 1. Áp dụng cho toàn bộ ứng dụng */
+    html, body, [class*="css"], .stApp {{
+        font-family: 'Arial', 'Helvetica', sans-serif !important;
+        color: #3E2723;
     }}
     
-    /* 2. TIÊU ĐỀ - Bắt buộc theo font chung, chỉ khác độ đậm */
-    h1, h2, h3, .intro-column, .step-label {{
-        font-family: inherit !important; /* Kế thừa font từ .stApp */
-        font-weight: bold;
+    /* 2. Ép font cho Tiêu đề, Nút, Input, Label... (Ghi đè mọi thứ khác) */
+    h1, h2, h3, h4, h5, h6, 
+    div, p, span, label,
+    button, input, textarea, select, 
+    .intro-column, .step-label, .stMarkdown, .stCaption {{
+        font-family: 'Arial', 'Helvetica', sans-serif !important;
     }}
 
+    /* 3. NỀN & MÀU CHỮ CHÍNH */
+    .stApp {{ 
+        background-color: #FDF5E6; 
+    }}
+
+    /* 4. CHỈNH TIÊU ĐỀ H1 */
     h1 {{
-        color: #8B4513 !important; font-size: {title_size} !important; text-align: center;
-        border-bottom: none !important; padding-bottom: 10px; margin-bottom: 20px;
+        color: #8B4513 !important; 
+        font-size: {title_size} !important; 
+        text-align: center;
+        border-bottom: none !important; 
+        padding-bottom: 10px; margin-bottom: 20px;
+        font-weight: bold !important;
     }}
 
-    /* [MOBILE] Cài đặt riêng cho điện thoại */
+    /* [MOBILE] */
     @media only screen and (max-width: 600px) {{
         h1 {{
             font-size: 20px !important; 
@@ -280,48 +292,49 @@ def get_app_style():
         }}
     }}
     
-    /* 3. STEP LABEL */
+    /* 5. STEP LABEL (KHUNG BƯỚC 1, BƯỚC 2...) */
     .step-label {{
-        font-size: 22px !important; font-weight: bold; color: #5D4037;
-        background-color: #fcefe3; padding: 8px 15px; border-left: 6px solid #8B4513;
+        font-size: 22px !important; 
+        font-weight: bold !important; 
+        color: #5D4037;
+        background-color: #fcefe3; 
+        padding: 8px 15px; 
+        border-left: 6px solid #8B4513;
         margin-top: 20px !important; 
         margin-bottom: 20px !important; 
         border-radius: 0 5px 5px 0;
         display: inline-block;
     }}
     
-    /* 4. INPUT & TEXTAREA */
+    /* 6. INPUT & TEXTAREA (Ô NHẬP LIỆU) */
     .stTextInput input, .stNumberInput input {{
-        background-color: #FFF8DC !important; color: #3E2723 !important;
-        font-weight: 500 !important; border: 1px solid #D7CCC8; border-radius: 4px;
-        font-family: inherit !important; /* Đồng bộ font */
+        background-color: #FFF8DC !important; 
+        color: #3E2723 !important;
+        font-weight: 500 !important; 
+        border: 1px solid #D7CCC8; 
+        border-radius: 4px;
     }}
     .stTextArea textarea {{
-        background-color: #FFF8DC !important; color: #3E2723 !important;
+        background-color: #FFF8DC !important; 
+        color: #3E2723 !important;
         border: 2px solid #8B4513 !important; 
         font-size: 19px !important;
         line-height: 1.5 !important;
-        font-family: inherit !important; /* Đồng bộ font */
     }}
     
-    /* 5. FIX DROPDOWN & ICONS */
-    div[data-baseweb="select"] > div:first-child {{
-        background-color: #FFF8DC !important; border: 1px solid #D7CCC8; color: #3E2723 !important;
+    /* 7. LABEL COLORS (MÀU CHỮ NHÃN) */
+    .stRadio label p, .stCheckbox label p, .stSlider label p, 
+    .stNumberInput label p, .stSelectbox label p, .stColorPicker label p {{
+        color: #3E2723 !important; 
+        font-weight: 600 !important; 
+        font-size: 16px !important;
     }}
-    div[data-baseweb="select"] svg {{ fill: #3E2723 !important; }}
     
-    /* 6. LABEL COLORS */
-    .stRadio label p, .stCheckbox label p, .stSlider label p, .stNumberInput label p, .stSelectbox label p, .stColorPicker label p {{
-        color: #3E2723 !important; font-weight: 600 !important; font-size: 16px !important;
-        font-family: inherit !important;
-    }}
-    .stMarkdown p, .stCaption {{ color: #5D4037 !important; font-family: inherit !important; }}
-    
-    /* 7. NÚT BẤM (BUTTON & LINK) - ĐỒNG BỘ 100% GIỮA NÚT LOGIN VÀ ZALO */
+    /* 8. NÚT BẤM (BUTTON & ZALO LINK) - ĐỒNG BỘ 100% */
     .stButton button, 
     div[data-testid="stFormSubmitButton"] button, 
     a[data-testid="stLinkButton"] {{
-        background-color: #8B4513 !important; /* Màu nâu đồng nhất */
+        background-color: #8B4513 !important; 
         color: #FFFFFF !important; 
         font-weight: bold !important;
         font-size: 20px !important; 
@@ -329,15 +342,14 @@ def get_app_style():
         margin-top: 10px;
         border: none !important;
         box-shadow: 2px 2px 5px rgba(0,0,0,0.2) !important;
-        font-family: inherit !important;
         
-        /* Căn chỉnh kích thước */
-        width: 100% !important; /* Ép bung full chiều ngang */
+        /* Cấu hình kích thước */
+        width: 100% !important; 
         display: flex !important;
         justify-content: center !important;
         align-items: center !important;
         text-decoration: none !important;
-        min-height: 48px !important; /* Đảm bảo chiều cao bằng nhau */
+        min-height: 48px !important;
     }}
     
     .stButton button:hover, 
@@ -348,31 +360,23 @@ def get_app_style():
         box-shadow: none !important;
     }}
     
-    /* 8. EXPANDER */
+    /* 9. EXPANDER */
     div[data-testid="stExpander"] details > summary {{
         background-color: #FFF8DC !important; color: #3E2723 !important; 
         border: 1px solid #D7CCC8 !important; border-radius: 5px;
         padding-top: 5px !important; padding-bottom: 5px !important;
-        min-height: 40px !important; height: auto !important;
-        font-family: inherit !important;
+        min-height: 40px !important;
     }}
     div[data-testid="stExpander"] details > summary svg {{ 
         fill: #3E2723 !important; width: 18px !important; height: 18px !important;
     }}
     
-    /* 9. FILE UPLOADER */
+    /* 10. CÁC THÀNH PHẦN KHÁC */
     div[data-testid="stFileUploaderUploadedFiles"] > div {{
         background-color: #FFF8DC !important; border: 1px solid #8B4513 !important; 
         color: #3E2723 !important;
-        width: fit-content !important; min-width: 150px !important; padding-right: 10px !important;
     }}
-    div[data-testid="stFileUploaderUploadedFiles"] div[data-testid="stMarkdownContainer"] p {{
-        color: #3E2723 !important; font-weight: bold !important;
-    }}
-    div[data-testid="stFileUploaderUploadedFiles"] svg {{ fill: #3E2723 !important; }}
-    div[data-testid="stFileUploaderDeleteBtn"] svg {{ fill: #D32F2F !important; stroke: #D32F2F !important; }}
-            
-    /* 10. AUDIO PLAYER */
+    
     audio {{
         height: 55px !important; width: 100% !important;
         border-radius: 30px !important; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
@@ -384,14 +388,13 @@ def get_app_style():
     audio::-webkit-media-controls-play-button,
     audio::-webkit-media-controls-mute-button {{
         background-color: #8B4513 !important; border-radius: 50%;
-        box-shadow: 1px 1px 4px rgba(0,0,0,0.2) !important; transform: scale(1.1);
     }}
     audio::-webkit-media-controls-current-time-display,
     audio::-webkit-media-controls-time-remaining-display {{
         color: #3E2723 !important; font-weight: bold;
     }}
     
-    /* ẨN GIAO DIỆN HỆ THỐNG */
+    /* ẨN UI HỆ THỐNG */
     #MainMenu {{visibility: hidden; display: none;}}
     header {{visibility: hidden; display: none;}}
     footer {{visibility: hidden !important;}}
@@ -401,12 +404,10 @@ def get_app_style():
     /* TAB ADMIN */
     button[data-baseweb="tab"] div[data-testid="stMarkdownContainer"] p {{
         color: #3E2723 !important; font-size: 20px !important; font-weight: bold !important;
-        font-family: inherit !important;
     }}
     div[data-baseweb="tab-highlight"] {{
         background-color: #8B4513 !important; height: 4px !important;
     }}
-    button[data-baseweb="tab"]:hover {{ background-color: #FFF8DC !important; }}
     </style>
     """
 
