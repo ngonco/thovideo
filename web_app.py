@@ -323,6 +323,21 @@ def get_app_style():
         transform: translateY(-2px);
     }}
 
+    /* SỬA LỖI NÚT HIỆN MẬT KHẨU (EYE ICON) BỊ ĐEN */
+    button[aria-label="Show password"] {{
+        background-color: transparent !important; /* Xóa nền đen */
+        color: #8B4513 !important; /* Đổi icon sang màu nâu */
+        border: none !important;
+        box-shadow: none !important;
+    }}
+    
+    /* ĐỔI MÀU NÚT ZALO SANG NÂU */
+    .zalo-button-container a[data-testid="stLinkButton"] {{
+        background-color: #8B4513 !important;
+        color: white !important;
+        border: 1px solid #5D4037 !important;
+    }}
+
     /* KIỂU CHO DÒNG GIỚI THIỆU */
     .intro-column {{
         padding: 40px 20px;
@@ -1137,7 +1152,10 @@ if not st.session_state['user_info']:
 
             st.markdown("---")
             st.markdown("<div style='text-align: center; margin-bottom:10px;'>Chưa có tài khoản?</div>", unsafe_allow_html=True)
+            # Thêm container để gán class CSS riêng cho nút Zalo này
+            st.markdown('<div class="zalo-button-container">', unsafe_allow_html=True)
             st.link_button("👉 Đăng ký mới qua Zalo", "https://zalo.me/g/ivgedj736", use_container_width=True)
+            st.markdown('</div>', unsafe_allow_html=True)
             
 
 
