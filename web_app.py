@@ -330,46 +330,54 @@ def get_app_style():
         font-size: 16px !important;
     }}
     
-    /* 8. ĐỒNG BỘ NÚT ĐĂNG NHẬP & NÚT ZALO */
+    /* 8. NÚT BẤM CHUNG (MÀU NÂU, CHỮ TRẮNG) */
     .stButton button, 
-    div[data-testid="stFormSubmitButton"] button, 
-    a[data-testid="stLinkButton"] {{
-        background-color: #8B4513 !important; /* Màu nâu chủ đạo */
+    div[data-testid="stFormSubmitButton"] button {{
+        background-color: #8B4513 !important; 
         color: #FFFFFF !important; 
         font-weight: bold !important;
         font-size: 20px !important; 
         border-radius: 8px !important; 
+        margin-top: 10px;
         border: none !important;
         box-shadow: 2px 2px 5px rgba(0,0,0,0.2) !important;
-        
-        /* Ép kích thước đồng nhất */
         width: 100% !important; 
-        min-height: 52px !important; /* Chiều cao cố định cho cả 2 loại nút */
-        height: 52px !important;
-        
-        /* Căn giữa nội dung bên trong */
-        display: inline-flex !important;
-        justify-content: center !important;
-        align-items: center !important;
-        text-decoration: none !important;
-        margin-top: 10px !important;
-        padding: 0px !important;
+        min-height: 48px !important;
     }}
-
-    /* Hiệu ứng khi di chuột vào */
+    
     .stButton button:hover, 
-    div[data-testid="stFormSubmitButton"] button:hover,
-    a[data-testid="stLinkButton"]:hover {{
+    div[data-testid="stFormSubmitButton"] button:hover {{
         background-color: #5D4037 !important; 
         color: #FFFFFF !important;
         box-shadow: none !important;
     }}
-    
-    .stButton button:hover, 
-    div[data-testid="stFormSubmitButton"] button:hover,
-    a[data-testid="stLinkButton"]:hover {{ 
-        background-color: #5D4037 !important; 
-        color: #FFFFFF !important;
+
+    /* [MỚI] NÚT ZALO (MÀU KEM, CHỮ NÂU - GIỐNG ẢNH) */
+    a[data-testid="stLinkButton"] {{
+        background-color: #FFF8DC !important; /* Màu kem */
+        color: #8B4513 !important; /* Chữ nâu */
+        font-weight: bold !important;
+        font-size: 20px !important;
+        border-radius: 8px !important;
+        margin-top: 10px;
+        
+        /* Thêm viền nâu để nút nổi bật trên nền kem */
+        border: 2px solid #8B4513 !important; 
+        box-shadow: 2px 2px 5px rgba(0,0,0,0.1) !important;
+        
+        /* Cấu hình kích thước */
+        width: 100% !important;
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        text-decoration: none !important;
+        min-height: 48px !important;
+    }}
+
+    a[data-testid="stLinkButton"]:hover {{
+        background-color: #FFE4C4 !important; /* Đậm hơn chút khi di chuột */
+        color: #8B4513 !important;
+        border-color: #5D4037 !important;
         box-shadow: none !important;
     }}
     
@@ -1179,7 +1187,7 @@ if not st.session_state['user_info']:
             st.markdown("<div style='text-align: center; margin-bottom:15px; font-size: 18px; font-weight: 500;'>Chưa có tài khoản?</div>", unsafe_allow_html=True)
             
             # Nút đăng ký mới đồng nhất màu nâu với nút đăng nhập
-            st.link_button("👉 ĐĂNG KÝ MỚI QUA ZALO", "https://zalo.me/g/ivgedj736", use_container_width=True)
+            st.link_button("👉 ĐĂNG KÝ MỚI QUA ZALO", "https://zalo.me/g/ivgedj736", use_container_width=True, type="primary")
             
 
 
