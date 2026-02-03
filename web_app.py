@@ -1154,8 +1154,8 @@ if not st.session_state['user_info']:
             # Thay nút bấm bằng dòng text dẫn link đơn giản
             st.markdown("""
                 <div style='text-align: center; font-size: 16px; color: #5D4037;'>
-                    Chưa có tài khoản? 
-                    <a href='https://zalo.me/g/ivgedj736' target='_blank' style='color: #8B4513; font-weight: bold; text-decoration: underline;'>
+                    Chưa có tài khoản?<br>
+                    <a href='https://zalo.me/g/ivgedj736' target='_blank' style='color: #8B4513; font-weight: bold; text-decoration: underline; display: inline-block; margin-top: 5px;'>
                         👉 Đăng ký mới qua Zalo tại đây
                     </a>
                 </div>
