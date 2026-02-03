@@ -1160,7 +1160,7 @@ if not st.session_state['user_info']:
             st.markdown("---")
             # Tăng cỡ chữ lên 20px và làm nổi bật link Đăng ký
             st.markdown("""
-                <div style='text-align: center; font-size: 20px; color: #3E2723; line-height: 1.6;'>
+                <div style='text-align: center; font-size: 17px; color: #3E2723; line-height: 1.6;'>
                     Chưa có tài khoản?<br>
                     <a href='https://zalo.me/g/ivgedj736' target='_blank' 
                        style='color: #8B4513; font-weight: 800; text-decoration: underline; 
