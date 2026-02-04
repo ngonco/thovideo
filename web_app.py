@@ -1762,7 +1762,7 @@ else:
                             padding: 15px; 
                             border-radius: 8px; 
                             color: #0D47A1; 
-                            font-size: 18px; 
+                            font-size: 20px; 
                             font-weight: bold; 
                             text-align: center;
                             border: 1px solid #90CAF9;
