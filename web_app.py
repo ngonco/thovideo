@@ -1,3 +1,4 @@
+import email
 import streamlit as st
 import pandas as pd
 import requests
@@ -126,8 +127,7 @@ def save_user_settings_supabase(user_id, settings_dict):
 def check_login(email, password):
     try:
         # 1. Tìm user trong Supabase (Bảng 'users')
-        response = supabase.table('users').select("*").eq('email', email).execute()
-        
+        response = supabase.table('users').select("id, email, password, quota_used, quota_max, plan, role, settings, stock_level").eq('email', email).execute()        
         if response.data and len(response.data) > 0:
             user_data = response.data[0]
             stored_hash = user_data['password']
