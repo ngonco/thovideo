@@ -1316,8 +1316,10 @@ if not st.session_state['user_info']:
         <div class="intro-column">
             <div class="intro-item">🍃 Biến kịch bản thành video trong 1 nốt nhạc</div>
             <div class="intro-item">🍃 Phụ đề chính xác 100%</div>
-            <div class="intro-item">🍃 Chuyên nội dung đạo lý, chữa lành, Phật pháp..</div>
-            <div class="intro-item">🍃 AI lựa chọn minh họa phù hợp nội dung</div>
+            <div class="intro-item">🍃 Chuyên nội dung đạo lý</div>
+            <div class="intro-item">🍃 AI lựa chọn video phù hợp nội dung</div>
+            <div class="intro-item">🍃 Nhiều lựa chọn về giọng nói</div>
+            <div class="intro-item">🍃 Và nhiều tính năng đang phát triển</div>
         </div>
         """, unsafe_allow_html=True)
 
