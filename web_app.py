@@ -707,8 +707,8 @@ def tts_gemini(text, voice_style_key="Nam 1 - Trầm Ấm (Charon)", region="Mi�
     else:
         input_text = text
 
-    # [QUAN TRỌNG 1] Dùng đúng URL của model 2.5 Preview TTS
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:streamGenerateContent?key={api_key}"
+    # [QUAN TRỌNG 1] Dùng đúng URL của model 2.5 Preview TTS (Dùng generateContent thay vì stream để ổn định hơn)
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key={api_key}"url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:streamGenerateContent?key={api_key}"
     
     # [QUAN TRỌNG 2] Payload giống hệt file Python của bạn
     payload = {
@@ -1786,39 +1786,7 @@ else:
             # Lưu ý cho người dùng
             st.info("💡 Mẹo: Gemini sẽ tự động điều chỉnh ngữ điệu miền Nam dựa trên yêu cầu ngầm định của hệ thống.")
               
-            # --- [MỚI] DEBUG TOOL: KIỂM TRA MODEL ---
-            st.markdown("---")
-            with st.expander("🛠️ Công cụ Admin: Kiểm tra Danh sách Model"):
-                if st.button("🔍 Quét các Model khả dụng"):
-                    try:
-                        # Lấy key từ secrets
-                        api_key = st.secrets["gemini"]["key"]
-                        
-                        st.write("⏳ Đang kết nối Google server...")
-                        
-                        # 1. Kiểm tra v1beta
-                        st.caption("Checking v1beta...")
-                        r_beta = requests.get(f"https://generativelanguage.googleapis.com/v1beta/models?key={api_key}")
-                        if r_beta.status_code == 200:
-                            models = r_beta.json().get('models', [])
-                            # Lọc ra các model Gemini 2.0
-                            found_names = [m['name'] for m in models if 'gemini-2.0' in m['name']]
-                            st.success(f"✅ Beta có: {found_names}")
-                        else:
-                            st.warning(f"Beta error: {r_beta.status_code}")
-                        
-                        # 2. Kiểm tra v1alpha (Quan trọng nhất cho bản Audio)
-                        st.caption("Checking v1alpha...")
-                        r_alpha = requests.get(f"https://generativelanguage.googleapis.com/v1alpha/models?key={api_key}")
-                        if r_alpha.status_code == 200:
-                            models = r_alpha.json().get('models', [])
-                            found_names = [m['name'] for m in models if 'gemini-2.0' in m['name']]
-                            st.info(f"ℹ️ Alpha có: {found_names}")
-                        else:
-                            st.warning(f"Alpha error: {r_alpha.status_code}")
-                            
-                    except Exception as e:
-                        st.error(f"Lỗi kiểm tra: {e}")     
+              
 
             if 'temp_ai_audio' in st.session_state and st.session_state['temp_ai_audio']:
                 st.audio(st.session_state['temp_ai_audio'])
