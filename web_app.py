@@ -1782,8 +1782,8 @@ else:
                     with c2:
                         # [CẬP NHẬT] Thêm hướng dẫn vào nút bấm
                         audio_data = mic_recorder(
-                            start_prompt="🔴 BẮT ĐẦU THU (Bấm xong nhớ chờ xử lý)",
-                            stop_prompt="⏹️ KẾT THÚC (Đang lưu... Vui lòng đợi!)",
+                            start_prompt="🔴 BẮT ĐẦU THU ",
+                            stop_prompt="⏹️ KẾT THÚC THU)",
                             just_once=True, 
                             use_container_width=True,
                             format="wav", 
