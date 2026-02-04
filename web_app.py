@@ -1780,20 +1780,30 @@ else:
                         """, unsafe_allow_html=True)
                     
                     with c2:
-                        # Nút thu âm
+                        # [CẬP NHẬT] Thêm hướng dẫn vào nút bấm
                         audio_data = mic_recorder(
-                            start_prompt="🔴 BẤM ĐỂ BẮT ĐẦU THU",
-                            stop_prompt="⏹️ BẤM ĐỂ DỪNG THU",
+                            start_prompt="🔴 BẮT ĐẦU THU (Bấm xong nhớ chờ xử lý)",
+                            stop_prompt="⏹️ KẾT THÚC (Đang lưu... Vui lòng đợi!)",
                             just_once=True, 
                             use_container_width=True,
                             format="wav", 
-                            key="new_mic_recorder_v3" # Đổi key mới nhất
+                            key="new_mic_recorder_v3"
                         )
                         
                         if audio_data:
-                            st.session_state['temp_record_file'] = audio_data['bytes']
-                            st.session_state['temp_record_name'] = f"record_{datetime.now().strftime('%H%M%S')}.wav"
-                            st.rerun()
+                            # [QUAN TRỌNG] Hiện vòng quay xử lý ngay lập tức để người dùng không bấm lung tung
+                            with st.spinner("💾 Đang lưu file... Vui lòng KHÔNG bấm gì thêm!"):
+                                raw_bytes = audio_data['bytes']
+                                # Kiểm tra: Nếu file > 20MB (khoảng 20 phút) thì từ chối
+                                if len(raw_bytes) > 20 * 1024 * 1024:
+                                    st.error("⚠️ File ghi âm quá dài (>20MB). Vui lòng thu ngắn hơn!")
+                                else:
+                                    st.session_state['temp_record_file'] = raw_bytes
+                                st.session_state['temp_record_name'] = f"record_{datetime.now().strftime('%H%M%S')}.wav"
+                                
+                                # Ngủ nhẹ 1 giây để đảm bảo session kịp cập nhật trước khi reload trang
+                                time.sleep(1) 
+                                st.rerun()
                 else:
                     # Giao diện sau khi thu xong
                     st.success("✅ Đã thu xong! Hãy nghe lại bên dưới:")
