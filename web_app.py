@@ -875,10 +875,10 @@ def admin_dashboard():
     
     # --- CẤU HÌNH CÁC GÓI CƯỚC (Đã cập nhật theo yêu cầu) ---
     PLAN_CONFIG = {
-        "Free (Miễn phí)":    {"quota_per_month": 10,  "code": "free"},    # 10 video
-        "Gói 30k (Cơ bản)":   {"quota_per_month": 30,  "code": "basic"},   # 30 video
-        "Gói 60k (Nâng cao)": {"quota_per_month": 60,  "code": "pro"},     # [ĐÃ SỬA] Giảm còn 60 video để cắt lỗ
-        "Gói huynh đệ":       {"quota_per_month": 60,  "code": "huynhde"}  # 60 video
+            "Free (Miễn phí)":    {"quota_per_month": 10,  "code": "free"},
+            "Gói 30k (Cơ bản)":   {"quota_per_month": 30,  "code": "basic"},
+            "Gói 60k (Nâng cao)": {"quota_per_month": 60,  "code": "pro"}, # Đã giảm từ 90 xuống 60
+            "Gói huynh đệ":       {"quota_per_month": 60,  "code": ""}
     }
 
     with tab1:
@@ -889,7 +889,7 @@ def admin_dashboard():
             "Free (Miễn phí)":    {"quota_per_month": 10,  "code": "free"},
             "Gói 30k (Cơ bản)":   {"quota_per_month": 30,  "code": "basic"},
             "Gói 60k (Nâng cao)": {"quota_per_month": 90,  "code": "pro"},
-            "Gói huynh đệ":       {"quota_per_month": 60,  "code": "huynhde"}
+            "Gói huynh đệ":       {"quota_per_month": 60,  "code": "dacbiet"}
         }
         
         DURATION_CONFIG = {
@@ -1916,12 +1916,20 @@ else:
                 link = upload_to_catbox(st.session_state['temp_record_file'], st.session_state['temp_record_name'])
                 if link: final_audio_link_to_send = link; ready_to_send = True
 
-        # --- [BUSSINESS LOGIC] GIỚI HẠN ĐỘ DÀI ĐỂ BẢO VỆ CHI PHÍ ---
-        # [CẬP NHẬT] Giảm giới hạn Pro xuống 1100 từ (tương đương 5 phút) để tránh lỗ vốn API
+        # --- [CẬP NHẬT] GIỚI HẠN ĐỘ DÀI THEO PHƯƠNG THỨC GIỌNG NÓI & GÓI CƯỚC ---
         word_count = len(noi_dung_gui.split())
-        MAX_WORDS = 1100 if user.get('plan') in ['pro', 'huynhde'] else 800
         
-        if not noi_dung_gui: 
+        if voice_method == "🤖 Giọng AI Google":
+            # Nếu dùng Gemini: Gói Pro/Huynhde cho 1100 từ, các gói còn lại (Basic/Free) cho 800 từ
+            if user.get('plan') in ['pro', 'huynhde']:
+                MAX_WORDS = 1100
+            else:
+                MAX_WORDS = 800
+        else:
+            # Các phương thức khác (Tự thu âm, Tải file lên, Dùng giọng có sẵn) cho phép đến 2000 từ
+            MAX_WORDS = 2000
+            
+        if not noi_dung_gui:
             st.toast("⚠️ Thiếu nội dung!", icon="⚠️")
         elif word_count > MAX_WORDS:
             st.error(f"⚠️ Nội dung quá dài ({word_count} từ). Gói hiện tại chỉ cho phép tối đa {MAX_WORDS} từ/video. Vui lòng cắt ngắn bớt!")
