@@ -1714,44 +1714,90 @@ else:
                     st.session_state['temp_upload_name'] = uploaded_file.name
                     st.success(f"✅ Đã chọn: {uploaded_file.name}")
 
-        # CASE 3: THU ÂM TRỰC TIẾP
+        # CASE 3: THU ÂM TRỰC TIẾP (GIAO DIỆN MÁY NHẮC CHỮ)
         elif voice_method == "🎙️ Thu âm trực tiếp": 
-            st.markdown("##### 🎙️ Bảng điều khiển thu âm")
             
-            # Kiểm tra xem đã có file thu âm trong bộ nhớ chưa
-            has_recording = 'temp_record_file' in st.session_state and st.session_state['temp_record_file'] is not None
+            # Tạo một khung chứa riêng biệt (như cửa sổ)
+            with st.container(border=True):
+                st.markdown("<h3 style='text-align: center; color: #D32F2F;'>🎙️ PHÒNG THU ÂM</h3>", unsafe_allow_html=True)
+                
+                # 1. HIỆN KỊCH BẢN ĐỂ ĐỌC (MÁY NHẮC CHỮ)
+                current_script = st.session_state.get('main_content_area', "")
+                
+                if not current_script:
+                    st.warning("⚠️ Bạn chưa nhập nội dung ở Bước 1. Vui lòng quay lại nhập kịch bản trước khi thu!")
+                else:
+                    # Tạo khung hiển thị văn bản to, rõ, nền giấy dễ đọc
+                    st.markdown(f"""
+                    <div style="
+                        background-color: #fff; 
+                        color: #000; 
+                        padding: 20px; 
+                        border-radius: 10px; 
+                        border: 2px solid #5D4037; 
+                        font-size: 22px; 
+                        line-height: 1.6; 
+                        max-height: 400px; 
+                        overflow-y: auto; 
+                        margin-bottom: 20px;
+                        box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
+                    ">
+                        <b>📝 Kịch bản cần đọc:</b><br><br>
+                        {current_script.replace(chr(10), '<br>')}
+                    </div>
+                    """, unsafe_allow_html=True)
 
-            # KHU VỰC THU ÂM (Luôn hiện để có thể thu lại đè lên)
-            if not has_recording:
-                c_mic1, c_mic2 = st.columns([3, 1])
-                with c_mic1:
-                    st.info("💡GIỮ IM LẶNG 5 GIÂY ĐẦU")
-                
-                # Gọi thư viện mic_recorder mới
-                audio_data = mic_recorder(
-                    start_prompt="🔴 BẤM ĐỂ BẮT ĐẦU THU",
-                    stop_prompt="⏹️ BẤM ĐỂ DỪNG THU",
-                    just_once=True, 
-                    use_container_width=True,
-                    format="wav", 
-                    key="new_mic_recorder"
-                )
-                
-                if audio_data:
-                    st.session_state['temp_record_file'] = audio_data['bytes']
-                    st.session_state['temp_record_name'] = f"record_{datetime.now().strftime('%H%M%S')}.wav"
-                    st.rerun()
+                st.markdown("---")
 
-            # KHU VỰC NGHE LẠI & XÁC NHẬN
-            else:
-                st.success("✅ Đã thu âm thành công!")
-                st.audio(st.session_state['temp_record_file'], format="audio/wav")
-                
-                if st.button("🔄 Xóa và Thu lại", use_container_width=True, type="secondary"):
-                    st.session_state['temp_record_file'] = None
-                    st.rerun()
+                # 2. BẢNG ĐIỀU KHIỂN THU ÂM (NẰM NGAY DƯỚI KỊCH BẢN)
+                has_recording = 'temp_record_file' in st.session_state and st.session_state['temp_record_file'] is not None
+
+                if not has_recording:
+                    c1, c2 = st.columns([1, 1])
+                    with c1:
+                        st.markdown("""
+                        <div style="background-color: #E3F2FD; padding: 10px; border-radius: 5px; color: #0D47A1; font-size: 14px;">
+                            💡 <b>Mẹo:</b> Giữ im lặng 3 giây đầu để lọc ồn tốt hơn.
+                        </div>
+                        """, unsafe_allow_html=True)
                     
-                st.info("👇 Nếu đã ưng ý, hãy bấm nút **'🚀 GỬI YÊU CẦU TẠO VIDEO'** bên dưới.")
+                    with c2:
+                        # Nút thu âm
+                        audio_data = mic_recorder(
+                            start_prompt="🔴 BẤM ĐỂ BẮT ĐẦU THU",
+                            stop_prompt="⏹️ BẤM ĐỂ DỪNG THU",
+                            just_once=True, 
+                            use_container_width=True,
+                            format="wav", 
+                            key="new_mic_recorder_v2" # Đổi key để tránh lỗi cache cũ
+                        )
+                        
+                        if audio_data:
+                            st.session_state['temp_record_file'] = audio_data['bytes']
+                            st.session_state['temp_record_name'] = f"record_{datetime.now().strftime('%H%M%S')}.wav"
+                            st.rerun()
+                else:
+                    # Giao diện sau khi thu xong
+                    st.success("✅ Đã thu xong! Hãy nghe lại bên dưới:")
+                    st.audio(st.session_state['temp_record_file'], format="audio/wav")
+                    
+                    col_act1, col_act2 = st.columns(2)
+                    with col_act1:
+                         if st.button("🔄 Thu lại từ đầu", use_container_width=True, type="secondary"):
+                            st.session_state['temp_record_file'] = None
+                            st.rerun()
+                    with col_act2:
+                        st.markdown("""
+                        <div style="
+                            text-align: center; 
+                            font-weight: bold; 
+                            color: #2E7D32; 
+                            padding: 8px; 
+                            border: 1px dashed #2E7D32; 
+                            border-radius: 5px;">
+                            👇 Kéo xuống cuối trang bấm GỬI
+                        </div>
+                        """, unsafe_allow_html=True)
         
 
         # CASE 4: GIỌNG AI CHẤT LƯỢNG CAO
