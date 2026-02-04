@@ -36,7 +36,23 @@ def get_cookie_manager():
 
 cookie_manager = get_cookie_manager()
 
+# --- [NEW] RATE LIMIT (CHỐNG SPAM) ---
+def check_rate_limit(user_email):
+    # Key lưu thời gian lần cuối request
+    last_req_key = f"last_req_{user_email}"
+    current_time = time.time()
+    
+    if last_req_key in st.session_state:
+        # Nếu khoảng cách giữa 2 lần bấm < 5 giây -> Chặn
+        if current_time - st.session_state[last_req_key] < 5:
+            return False
+    
+    st.session_state[last_req_key] = current_time
+    return True
+
+
 # --- [NEW] HÀM XỬ LÝ TOKEN (AUTO LOGIN) ---
+
 def update_session_token(user_id, token):
     try:
         supabase.table('users').update({"session_token": token}).eq('id', user_id).execute()
@@ -58,6 +74,20 @@ def login_by_token():
         except Exception as e:
             print(f"Lỗi auto login: {e}")
     return None
+
+# --- [NEW] HÀM CHỐNG SPAM (RATE LIMIT) ---
+def check_rate_limit(user_email):
+    # Key lưu thời gian lần cuối request
+    last_req_key = f"last_req_{user_email}"
+    current_time = time.time()
+    
+    if last_req_key in st.session_state:
+        # Nếu khoảng cách giữa 2 lần bấm < 5 giây -> Chặn
+        if current_time - st.session_state[last_req_key] < 5:
+            return False
+    
+    st.session_state[last_req_key] = current_time
+    return True
 
 # FILE: web_app.py (VERSION 7.2 - FULL SETTINGS RESTORED)
 
@@ -1868,6 +1898,12 @@ else:
     
     # Disable nút bấm nếu hết Quota
     if st.button("🚀 GỬI YÊU CẦU TẠO VIDEO", type="primary", use_container_width=True, disabled=is_out_of_quota):
+        
+        # [NEW] Kiểm tra spam (Chống bấm liên tục)
+        if not check_rate_limit(user['email']):
+            st.warning("⚠️ Bạn thao tác quá nhanh! Vui lòng chờ 5 giây.")
+            st.stop() # Dừng ngay lập tức, không chạy code bên dưới
+
         ready_to_send = False
         
         # Logic upload file giữ nguyên
@@ -1882,8 +1918,17 @@ else:
                 link = upload_to_catbox(st.session_state['temp_record_file'], st.session_state['temp_record_name'])
                 if link: final_audio_link_to_send = link; ready_to_send = True
 
-        if not noi_dung_gui: st.toast("⚠️ Thiếu nội dung!", icon="⚠️")
-        elif not ready_to_send: st.toast("⚠️ Thiếu file âm thanh!", icon="⚠️")
+        # --- [BUSSINESS LOGIC] GIỚI HẠN ĐỘ DÀI ĐỂ BẢO VỆ CHI PHÍ ---
+        # Quy định: Gói Free/Basic max 1000 từ, Pro max 2000 từ
+        word_count = len(noi_dung_gui.split())
+        MAX_WORDS = 2000 if user.get('plan') in ['pro', 'huynhde'] else 800
+        
+        if not noi_dung_gui: 
+            st.toast("⚠️ Thiếu nội dung!", icon="⚠️")
+        elif word_count > MAX_WORDS:
+            st.error(f"⚠️ Nội dung quá dài ({word_count} từ). Gói hiện tại chỉ cho phép tối đa {MAX_WORDS} từ/video. Vui lòng cắt ngắn bớt!")
+        elif not ready_to_send: 
+            st.toast("⚠️ Thiếu file âm thanh!", icon="⚠️")
         else:
             try:
                 gc = get_gspread_client()
