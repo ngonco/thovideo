@@ -29,13 +29,16 @@ def init_supabase():
 # Khởi tạo kết nối ngay lập tức
 supabase = init_supabase()
 
-# --- [NEW] QUẢN LÝ COOKIE ---
-# [ĐÃ SỬA] Bỏ @st.cache_resource vì CookieManager là Widget, không được cache
+# --- [NEW] QUẢN LÝ COOKIE (SỬA LỖI LOADING) ---
+@st.cache_resource
 def get_cookie_manager():
-    # Thêm key="cookie_manager" để định danh duy nhất, tránh reload lỗi
-    return stx.CookieManager(key="cookie_manager")
+    return stx.CookieManager(key="cookie_manager_stable")
 
-cookie_manager = get_cookie_manager()
+try:
+    cookie_manager = get_cookie_manager()
+except:
+    st.error("Trình duyệt đang chặn Cookie hoặc thành phần chưa tải kịp. Vui lòng F5 trang.")
+    st.stop()
 
 # --- [NEW] RATE LIMIT (CHỐNG SPAM) ---
 def check_rate_limit(user_email):
