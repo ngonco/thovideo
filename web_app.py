@@ -75,19 +75,7 @@ def login_by_token():
             print(f"Lỗi auto login: {e}")
     return None
 
-# --- [NEW] HÀM CHỐNG SPAM (RATE LIMIT) ---
-def check_rate_limit(user_email):
-    # Key lưu thời gian lần cuối request
-    last_req_key = f"last_req_{user_email}"
-    current_time = time.time()
-    
-    if last_req_key in st.session_state:
-        # Nếu khoảng cách giữa 2 lần bấm < 5 giây -> Chặn
-        if current_time - st.session_state[last_req_key] < 5:
-            return False
-    
-    st.session_state[last_req_key] = current_time
-    return True
+
 
 # FILE: web_app.py (VERSION 7.2 - FULL SETTINGS RESTORED)
 
@@ -2005,7 +1993,10 @@ else:
                 st.error("⚠️ Hệ thống phát hiện bạn đã hết Quota. Vui lòng nạp thêm!")
                 st.stop()
 
+        # Nếu kiểm tra rate limit trả về False (tức là bấm quá nhanh)
         if not check_rate_limit(user['email']):
+            st.warning("⚠️ Bạn thao tác quá nhanh! Vui lòng chờ 5 giây.")
+            st.stop()  # Dừng chương trình ngay lập tức
         
         ready_to_send = False
         
