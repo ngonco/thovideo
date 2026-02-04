@@ -1756,8 +1756,17 @@ else:
                     c1, c2 = st.columns([1, 1])
                     with c1:
                         st.markdown("""
-                        <div style="background-color: #E3F2FD; padding: 10px; border-radius: 5px; color: #0D47A1; font-size: 14px;">
-                            💡 <b>Mẹo:</b> Giữ im lặng 3 giây đầu để lọc ồn tốt hơn.
+                        <div style="
+                            background-color: #E3F2FD; 
+                            padding: 15px; 
+                            border-radius: 8px; 
+                            color: #0D47A1; 
+                            font-size: 20px; 
+                            font-weight: bold; 
+                            text-align: center;
+                            border: 1px solid #90CAF9;
+                        ">
+                            💡 Giữ im lặng 5 giây đầu để lọc ồn tốt hơn.
                         </div>
                         """, unsafe_allow_html=True)
                     
