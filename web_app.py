@@ -640,15 +640,30 @@ def clean_text_for_tts(text):
 # --- [NEW] HÀM GỌI API TTS (CHẤT LƯỢNG CAO) ---
 
 def tts_fpt(text):
-    """FPT.ai - Giọng Ban Mai/Minh Quang rất hay"""
-    url = "https://api.fpt.ai/hdl/tts/v1/prediction"
-    headers = {"api-key": st.secrets["tts"]["fpt_key"], "speed": "0", "voice": "banmai"}
+    """FPT.ai - API v5 (Cập nhật mới)"""
+    url = "https://api.fpt.ai/hmi/tts/v5"
+    
+    # [QUAN TRỌNG] Lấy API Key từ file secrets (Bảo mật)
+    # Không điền trực tiếp key '1111...' vào đây để tránh bị lộ
+    api_key = st.secrets["tts"]["fpt_key"]
+    
+    headers = {
+        "api-key": api_key,
+        "speed": "-1",        # Tốc độ đọc: -1 (hơi chậm, phù hợp đọc truyện/tâm sự)
+        "voice": "minhquang"     # 'banmai' (Nữ miền Bắc) hoặc 'minhquang' (Nam miền Bắc)
+    }
+    
     try:
-        # FPT trả về link MP3 sau khi xử lý
+        # Gửi dữ liệu lên FPT (Encode utf-8 để không lỗi tiếng Việt)
         response = requests.post(url, data=text.encode('utf-8'), headers=headers)
+        
         if response.status_code == 200:
+            # Lấy link file âm thanh từ kết quả trả về
             return response.json().get("async")
-    except: pass
+        else:
+            print(f"Lỗi FPT trả về: {response.text}")
+    except Exception as e: 
+        print(f"Lỗi kết nối FPT: {e}")
     return None
 
 def tts_azure(text):
