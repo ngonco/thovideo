@@ -2200,9 +2200,20 @@ else:
                     script_preview = " ".join(words[:10]) + "..." if len(words) > 10 else decoded_content
                 except: script_preview = ""
 
-                # Format ngày & Trạng thái
-                try: display_date = pd.to_datetime(date_str).strftime('%d/%m/%Y - %H:%M')
-                except: display_date = str(date_str)
+                # Format ngày & Trạng thái (Đã sửa lỗi lệch múi giờ Việt Nam)
+                try:
+                    # Chuyển chuỗi chữ thành định dạng thời gian
+                    dt_obj = pd.to_datetime(date_str)
+                    
+                    # Nếu thời gian chưa có múi giờ, ta gán cho nó là UTC, sau đó chuyển sang giờ VN (+7)
+                    if dt_obj.tzinfo is None:
+                        dt_obj = dt_obj.tz_localize('UTC').tz_convert('Asia/Ho_Chi_Minh')
+                    else:
+                        dt_obj = dt_obj.tz_convert('Asia/Ho_Chi_Minh')
+                        
+                    display_date = dt_obj.strftime('%d/%m/%Y - %H:%M')
+                except Exception as e:
+                    display_date = str(date_str)
                 vn_status = status_map.get(raw_status, raw_status)
 
                 # HIỂN THỊ EXPANDER
