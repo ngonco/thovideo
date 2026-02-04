@@ -1654,7 +1654,7 @@ else:
 
     # Tạo danh sách lựa chọn
     # Tạo danh sách lựa chọn
-    voice_options = ["🎙️ Thu âm trực tiếp", "📤 Tải file lên", "🤖 Giọng AI Google"]
+    voice_options = ["🎙️ Thu âm trực tiếp", "📤 Tải file lên", "🤖 Giọng AI Gemini"]
     
     # Chỉ thêm lựa chọn này nếu file audio TỒN TẠI
     if has_valid_audio: 
