@@ -1,4 +1,3 @@
-import email
 import streamlit as st
 import pandas as pd
 import requests
@@ -29,16 +28,13 @@ def init_supabase():
 # Khởi tạo kết nối ngay lập tức
 supabase = init_supabase()
 
-# --- [NEW] QUẢN LÝ COOKIE (SỬA LỖI LOADING) ---
-@st.cache_resource
+# --- [NEW] QUẢN LÝ COOKIE ---
+# [ĐÃ SỬA] Bỏ @st.cache_resource vì CookieManager là Widget, không được cache
 def get_cookie_manager():
-    return stx.CookieManager(key="cookie_manager_stable")
+    # Thêm key="cookie_manager" để định danh duy nhất, tránh reload lỗi
+    return stx.CookieManager(key="cookie_manager")
 
-try:
-    cookie_manager = get_cookie_manager()
-except:
-    st.error("Trình duyệt đang chặn Cookie hoặc thành phần chưa tải kịp. Vui lòng F5 trang.")
-    st.stop()
+cookie_manager = get_cookie_manager()
 
 # --- [NEW] RATE LIMIT (CHỐNG SPAM) ---
 def check_rate_limit(user_email):
@@ -130,7 +126,8 @@ def save_user_settings_supabase(user_id, settings_dict):
 def check_login(email, password):
     try:
         # 1. Tìm user trong Supabase (Bảng 'users')
-        response = supabase.table('users').select("id, email, password, quota_used, quota_max, plan, role, settings, stock_level").eq('email', email).execute()        
+        response = supabase.table('users').select("*").eq('email', email).execute()
+        
         if response.data and len(response.data) > 0:
             user_data = response.data[0]
             stored_hash = user_data['password']
@@ -151,9 +148,10 @@ def check_login(email, password):
                 # Trả về thông tin user để lưu vào session
                 return user_data
     except Exception as e:
-        # Hiển thị lỗi trực tiếp để chủ app biết đường sửa
-        st.error(f"Lỗi kỹ thuật Supabase: {e}")
-        print(f"DEBUG LOGIN ERROR: {e}")
+        # In lỗi ra màn hình đen (console) để admin sửa
+        print(f"DEBUG LOGIN ERROR: {e}") 
+        # Chỉ báo lỗi chung chung cho người dùng để bảo mật
+        st.error("Đã xảy ra lỗi kết nối. Vui lòng thử lại sau.")
     
     # [BẢO MẬT] Làm chậm hacker 2 giây nếu đăng nhập thất bại
     time.sleep(2) 
@@ -216,8 +214,8 @@ def auto_save_callback():
         # Lấy nội dung mới nhất từ ô nhập liệu (thông qua key)
         current_content = st.session_state['main_content_area']
         
-        # Gọi hàm lưu vào Sheet
-        save_draft_to_sheet(user_email, current_content)
+        # Gọi hàm lưu vào Supabase
+        save_draft_to_supabase(user_email, current_content)
         
         # Hiện thông báo nhỏ góc dưới (Toast) để người dùng yên tâm
         st.toast("Đã tự động lưu nháp! ✅")
@@ -859,7 +857,7 @@ def sync_sheet_to_supabase():
     
 # --- [UPDATE] GIAO DIỆN ADMIN DASHBOARD ---
 def admin_dashboard():
-    # [FIX] CSS MÀU CHỮ TAB CHO ADMIN
+    # [FIX] CSS MÀU CHỮ TAB CHO ADMIN (Paste đoạn này vào đây hoặc vào get_app_style đều được)
     st.markdown("""
     <style>
         button[data-baseweb="tab"] div[data-testid="stMarkdownContainer"] p {
@@ -872,8 +870,8 @@ def admin_dashboard():
     st.markdown("---")
     st.title("🛠️ QUẢN TRỊ VIÊN (ADMIN)")
     
-    # [CẬP NHẬT] Thêm Tab thứ 4 là Báo cáo Tài chính
-    tab1, tab2, tab3, tab4 = st.tabs(["👥 Thêm User Mới", "🔄 Đồng bộ Kịch bản", "✏️ Sửa/Tìm User", "📊 Tài chính & Lợi nhuận"])
+    # [CẬP NHẬT] Thêm Tab thứ 3 là Quản lý User
+    tab1, tab2, tab3 = st.tabs(["👥 Thêm User Mới", "🔄 Đồng bộ Kịch bản", "✏️ Sửa/Tìm User"])
     
     # --- CẤU HÌNH CÁC GÓI CƯỚC (Đã cập nhật theo yêu cầu) ---
     PLAN_CONFIG = {
@@ -1059,101 +1057,6 @@ def admin_dashboard():
                     st.rerun()
                 except Exception as e:
                     st.error(f"Lỗi khi lưu: {e}")
-
-    with tab4:
-        st.subheader("💰 Báo cáo Doanh thu & Chi phí API")
-        
-        # --- 1. CẤU HÌNH GIÁ VỐN & GIÁ BÁN ---
-        st.markdown("##### ⚙️ Tham số tính toán")
-        c_cost1, c_cost2 = st.columns(2)
-        with c_cost1:
-            # Ước tính: 1 video tốn bao nhiêu tiền API (Gemini + Server + Database)
-            # Ví dụ: Gemini rẻ, nhưng tính cả điện, server... tạm tính 200đ/video
-            COST_PER_VIDEO = st.number_input("Chi phí vốn cho 1 Video (VND)", value=200, step=50, help="Chi phí API + Server ước tính cho mỗi video tạo ra")
-        with c_cost2:
-            st.info("💡 Thay đổi số liệu bên cạnh để dự báo lợi nhuận thực tế.")
-
-        # Bảng giá bán (Revenue)
-        PLAN_PRICE = {
-            "free": 0,          # Miễn phí
-            "basic": 30000,     # Gói 30k
-            "pro": 60000,       # Gói 60k
-            "huynhde": 0        # Gói từ thiện -> Doanh thu = 0
-        }
-        
-        # --- 2. TÍNH TOÁN SỐ LIỆU ---
-        try:
-            # Lấy toàn bộ user từ DB để thống kê
-            all_users_res = supabase.table('users').select("email, plan, quota_used").execute()
-            df_users = pd.DataFrame(all_users_res.data)
-            
-            if not df_users.empty:
-                # Tổng hợp dữ liệu
-                total_users = len(df_users)
-                total_videos_created = df_users['quota_used'].sum()
-                
-                # Tính doanh thu & chi phí từng user
-                df_users['Doanh_Thu'] = df_users['plan'].map(lambda x: PLAN_PRICE.get(x, 0))
-                df_users['Chi_Phi_Vốn'] = df_users['quota_used'] * COST_PER_VIDEO
-                df_users['Loi_Nhuan'] = df_users['Doanh_Thu'] - df_users['Chi_Phi_Vốn']
-                
-                # Tổng kết toàn hệ thống
-                total_revenue = df_users['Doanh_Thu'].sum()
-                total_cost = df_users['Chi_Phi_Vốn'].sum()
-                net_profit = total_revenue - total_cost
-                
-                # --- 3. HIỂN THỊ DASHBOARD ---
-                # Hiển thị 3 chỉ số lớn (Metrics)
-                m1, m2, m3 = st.columns(3)
-                m1.metric("Tổng Doanh Thu", f"{total_revenue:,} đ")
-                m2.metric("Tổng Chi Phí API (Ước tính)", f"{total_cost:,} đ", delta_color="inverse")
-                m3.metric("LỢI NHUẬN RÒNG", f"{net_profit:,} đ", delta=f"{net_profit:,} đ")
-                
-                st.markdown("---")
-                
-                # --- 4. PHÂN TÍCH RỦI RO (LỖ/LÃI TỪNG GÓI) ---
-                st.markdown("#### 📉 Dự báo Lỗ/Lãi theo từng nhóm khách")
-                
-                # Nhóm theo gói cước (Plan)
-                grouped = df_users.groupby('plan').agg({
-                    'email': 'count', 
-                    'Doanh_Thu': 'sum', 
-                    'Chi_Phi_Vốn': 'sum',
-                    'Loi_Nhuan': 'sum'
-                }).reset_index()
-                
-                grouped = grouped.rename(columns={'email': 'Số User', 'plan': 'Gói Cước'})
-                
-                # Hiển thị bảng màu mè cho dễ nhìn
-                st.dataframe(
-                    grouped.style.format({
-                        "Doanh_Thu": "{:,.0f} đ", 
-                        "Chi_Phi_Vốn": "{:,.0f} đ", 
-                        "Loi_Nhuan": "{:,.0f} đ"
-                    }).background_gradient(subset=['Loi_Nhuan'], cmap='RdYlGn'),
-                    use_container_width=True
-                )
-                
-                # --- 5. CẢNH BÁO ĐẶC BIỆT ---
-                st.markdown("##### ⚠️ Cảnh báo chi phí:")
-                
-                # Tính riêng gói Huynh Đệ
-                hd_stats = grouped[grouped['Gói Cước'] == 'huynhde']
-                if not hd_stats.empty:
-                    loss_hd = abs(hd_stats['Loi_Nhuan'].values[0])
-                    st.error(f"🔴 **Gói Huynh Đệ (Từ thiện):** Bạn đang trợ giá khoảng **{loss_hd:,} VNĐ** tiền API cho nhóm này.")
-                
-                # Tính riêng gói Free
-                free_stats = grouped[grouped['Gói Cước'] == 'free']
-                if not free_stats.empty:
-                    loss_free = abs(free_stats['Loi_Nhuan'].values[0])
-                    st.warning(f"🟡 **Gói Dùng thử (Free):** Chi phí marketing/dùng thử hiện tại là **{loss_free:,} VNĐ**.")
-
-            else:
-                st.info("Chưa có dữ liệu user nào.")
-                
-        except Exception as e:
-            st.error(f"Lỗi tính toán: {e}")
 # --- CSS GIAO DIỆN (FIXED FILE UPLOADER VISIBILITY) ---
 st.markdown("""
     <style>
@@ -1995,10 +1898,7 @@ else:
                 st.error("⚠️ Hệ thống phát hiện bạn đã hết Quota. Vui lòng nạp thêm!")
                 st.stop()
 
-        # Nếu kiểm tra rate limit trả về False (tức là bấm quá nhanh)
         if not check_rate_limit(user['email']):
-            st.warning("⚠️ Bạn thao tác quá nhanh! Vui lòng chờ 5 giây.")
-            st.stop()  # Dừng chương trình ngay lập tức
         
         ready_to_send = False
         
