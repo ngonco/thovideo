@@ -2132,12 +2132,10 @@ else:
                     st.balloons()
                     st.rerun()
                 else:
-                    # Thông báo và giữ nguyên màn hình để khách yên tâm
-                    st.warning(f"✅ ĐÃ NHẬN ĐƠN THÀNH CÔNG! Mã đơn: {order_id}")
-                    st.info("🌙 Hệ thống sẽ xử lý video của bạn vào đầu giờ sáng mai (sau 7:00). Bạn có thể đóng trình duyệt ngay bây giờ.")
+                    # [ĐÃ SỬA] Dùng st.success và st.rerun giống hệt bên trên, chỉ khác nội dung
+                    st.success(f"🌙 ĐÃ NHẬN ĐƠN NGOÀI GIỜ! Mã đơn: {order_id}. Hệ thống sẽ xử lý sau 7:00 sáng.")
                     st.balloons()
-                    # Dùng stop thay vì rerun để giữ thông báo này vĩnh viễn cho đến khi họ tự tay chuyển trang
-                    st.stop()
+                    st.rerun()
                 
             except Exception as e: st.error(f"Lỗi hệ thống: {e}")
 
