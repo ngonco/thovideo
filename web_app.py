@@ -2112,9 +2112,32 @@ else:
                 # [MOI] Xóa cache lịch sử cũ & Bật thông báo chờ
                 st.session_state['show_wait_message'] = True
                 
-                st.success(f"✅ ĐÃ GỬI THÀNH CÔNG! Mã đơn: {order_id}")
-                st.balloons()
-                st.rerun() # Refresh lại để cập nhật số quota trên giao diện
+                # --- [NEW LOGIC] KIỂM TRA GIỜ ĐỂ HIỆN THÔNG BÁO ---
+                # Biến now_vn đã được tạo ở trên (dòng 1405): now_vn = datetime.utcnow() + timedelta(hours=7)
+                cur_hour = now_vn.hour
+                cur_minute = now_vn.minute
+                
+                # Logic: Giờ làm việc từ 7:00 đến 21:45
+                # Tức là: (Giờ >= 7 và Giờ < 21) HOẶC (Giờ == 21 và Phút <= 45)
+                is_working_time = False
+                if 7 <= cur_hour < 21:
+                    is_working_time = True
+                elif cur_hour == 21 and cur_minute <= 45:
+                    is_working_time = True
+
+                if is_working_time:
+                    st.success(f"✅ ĐÃ GỬI THÀNH CÔNG! Mã đơn: {order_id}. Vui lòng đợi 5 phút.")
+                    st.balloons()
+                    st.rerun()
+                else:
+                    # Nếu ngoài giờ làm việc -> Thông báo chờ đến sáng mai
+                    st.warning(f"✅ ĐÃ GỬI THÀNH CÔNG! Mã đơn: {order_id}")
+                    st.info("🌙 Nội dung của bạn đã được lưu vào danh sách, sáng mai quay lại sau 7h để tải video bạn nhé.\n\n(Hệ thống đang ở chế độ thử nghiệm nên chỉ tạo video nhanh từ 7h sáng đến 21h)")
+                    st.balloons()
+                    
+                    # [QUAN TRỌNG] Dừng 4 giây để người dùng kịp đọc thông báo trước khi reload trang
+                    time.sleep(4)
+                    st.rerun()
                 
             except Exception as e: st.error(f"Lỗi hệ thống: {e}")
 
