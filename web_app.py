@@ -869,7 +869,7 @@ def sync_sheet_to_supabase():
     
 # --- [UPDATE] GIAO DIỆN ADMIN DASHBOARD ---
 def admin_dashboard():
-    # [FIX] CSS MÀU CHỮ TAB CHO ADMIN (Paste đoạn này vào đây hoặc vào get_app_style đều được)
+    # [FIX] CSS MÀU CHỮ TAB CHO ADMIN
     st.markdown("""
     <style>
         button[data-baseweb="tab"] div[data-testid="stMarkdownContainer"] p {
@@ -882,14 +882,14 @@ def admin_dashboard():
     st.markdown("---")
     st.title("🛠️ QUẢN TRỊ VIÊN (ADMIN)")
     
-    # [CẬP NHẬT] Thêm Tab thứ 3 là Quản lý User
-    tab1, tab2, tab3 = st.tabs(["👥 Thêm User Mới", "🔄 Đồng bộ Kịch bản", "✏️ Sửa/Tìm User"])
+    # [CẬP NHẬT] Thêm Tab thứ 4 là Báo cáo Tài chính
+    tab1, tab2, tab3, tab4 = st.tabs(["👥 Thêm User Mới", "🔄 Đồng bộ Kịch bản", "✏️ Sửa/Tìm User", "📊 Tài chính & Lợi nhuận"])
     
     # --- CẤU HÌNH CÁC GÓI CƯỚC (Đã cập nhật theo yêu cầu) ---
     PLAN_CONFIG = {
         "Free (Miễn phí)":    {"quota_per_month": 10,  "code": "free"},    # 10 video
         "Gói 30k (Cơ bản)":   {"quota_per_month": 30,  "code": "basic"},   # 30 video
-        "Gói 60k (Nâng cao)": {"quota_per_month": 90,  "code": "pro"},     # 90 video
+        "Gói 60k (Nâng cao)": {"quota_per_month": 60,  "code": "pro"},     # [ĐÃ SỬA] Giảm còn 60 video để cắt lỗ
         "Gói huynh đệ":       {"quota_per_month": 60,  "code": "huynhde"}  # 60 video
     }
 
@@ -1069,6 +1069,101 @@ def admin_dashboard():
                     st.rerun()
                 except Exception as e:
                     st.error(f"Lỗi khi lưu: {e}")
+
+    with tab4:
+        st.subheader("💰 Báo cáo Doanh thu & Chi phí API")
+        
+        # --- 1. CẤU HÌNH GIÁ VỐN & GIÁ BÁN ---
+        st.markdown("##### ⚙️ Tham số tính toán")
+        c_cost1, c_cost2 = st.columns(2)
+        with c_cost1:
+            # Ước tính: 1 video tốn bao nhiêu tiền API (Gemini + Server + Database)
+            # Ví dụ: Gemini rẻ, nhưng tính cả điện, server... tạm tính 200đ/video
+            COST_PER_VIDEO = st.number_input("Chi phí vốn cho 1 Video (VND)", value=200, step=50, help="Chi phí API + Server ước tính cho mỗi video tạo ra")
+        with c_cost2:
+            st.info("💡 Thay đổi số liệu bên cạnh để dự báo lợi nhuận thực tế.")
+
+        # Bảng giá bán (Revenue)
+        PLAN_PRICE = {
+            "free": 0,          # Miễn phí
+            "basic": 30000,     # Gói 30k
+            "pro": 60000,       # Gói 60k
+            "huynhde": 0        # Gói từ thiện -> Doanh thu = 0
+        }
+        
+        # --- 2. TÍNH TOÁN SỐ LIỆU ---
+        try:
+            # Lấy toàn bộ user từ DB để thống kê
+            all_users_res = supabase.table('users').select("email, plan, quota_used").execute()
+            df_users = pd.DataFrame(all_users_res.data)
+            
+            if not df_users.empty:
+                # Tổng hợp dữ liệu
+                total_users = len(df_users)
+                total_videos_created = df_users['quota_used'].sum()
+                
+                # Tính doanh thu & chi phí từng user
+                df_users['Doanh_Thu'] = df_users['plan'].map(lambda x: PLAN_PRICE.get(x, 0))
+                df_users['Chi_Phi_Vốn'] = df_users['quota_used'] * COST_PER_VIDEO
+                df_users['Loi_Nhuan'] = df_users['Doanh_Thu'] - df_users['Chi_Phi_Vốn']
+                
+                # Tổng kết toàn hệ thống
+                total_revenue = df_users['Doanh_Thu'].sum()
+                total_cost = df_users['Chi_Phi_Vốn'].sum()
+                net_profit = total_revenue - total_cost
+                
+                # --- 3. HIỂN THỊ DASHBOARD ---
+                # Hiển thị 3 chỉ số lớn (Metrics)
+                m1, m2, m3 = st.columns(3)
+                m1.metric("Tổng Doanh Thu", f"{total_revenue:,} đ")
+                m2.metric("Tổng Chi Phí API (Ước tính)", f"{total_cost:,} đ", delta_color="inverse")
+                m3.metric("LỢI NHUẬN RÒNG", f"{net_profit:,} đ", delta=f"{net_profit:,} đ")
+                
+                st.markdown("---")
+                
+                # --- 4. PHÂN TÍCH RỦI RO (LỖ/LÃI TỪNG GÓI) ---
+                st.markdown("#### 📉 Dự báo Lỗ/Lãi theo từng nhóm khách")
+                
+                # Nhóm theo gói cước (Plan)
+                grouped = df_users.groupby('plan').agg({
+                    'email': 'count', 
+                    'Doanh_Thu': 'sum', 
+                    'Chi_Phi_Vốn': 'sum',
+                    'Loi_Nhuan': 'sum'
+                }).reset_index()
+                
+                grouped = grouped.rename(columns={'email': 'Số User', 'plan': 'Gói Cước'})
+                
+                # Hiển thị bảng màu mè cho dễ nhìn
+                st.dataframe(
+                    grouped.style.format({
+                        "Doanh_Thu": "{:,.0f} đ", 
+                        "Chi_Phi_Vốn": "{:,.0f} đ", 
+                        "Loi_Nhuan": "{:,.0f} đ"
+                    }).background_gradient(subset=['Loi_Nhuan'], cmap='RdYlGn'),
+                    use_container_width=True
+                )
+                
+                # --- 5. CẢNH BÁO ĐẶC BIỆT ---
+                st.markdown("##### ⚠️ Cảnh báo chi phí:")
+                
+                # Tính riêng gói Huynh Đệ
+                hd_stats = grouped[grouped['Gói Cước'] == 'huynhde']
+                if not hd_stats.empty:
+                    loss_hd = abs(hd_stats['Loi_Nhuan'].values[0])
+                    st.error(f"🔴 **Gói Huynh Đệ (Từ thiện):** Bạn đang trợ giá khoảng **{loss_hd:,} VNĐ** tiền API cho nhóm này.")
+                
+                # Tính riêng gói Free
+                free_stats = grouped[grouped['Gói Cước'] == 'free']
+                if not free_stats.empty:
+                    loss_free = abs(free_stats['Loi_Nhuan'].values[0])
+                    st.warning(f"🟡 **Gói Dùng thử (Free):** Chi phí marketing/dùng thử hiện tại là **{loss_free:,} VNĐ**.")
+
+            else:
+                st.info("Chưa có dữ liệu user nào.")
+                
+        except Exception as e:
+            st.error(f"Lỗi tính toán: {e}")
 # --- CSS GIAO DIỆN (FIXED FILE UPLOADER VISIBILITY) ---
 st.markdown("""
     <style>
@@ -1900,10 +1995,18 @@ else:
     if st.button("🚀 GỬI YÊU CẦU TẠO VIDEO", type="primary", use_container_width=True, disabled=is_out_of_quota):
         
         # [NEW] Kiểm tra spam (Chống bấm liên tục)
-        if not check_rate_limit(user['email']):
-            st.warning("⚠️ Bạn thao tác quá nhanh! Vui lòng chờ 5 giây.")
-            st.stop() # Dừng ngay lập tức, không chạy code bên dưới
+        # [BẢO MẬT] Kiểm tra Quota thực tế từ DB lần nữa trước khi gọi API tốn tiền
+        # Tránh trường hợp Session lưu user['quota_used'] cũ chưa kịp cập nhật
+        current_db_user = supabase.table('users').select("quota_used, quota_max").eq('id', user['id']).execute()
+        if current_db_user.data:
+            real_used = current_db_user.data[0]['quota_used']
+            real_max = current_db_user.data[0]['quota_max']
+            if real_used >= real_max:
+                st.error("⚠️ Hệ thống phát hiện bạn đã hết Quota. Vui lòng nạp thêm!")
+                st.stop()
 
+        if not check_rate_limit(user['email']):
+        
         ready_to_send = False
         
         # Logic upload file giữ nguyên
@@ -1919,9 +2022,9 @@ else:
                 if link: final_audio_link_to_send = link; ready_to_send = True
 
         # --- [BUSSINESS LOGIC] GIỚI HẠN ĐỘ DÀI ĐỂ BẢO VỆ CHI PHÍ ---
-        # Quy định: Gói Free/Basic max 1000 từ, Pro max 2000 từ
+        # [CẬP NHẬT] Giảm giới hạn Pro xuống 1100 từ (tương đương 5 phút) để tránh lỗ vốn API
         word_count = len(noi_dung_gui.split())
-        MAX_WORDS = 2000 if user.get('plan') in ['pro', 'huynhde'] else 800
+        MAX_WORDS = 1100 if user.get('plan') in ['pro', 'huynhde'] else 800
         
         if not noi_dung_gui: 
             st.toast("⚠️ Thiếu nội dung!", icon="⚠️")
