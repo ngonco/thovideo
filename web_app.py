@@ -431,21 +431,29 @@ def get_app_style():
             padding-bottom: 10px !important;
         }}
 
-        /* 4. [FIX] PHÓNG TO AUDIO PLAYER CHO ĐIỆN THOẠI */
+        /* 4. [FIX] AUDIO PLAYER TRÊN MOBILE (STYLE GIỐNG PC) */
         audio {{
-            height: 65px !important;    /* Tăng chiều cao lên 65px */
-            width: 104% !important;     /* Rộng hơn khung màn hình */
-            margin-left: -2% !important;
+            width: 100% !important;     
+            height: 50px !important;     /* Chiều cao vừa phải giống PC */
             margin-top: 15px !important;
             margin-bottom: 15px !important;
-            border-radius: 15px !important;
+            border-radius: 30px !important; /* Bo tròn mạnh giống PC */
+            box-shadow: none !important; /* Bỏ bóng đen mặc định */
         }}
         
-        /* Phóng to nút bấm Play/Pause bên trong */
-        audio::-webkit-media-controls-play-button {{
-            transform: scale(1.8) !important;
+        /* [QUAN TRỌNG] Đổi màu nền xám mặc định của điện thoại thành màu Nâu Nhạt */
+        audio::-webkit-media-controls-panel {{
+            background-color: #D7CCC8 !important; /* Mã màu nâu nhạt (Cafe sữa) */
+            border: 1px solid #8D6E63 !important; /* Viền nâu đậm nhẹ */
         }}
-
+        
+        /* Chỉnh nút Play trên điện thoại cho nổi bật nhưng không quá to */
+        audio::-webkit-media-controls-play-button {{
+            background-color: #5D4037 !important; /* Nút màu nâu đậm */
+            border-radius: 50% !important;
+            color: white !important;
+            transform: scale(1.3) !important; /* Phóng to vừa phải (1.3) thay vì 1.8 */
+        }}
     }}
     
     footer {{visibility: hidden;}}
