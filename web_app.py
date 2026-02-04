@@ -1899,6 +1899,8 @@ else:
                 st.stop()
 
         if not check_rate_limit(user['email']):
+            st.error("⚠️ Thao tác quá nhanh! Vui lòng đợi 5 giây giữa mỗi lần gửi.")
+            st.stop()
         
         ready_to_send = False
         
