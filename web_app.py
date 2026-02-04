@@ -13,6 +13,7 @@ from supabase import create_client, Client
 from streamlit_mic_recorder import mic_recorder
 import extra_streamlit_components as stx # <--- Thư viện Cookie
 import uuid # <--- Để tạo mã Token ngẫu nhiên
+import struct # <--- [MỚI] Để xử lý file âm thanh WAV
 
 # --- THÊM ĐOẠN NÀY VÀO SAU CÁC DÒNG IMPORT ---
 # Hàm này giúp kết nối Supabase và giữ kết nối không bị ngắt
@@ -637,69 +638,79 @@ def clean_text_for_tts(text):
 
 
 
-# --- [NEW] HÀM GỌI API TTS (CHẤT LƯỢNG CAO) ---
+# --- [NEW] HÀM GỌI API TTS (CHẤT LƯỢNG CAO - GEMINI) ---
 
-def tts_fpt(text):
-    """FPT.ai - API v5 (Cập nhật mới)"""
-    url = "https://api.fpt.ai/hmi/tts/v5"
+def _convert_to_wav(base64_raw_data):
+    """Hàm phụ: Convert raw PCM từ Gemini sang WAV"""
+    try:
+        sample_rate, num_channels, bits_per_sample = 24000, 1, 16
+        raw_buffer = base64.b64decode(base64_raw_data)
+        
+        byte_rate = sample_rate * num_channels * bits_per_sample // 8
+        block_align = num_channels * bits_per_sample // 8
+        wav_header_size, data_size = 44, len(raw_buffer)
+        file_size = wav_header_size + data_size - 8
+        
+        header = bytearray(wav_header_size)
+        header[0:4] = b'RIFF'
+        struct.pack_into('<I', header, 4, file_size)
+        header[8:12] = b'WAVE'
+        header[12:16] = b'fmt '
+        struct.pack_into('<IHHIIHH', header, 16, 16, 1, num_channels, sample_rate, byte_rate, block_align, bits_per_sample)
+        header[36:40] = b'data'
+        struct.pack_into('<I', header, 40, data_size)
+        
+        return bytes(header) + raw_buffer
+    except Exception as e:
+        print(f"Lỗi convert WAV: {e}")
+        return None
+
+def tts_gemini(text):
+    """Google Gemini TTS - Giọng đọc AI thế hệ mới"""
+    # Lấy Key từ secrets (Bạn cần thêm key này vào file secrets.toml)
+    # Cấu trúc secrets: [gemini] key = "..."
+    if "gemini" in st.secrets and "key" in st.secrets["gemini"]:
+        api_key = st.secrets["gemini"]["key"]
+    else:
+        st.error("⚠️ Chưa cấu hình Gemini API Key trong secrets!")
+        return None
+
+    base_url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:streamGenerateContent"
     
-    # [QUAN TRỌNG] Lấy API Key từ file secrets (Bảo mật)
-    # Không điền trực tiếp key '1111...' vào đây để tránh bị lộ
-    api_key = st.secrets["tts"]["fpt_key"]
-    
-    headers = {
-        "api-key": api_key,
-        "speed": "-1",        # Tốc độ đọc: -1 (hơi chậm, phù hợp đọc truyện/tâm sự)
-        "voice": "minhquang"     # 'banmai' (Nữ miền Bắc) hoặc 'minhquang' (Nam miền Bắc)
+    payload = {
+        "contents": [{"role": "user", "parts": [{"text": f"trầm tĩnh: {text}"}]}],
+        "generationConfig": {
+            "responseModalities": ["audio"], 
+            "temperature": 1,
+            "speech_config": {"voice_config": {"prebuilt_voice_config": {"voice_name": "Algieba"}}} # Voice: Algieba
+        }
     }
+    headers = {"Content-Type": "application/json"}
+    url = f"{base_url}?key={api_key}"
     
     try:
-        # Gửi dữ liệu lên FPT (Encode utf-8 để không lỗi tiếng Việt)
-        response = requests.post(url, data=text.encode('utf-8'), headers=headers)
+        response = requests.post(url, headers=headers, json=payload)
         
         if response.status_code == 200:
-            # Lấy link file âm thanh từ kết quả trả về
-            return response.json().get("async")
+            result = response.json()
+            # Xử lý JSON trả về để lấy data âm thanh
+            candidates_data = result[0] if isinstance(result, list) and len(result) > 0 else result
+            
+            if candidates_data and 'candidates' in candidates_data:
+                for candidate in candidates_data['candidates']:
+                    if 'content' in candidate and 'parts' in candidate['content']:
+                        for part in candidate['content']['parts']:
+                            if 'inlineData' in part and 'data' in part['inlineData']:
+                                # Convert sang WAV
+                                wav_data = _convert_to_wav(part['inlineData']['data'])
+                                if wav_data:
+                                    # Upload thẳng lên Cloudinary/Catbox để lấy link
+                                    return upload_to_catbox(wav_data, "gemini_voice.wav")
+            st.error("❌ Không tìm thấy dữ liệu âm thanh trong phản hồi Gemini.")
         else:
-            print(f"Lỗi FPT trả về: {response.text}")
+            st.error(f"❌ Lỗi API Gemini: {response.text}")
     except Exception as e: 
-        print(f"Lỗi kết nối FPT: {e}")
-    return None
-
-def tts_azure(text):
-    """Microsoft Azure - Giọng Hoài My/Nam Minh cực chuẩn"""
-    region = st.secrets["tts"]["azure_region"]
-    url = f"https://{region}.tts.speech.microsoft.com/cognitiveservices/v1"
-    headers = {
-        "Ocp-Apim-Subscription-Key": st.secrets["tts"]["azure_key"],
-        "Content-Type": "application/ssml+xml",
-        "X-Microsoft-OutputFormat": "audio-16khz-128kbitrate-mono-mp3"
-    }
-    ssml = f"<speak version='1.0' xml:lang='vi-VN'><voice name='vi-VN-HoaiMyNeural'>{text}</voice></speak>"
-    try:
-        r = requests.post(url, data=ssml.encode('utf-8'), headers=headers)
-        if r.status_code == 200:
-            # Azure trả về Binary, ta upload lên Cloudinary để lấy link
-            return upload_to_catbox(r.content, "azure_tts.mp3")
-    except: pass
-    return None
-
-def tts_google(text):
-    """Google Cloud - Giọng Wavenet tự nhiên"""
-    api_key = st.secrets["tts"]["google_api_key"]
-    url = f"https://texttospeech.googleapis.com/v1/text:synthesize?key={api_key}"
-    data = {
-        "input": {"text": text},
-        "voice": {"languageCode": "vi-VN", "name": "vi-VN-Wavenet-A"},
-        "audioConfig": {"audioEncoding": "MP3"}
-    }
-    try:
-        r = requests.post(url, json=data)
-        if r.status_code == 200:
-            import base64
-            audio_content = base64.b64decode(r.json()["audioContent"])
-            return upload_to_catbox(audio_content, "google_tts.mp3")
-    except: pass
+        st.error(f"Lỗi kết nối Gemini: {e}")
     return None
 
 
@@ -1678,7 +1689,6 @@ else:
                 st.info("👇 Nếu đã ưng ý, hãy bấm nút **'🚀 GỬI YÊU CẦU TẠO VIDEO'** bên dưới.")
         
 
-        # --- ĐÂY LÀ VỊ TRÍ CHÈN ---
         # CASE 4: GIỌNG AI CHẤT LƯỢNG CAO
         elif voice_method == "🤖 Giọng AI (FPT/Azure/Google)":
             st.markdown("##### 🔊 Chọn dịch vụ AI")
@@ -1689,7 +1699,8 @@ else:
 
             c_ai1, c_ai2 = st.columns([2, 1])
             with c_ai1:
-                ai_service = st.selectbox("Dịch vụ:", ["FPT.ai (Khuyên dùng)", "Microsoft Azure", "Google Cloud"])
+                # Chỉ còn 1 lựa chọn duy nhất là Gemini
+                ai_service = st.selectbox("Dịch vụ:", ["Google Gemini (Mới nhất)"])
             with c_ai2:
                 btn_gen_ai = st.button("✨ TẠO GIỌNG", use_container_width=True)
 
@@ -1706,22 +1717,14 @@ else:
                     with st.spinner(f"Đang gọi AI {ai_service} xử lý..."):
                         link_result = None
                         
-                        # [FIX] Đặc biệt quan trọng với Azure (vì Azure dùng XML)
-                        # Chúng ta cần escape ký tự đặc biệt như <, >, & để không vỡ cấu trúc XML
-                        content_for_api = safe_content
-                        if "Azure" in ai_service:
-                            content_for_api = html.escape(safe_content)
-
-                        # Gửi nội dung ĐÃ SẠCH vào hàm
-                        if "FPT" in ai_service: link_result = tts_fpt(content_for_api)
-                        elif "Azure" in ai_service: link_result = tts_azure(content_for_api)
-                        elif "Google" in ai_service: link_result = tts_google(content_for_api)
+                        # Gọi hàm Gemini mới
+                        link_result = tts_gemini(safe_content)
                         
                         if link_result:
                             st.session_state['temp_ai_audio'] = link_result
                             st.success("Đã tạo giọng AI thành công!")
                         else:
-                            st.error("Dịch vụ đang bận hoặc hết hạn mức (Free Tier).")
+                            st.error("Không thể tạo giọng đọc. Vui lòng kiểm tra API Key.")
                         
                     
 
