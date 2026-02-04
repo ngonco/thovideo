@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 import bcrypt
 import time
 import html  # <--- Thêm thư viện này để xử lý ký tự đặc biệt
+import re  # <--- [MỚI] Thêm thư viện Regular Expression để xử lý văn bản mạnh mẽ
 from supabase import create_client, Client
 from streamlit_mic_recorder import mic_recorder
 import extra_streamlit_components as stx # <--- Thư viện Cookie
@@ -588,6 +589,107 @@ def upload_to_catbox(file_obj, custom_name=None):
         
     return None
 
+
+# --- [NEW] HÀM LÀM SẠCH RIÊNG CHO TTS (BẢN NÂNG CẤP V2) ---
+def clean_text_for_tts(text):
+    if not text: return ""
+    text = str(text)
+    
+    # 1. Xóa các thẻ HTML & Link rác
+    text = re.sub(r'<[^>]+>', '', text)
+    text = re.sub(r'http\S+', '', text)
+    
+    # 2. [NÂNG CẤP] THAY THẾ TỪ VIẾT TẮT (DICT)
+    # Bạn có thể thêm các từ muốn sửa vào danh sách dưới đây:
+    replacements = {
+        "vn": "Việt Nam",
+        "HT": "Hòa Thượng",
+        "sp": "Sư phụ",
+        "TT": "Thượng Tọa",
+        "ko": "không",
+        "k": "không",
+        "hok": "không",
+        "dc": "được",
+        "đc": "được",
+        "mn": "mọi người",
+        "mng": "mọi người",
+        "acc": "tài khoản",
+        "fb": "Facebook",
+        "zalo": "Za lô",
+        "kg": "ki lô gam",
+        "km": "ki lô mét",
+        "sp": "sản phẩm",
+        "shop": "cửa hàng",
+        "ok": "ô kê"
+    }
+    
+    # Vòng lặp thay thế thông minh (Dùng Regex)
+    for k, v in replacements.items():
+        # \b nghĩa là "ranh giới từ" -> Chỉ thay khi từ đứng một mình
+        # re.IGNORECASE -> Không phân biệt hoa thường (VN hay vn đều thay hết)
+        text = re.sub(r'\b' + re.escape(k) + r'\b', v, text, flags=re.IGNORECASE)
+
+    # 3. Xóa ký tự điều khiển lạ & Chuẩn hóa khoảng trắng
+    text = "".join(ch for ch in text if ch.isprintable())
+    text = " ".join(text.split())
+    
+    return text.strip()
+
+
+
+# --- [NEW] HÀM GỌI API TTS (CHẤT LƯỢNG CAO) ---
+
+def tts_fpt(text):
+    """FPT.ai - Giọng Ban Mai/Minh Quang rất hay"""
+    url = "https://api.fpt.ai/hdl/tts/v1/prediction"
+    headers = {"api-key": st.secrets["tts"]["fpt_key"], "speed": "0", "voice": "banmai"}
+    try:
+        # FPT trả về link MP3 sau khi xử lý
+        response = requests.post(url, data=text.encode('utf-8'), headers=headers)
+        if response.status_code == 200:
+            return response.json().get("async")
+    except: pass
+    return None
+
+def tts_azure(text):
+    """Microsoft Azure - Giọng Hoài My/Nam Minh cực chuẩn"""
+    region = st.secrets["tts"]["azure_region"]
+    url = f"https://{region}.tts.speech.microsoft.com/cognitiveservices/v1"
+    headers = {
+        "Ocp-Apim-Subscription-Key": st.secrets["tts"]["azure_key"],
+        "Content-Type": "application/ssml+xml",
+        "X-Microsoft-OutputFormat": "audio-16khz-128kbitrate-mono-mp3"
+    }
+    ssml = f"<speak version='1.0' xml:lang='vi-VN'><voice name='vi-VN-HoaiMyNeural'>{text}</voice></speak>"
+    try:
+        r = requests.post(url, data=ssml.encode('utf-8'), headers=headers)
+        if r.status_code == 200:
+            # Azure trả về Binary, ta upload lên Cloudinary để lấy link
+            return upload_to_catbox(r.content, "azure_tts.mp3")
+    except: pass
+    return None
+
+def tts_google(text):
+    """Google Cloud - Giọng Wavenet tự nhiên"""
+    api_key = st.secrets["tts"]["google_api_key"]
+    url = f"https://texttospeech.googleapis.com/v1/text:synthesize?key={api_key}"
+    data = {
+        "input": {"text": text},
+        "voice": {"languageCode": "vi-VN", "name": "vi-VN-Wavenet-A"},
+        "audioConfig": {"audioEncoding": "MP3"}
+    }
+    try:
+        r = requests.post(url, json=data)
+        if r.status_code == 200:
+            import base64
+            audio_content = base64.b64decode(r.json()["audioContent"])
+            return upload_to_catbox(audio_content, "google_tts.mp3")
+    except: pass
+    return None
+
+
+
+
 # --- [NEW] HÀM ĐỒNG BỘ TỪ GOOGLE SHEET VỀ SUPABASE ---
 def sync_sheet_to_supabase():
     try:
@@ -628,13 +730,15 @@ def sync_sheet_to_supabase():
                 
                 # [LOGIC MỚI] 2. Chỉ thêm nếu có nội dung VÀ nội dung đó CHƯA CÓ trong DB
                 if content and content not in existing_contents:
+                    # [BẢO MẬT] Làm sạch nội dung kịch bản trước khi đưa vào DB
+                    clean_content = sanitize_input(content)
                     
                     # [ĐÃ SỬA] Cộng thêm 1 để khớp với tên file (1.mp3, 2.mp3...)
                     audio_link = f"{BASE_URL}{sheet_name}/{i + 2}.mp3"
                     
                     # Chuẩn bị dữ liệu
                     batch_data.append({
-                        "content": content,
+                        "content": clean_content,
                         "audio_url": audio_link,
                         "category": sheet_name,
                         "source_index": i # Index thực tế
@@ -1450,7 +1554,8 @@ else:
         has_valid_audio = check_link_exists(selected_library_audio)
 
     # Tạo danh sách lựa chọn
-    voice_options = ["🎙️ Thu âm trực tiếp", "📤 Tải file lên"]
+    # Tạo danh sách lựa chọn
+    voice_options = ["🎙️ Thu âm trực tiếp", "📤 Tải file lên", "🤖 Giọng AI (FPT/Azure/Google)"]
     
     # Chỉ thêm lựa chọn này nếu file audio TỒN TẠI
     if has_valid_audio: 
@@ -1557,6 +1662,61 @@ else:
                     
                 st.info("👇 Nếu đã ưng ý, hãy bấm nút **'🚀 GỬI YÊU CẦU TẠO VIDEO'** bên dưới.")
         
+
+        # --- ĐÂY LÀ VỊ TRÍ CHÈN ---
+        # CASE 4: GIỌNG AI CHẤT LƯỢNG CAO
+        elif voice_method == "🤖 Giọng AI (FPT/Azure/Google)":
+            st.markdown("##### 🔊 Chọn dịch vụ AI")
+            
+            # Kiểm tra độ dài văn bản để tránh vượt quá Free Tier
+            char_count = len(noi_dung_gui)
+            st.caption(f"Độ dài kịch bản: {char_count} ký tự.")
+
+            c_ai1, c_ai2 = st.columns([2, 1])
+            with c_ai1:
+                ai_service = st.selectbox("Dịch vụ:", ["FPT.ai (Khuyên dùng)", "Microsoft Azure", "Google Cloud"])
+            with c_ai2:
+                btn_gen_ai = st.button("✨ TẠO GIỌNG", use_container_width=True)
+
+            if btn_gen_ai:
+                # [FIX] Làm sạch nội dung trước khi kiểm tra độ dài và gửi đi
+                safe_content = clean_text_for_tts(noi_dung_gui)
+                safe_char_count = len(safe_content) # Đếm lại độ dài thật
+
+                if safe_char_count < 10:
+                    st.error("Nội dung quá ngắn (hoặc chứa toàn ký tự lạ)!")
+                elif safe_char_count > 2000:
+                    st.warning("⚠️ Nội dung quá dài, hãy chia nhỏ kịch bản.")
+                else:
+                    with st.spinner(f"Đang gọi AI {ai_service} xử lý..."):
+                        link_result = None
+                        
+                        # [FIX] Đặc biệt quan trọng với Azure (vì Azure dùng XML)
+                        # Chúng ta cần escape ký tự đặc biệt như <, >, & để không vỡ cấu trúc XML
+                        content_for_api = safe_content
+                        if "Azure" in ai_service:
+                            content_for_api = html.escape(safe_content)
+
+                        # Gửi nội dung ĐÃ SẠCH vào hàm
+                        if "FPT" in ai_service: link_result = tts_fpt(content_for_api)
+                        elif "Azure" in ai_service: link_result = tts_azure(content_for_api)
+                        elif "Google" in ai_service: link_result = tts_google(content_for_api)
+                        
+                        if link_result:
+                            st.session_state['temp_ai_audio'] = link_result
+                            st.success("Đã tạo giọng AI thành công!")
+                        else:
+                            st.error("Dịch vụ đang bận hoặc hết hạn mức (Free Tier).")
+                        
+                    
+
+            if 'temp_ai_audio' in st.session_state and st.session_state['temp_ai_audio']:
+                st.audio(st.session_state['temp_ai_audio'])
+                final_audio_link_to_send = st.session_state['temp_ai_audio']
+                st.session_state['chk_ai_upload_flag'] = True
+
+
+
     # --- SETTINGS (CẬP NHẬT: TỰ ĐỘNG LOAD TỪ DATABASE) ---
     st.markdown("---")
     if 's_voice' not in st.session_state:
@@ -1804,8 +1964,10 @@ else:
 
                 # Tạo trích dẫn ngắn
                 try:
-                    words = str(old_content_script).split()
-                    script_preview = " ".join(words[:10]) + "..." if len(words) > 10 else str(old_content_script)
+                    # Giải mã HTML trước khi hiển thị trích dẫn để người dùng đọc được ký tự gốc
+                    decoded_content = html.unescape(str(old_content_script))
+                    words = decoded_content.split()
+                    script_preview = " ".join(words[:10]) + "..." if len(words) > 10 else decoded_content
                 except: script_preview = ""
 
                 # Format ngày & Trạng thái
