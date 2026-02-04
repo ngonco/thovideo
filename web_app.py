@@ -1763,7 +1763,6 @@ else:
                             border-radius: 8px; 
                             color: #0D47A1; 
                             font-size: 20px; 
-                            font-weight: bold; 
                             text-align: center;
                             border: 1px solid #90CAF9;
                             line-height: 1.4;
@@ -2307,3 +2306,4 @@ else:
         if st.button("❌ Đóng lại", use_container_width=True):
             st.session_state['show_history_section'] = False
             st.rerun()
+
