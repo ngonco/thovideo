@@ -1739,7 +1739,7 @@ else:
                         line-height: 1.6; 
                         max-height: 400px; 
                         overflow-y: auto; 
-                        margin-bottom: 5px; 
+                        margin-bottom: 10px; 
                         box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
                     ">
                         <b>📝 Kịch bản cần đọc:</b><br><br>
@@ -2306,4 +2306,3 @@ else:
         if st.button("❌ Đóng lại", use_container_width=True):
             st.session_state['show_history_section'] = False
             st.rerun()
-
