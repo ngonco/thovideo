@@ -2127,14 +2127,12 @@ else:
                     st.balloons()
                     st.rerun()
                 else:
-                    # Nếu ngoài giờ làm việc -> Thông báo chờ đến sáng mai
-                    st.warning(f"✅ ĐÃ GỬI THÀNH CÔNG! Mã đơn: {order_id}")
-                    st.info("🌙 Nội dung của bạn đã được lưu vào danh sách, sáng mai quay lại sau 7h để tải video bạn nhé.\n\n(Hệ thống đang ở chế độ thử nghiệm nên chỉ tạo video nhanh từ 7h sáng đến 23h)")
+                    # Thông báo và giữ nguyên màn hình để khách yên tâm
+                    st.warning(f"✅ ĐÃ NHẬN ĐƠN THÀNH CÔNG! Mã đơn: {order_id}")
+                    st.info("🌙 Hệ thống sẽ xử lý video của bạn vào đầu giờ sáng mai (sau 7:00). Bạn có thể đóng trình duyệt ngay bây giờ.")
                     st.balloons()
-                    
-                    # [QUAN TRỌNG] Dừng 4 giây để người dùng kịp đọc thông báo trước khi reload trang
-                    time.sleep(4)
-                    st.rerun()
+                    # Dùng stop thay vì rerun để giữ thông báo này vĩnh viễn cho đến khi họ tự tay chuyển trang
+                    st.stop()
                 
             except Exception as e: st.error(f"Lỗi hệ thống: {e}")
 
