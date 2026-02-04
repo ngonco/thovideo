@@ -1714,20 +1714,20 @@ else:
                     st.session_state['temp_upload_name'] = uploaded_file.name
                     st.success(f"✅ Đã chọn: {uploaded_file.name}")
 
-        # CASE 3: THU ÂM TRỰC TIẾP (GIAO DIỆN MÁY NHẮC CHỮ)
+        # CASE 3: THU ÂM TRỰC TIẾP (GIAO DIỆN MÁY NHẮC CHỮ - ĐÃ SỬA KHOẢNG CÁCH)
         elif voice_method == "🎙️ Thu âm trực tiếp": 
             
-            # Tạo một khung chứa riêng biệt (như cửa sổ)
+            # Tạo một khung chứa riêng biệt
             with st.container(border=True):
-                st.markdown("<h3 style='text-align: center; color: #D32F2F;'>🎙️ PHÒNG THU ÂM</h3>", unsafe_allow_html=True)
+                st.markdown("<h3 style='text-align: center; color: #D32F2F; margin-bottom: 15px;'>🎙️ PHÒNG THU ÂM</h3>", unsafe_allow_html=True)
                 
-                # 1. HIỆN KỊCH BẢN ĐỂ ĐỌC (MÁY NHẮC CHỮ)
+                # 1. HIỆN KỊCH BẢN ĐỂ ĐỌC
                 current_script = st.session_state.get('main_content_area', "")
                 
                 if not current_script:
                     st.warning("⚠️ Bạn chưa nhập nội dung ở Bước 1. Vui lòng quay lại nhập kịch bản trước khi thu!")
                 else:
-                    # Tạo khung hiển thị văn bản to, rõ, nền giấy dễ đọc
+                    # [ĐÃ SỬA] margin-bottom giảm từ 20px xuống 5px để sát lại gần nút thu âm
                     st.markdown(f"""
                     <div style="
                         background-color: #fff; 
@@ -1739,7 +1739,7 @@ else:
                         line-height: 1.6; 
                         max-height: 400px; 
                         overflow-y: auto; 
-                        margin-bottom: 20px;
+                        margin-bottom: 5px; 
                         box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
                     ">
                         <b>📝 Kịch bản cần đọc:</b><br><br>
@@ -1747,26 +1747,28 @@ else:
                     </div>
                     """, unsafe_allow_html=True)
 
-                st.markdown("---")
+                # [ĐÃ XÓA] Dòng st.markdown("---") ở đây để bỏ khoảng trống thừa
 
-                # 2. BẢNG ĐIỀU KHIỂN THU ÂM (NẰM NGAY DƯỚI KỊCH BẢN)
+                # 2. BẢNG ĐIỀU KHIỂN THU ÂM
                 has_recording = 'temp_record_file' in st.session_state and st.session_state['temp_record_file'] is not None
 
                 if not has_recording:
-                    c1, c2 = st.columns([1, 1])
+                    c1, c2 = st.columns([1, 1], vertical_alignment="center") # [MỚI] Căn giữa theo chiều dọc
                     with c1:
+                        # [ĐÃ SỬA] Thêm thẻ <br> để xuống dòng và sửa số 3 thành 5 giây
                         st.markdown("""
                         <div style="
                             background-color: #E3F2FD; 
                             padding: 15px; 
                             border-radius: 8px; 
                             color: #0D47A1; 
-                            font-size: 20px; 
+                            font-size: 18px; 
                             font-weight: bold; 
                             text-align: center;
                             border: 1px solid #90CAF9;
+                            line-height: 1.4;
                         ">
-                            💡 Giữ im lặng 5 giây đầu để lọc ồn tốt hơn.
+                            💡 Giữ im lặng 5 giây đầu<br>để lọc ồn tốt hơn.
                         </div>
                         """, unsafe_allow_html=True)
                     
@@ -1778,7 +1780,7 @@ else:
                             just_once=True, 
                             use_container_width=True,
                             format="wav", 
-                            key="new_mic_recorder_v2" # Đổi key để tránh lỗi cache cũ
+                            key="new_mic_recorder_v3" # Đổi key mới nhất
                         )
                         
                         if audio_data:
@@ -1804,7 +1806,7 @@ else:
                             padding: 8px; 
                             border: 1px dashed #2E7D32; 
                             border-radius: 5px;">
-                            👇 Kéo xuống cuối trang bấm GỬI
+                            Nếu hài lòng, bấm GỬI TẠO VIDEO bên dưới!
                         </div>
                         """, unsafe_allow_html=True)
         
