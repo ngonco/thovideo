@@ -148,10 +148,9 @@ def check_login(email, password):
                 # Trả về thông tin user để lưu vào session
                 return user_data
     except Exception as e:
-        # In lỗi ra màn hình đen (console) để admin sửa
-        print(f"DEBUG LOGIN ERROR: {e}") 
-        # Chỉ báo lỗi chung chung cho người dùng để bảo mật
-        st.error("Đã xảy ra lỗi kết nối. Vui lòng thử lại sau.")
+        # Hiển thị lỗi trực tiếp để chủ app biết đường sửa
+        st.error(f"Lỗi kỹ thuật Supabase: {e}")
+        print(f"DEBUG LOGIN ERROR: {e}")
     
     # [BẢO MẬT] Làm chậm hacker 2 giây nếu đăng nhập thất bại
     time.sleep(2) 
