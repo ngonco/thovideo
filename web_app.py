@@ -696,22 +696,25 @@ def tts_gemini(text, voice_style_key="Nam 1 - Trầm Ấm (Charon)", region="Mi�
     voice_id = voice_config["id"]
     style_desc = voice_config["style"]
 
-    # Xử lý text đầu vào (nếu là test thì ghi đè)
+    # --- [MỚI] LOGIC TÁCH 2 CÂU ĐẦU ĐỂ NGHE THỬ ---
     if is_test:
-        input_text = f"Xin chào, đây là thử nghiệm giọng {region}, phong cách {style_desc}."
+        if not text or len(text.strip()) < 5:
+            input_text = f"Chào bạn, tôi là giọng đọc {region}, phong cách {style_desc}. Đây là mẫu thử giọng của tôi."
+        else:
+            # Tách lấy 2 câu đầu (dựa trên dấu chấm, hỏi, cảm)
+            sentences = re.split(r'(?<=[.!?])\s+', text.strip())
+            input_text = " ".join(sentences[:2])
     else:
         input_text = text
 
-    # [BÍ KÍP] Prompt Engineering để điều khiển giọng & vùng miền
-    # Gemini rất giỏi việc đóng vai, ta sẽ yêu cầu nó đóng vai người vùng đó.
+    # Prompt điều khiển giọng & vùng miền
     system_instruction = (
         f"Bạn là một phát thanh viên chuyên nghiệp người {region} (Việt Nam). "
-        f"Hãy đọc văn bản sau với chất giọng {region} chuẩn xác, "
-        f"phong cách {style_desc}. "
-        f"Đọc trôi chảy, cảm xúc, ngắt nghỉ đúng chỗ."
+        f"Hãy đọc văn bản sau với chất giọng {region} chuẩn xác, phong cách {style_desc}. "
+        f"Đọc trôi chảy, cảm xúc, ngắt nghỉ đúng chỗ. CHỈ TRẢ VỀ ÂM THANH."
     )
     
-    # URL API (Dùng bản Flash 2.0 mới nhất để nhanh và rẻ)
+    # URL API Gemini 2.0 Flash
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
     
     payload = {
@@ -719,11 +722,12 @@ def tts_gemini(text, voice_style_key="Nam 1 - Trầm Ấm (Charon)", region="Mi�
             "parts": [{"text": f"{system_instruction}\n\nNội dung cần đọc: {input_text}"}]
         }],
         "generationConfig": {
-            "responseModalities": ["AUDIO"], 
+            # Ép kiểu phản hồi là AUDIO
+            "response_modalities": ["AUDIO"], 
             "speech_config": {
                 "voice_config": {
                     "prebuilt_voice_config": {
-                        "voice_name": voice_id
+                        "voice_name": voice_id # Ví dụ: "Charon", "Aoede"...
                     }
                 }
             }
@@ -735,18 +739,18 @@ def tts_gemini(text, voice_style_key="Nam 1 - Trầm Ấm (Charon)", region="Mi�
         
         if response.status_code == 200:
             result = response.json()
+            # Kiểm tra cấu trúc trả về của Gemini 2.0
             if "candidates" in result and result["candidates"]:
-                candidate = result["candidates"][0]
-                if "content" in candidate and "parts" in candidate["content"]:
-                    for part in candidate["content"]["parts"]:
-                        if "inlineData" in part:
-                            # Convert Base64 sang WAV
-                            wav_data = _convert_to_wav(part["inlineData"]["data"])
-                            if wav_data:
-                                if is_test: return wav_data 
-                                return upload_to_catbox(wav_data, "gemini_voice.wav")
-            print(f"DEBUG GEMINI: {result}") # In ra console để debug nếu lỗi
-            st.error("Gemini không trả về âm thanh (Có thể do nội dung nhạy cảm).")
+                parts = result["candidates"][0].get("content", {}).get("parts", [])
+                for part in parts:
+                    if "inlineData" in part and "data" in part["inlineData"]:
+                        # Chuyển Base64 sang WAV
+                        wav_data = _convert_to_wav(part["inlineData"]["data"])
+                        if wav_data:
+                            if is_test: return wav_data 
+                            return upload_to_catbox(wav_data, "gemini_voice.wav")
+            
+            st.error("Gemini không trả về âm thanh. Có thể nội dung vi phạm chính sách của Google.")
         else:
             st.error(f"Lỗi API Gemini ({response.status_code}): {response.text}")
     except Exception as e: 
@@ -1752,10 +1756,12 @@ else:
             # 3. NGHE THỬ
             st.markdown("<div style='margin-bottom: 10px;'></div>", unsafe_allow_html=True)
             if st.button("▶️ Nghe thử giọng này", use_container_width=True):
-                with st.spinner(f"Đang tạo mẫu giọng {selected_region} - {selected_voice_key}..."):
-                    # Gọi hàm với tham số vùng miền mới
+                # Lấy nội dung từ ô nhập liệu để nghe thử thực tế
+                script_to_preview = st.session_state.get('main_content_area', "")
+                
+                with st.spinner(f"Đang tạo mẫu giọng {selected_region} cho 2 câu đầu..."):
                     sample_audio = tts_gemini(
-                        text="", 
+                        text=script_to_preview, 
                         voice_style_key=selected_voice_key, 
                         region=selected_region, 
                         is_test=True
