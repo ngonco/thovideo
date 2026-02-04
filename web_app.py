@@ -711,8 +711,8 @@ def tts_gemini(text, voice_style_key="Nam 1 - Trầm Ấm (Charon)", region="Mi�
         f"Đọc trôi chảy, cảm xúc, ngắt nghỉ đúng chỗ."
     )
     
-    # [ĐÃ SỬA] Chuyển sang bản flash-exp (Experimental) mới hỗ trợ xuất Audio
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key={api_key}"url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
+    # URL API (Dùng bản Flash 2.0 mới nhất để nhanh và rẻ)
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
     
     payload = {
         "contents": [{
