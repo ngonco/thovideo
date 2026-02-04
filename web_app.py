@@ -683,7 +683,8 @@ GEMINI_STYLES = {
 
 def tts_gemini(text, voice_style_key="Nam 1 - Trầm Ấm (Charon)", region="Miền Nam", is_test=False):
     """
-    Google Gemini TTS - Sử dụng model gemini-2.0-flash chuẩn
+    Google Gemini TTS - Updated to use Gemini 2.5 Flash Preview TTS
+    (Copy logic từ tool python chạy thành công)
     """
     if "gemini" in st.secrets and "key" in st.secrets["gemini"]:
         api_key = st.secrets["gemini"]["key"]
@@ -691,44 +692,37 @@ def tts_gemini(text, voice_style_key="Nam 1 - Trầm Ấm (Charon)", region="Mi�
         st.error("⚠️ Chưa cấu hình Gemini API Key!")
         return None
 
-    # Lấy thông tin cấu hình giọng
+    # Lấy voice_id từ style đã chọn
+    # Lưu ý: File python đang dùng cứng "Algieba", ta cần map lại cho đúng ý người dùng
     voice_config = GEMINI_STYLES.get(voice_style_key, GEMINI_STYLES["Nam 1 - Trầm Ấm (Charon)"])
-    voice_id = voice_config["id"]
-    style_desc = voice_config["style"]
-
-    # --- LOGIC TÁCH 2 CÂU ĐẦU ---
+    voice_id = voice_config["id"] # Ví dụ: Charon, Fenrir...
+    
+    # Logic xử lý text đầu vào
     if is_test:
         if not text or len(text.strip()) < 5:
-            input_text = f"Chào bạn, tôi là giọng đọc {region}, phong cách {style_desc}."
+            input_text = f"Chào bạn, tôi là giọng đọc {region}."
         else:
             sentences = re.split(r'(?<=[.!?])\s+', text.strip())
             input_text = " ".join(sentences[:2])
     else:
         input_text = text
 
-    system_prompt = (
-        f"Bạn là phát thanh viên chuyên nghiệp người {region} (Việt Nam). "
-        f"Đọc văn bản sau với giọng {region}, phong cách {style_desc}. "
-        f"Đọc trôi chảy, cảm xúc. CHỈ TRẢ VỀ ÂM THANH."
-    )
+    # [QUAN TRỌNG 1] Dùng đúng URL của model 2.5 Preview TTS
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:streamGenerateContent?key={api_key}"
     
-    # [QUAN TRỌNG] Dùng đúng tên model có trong danh sách của bạn
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
-    
-    # [QUAN TRỌNG] Payload chuẩn JSON camelCase
+    # [QUAN TRỌNG 2] Payload giống hệt file Python của bạn
     payload = {
-        "systemInstruction": {
-            "parts": [{"text": system_prompt}]
-        },
         "contents": [{
-            "parts": [{"text": f"Nội dung cần đọc: {input_text}"}]
+            "role": "user",
+            "parts": [{"text": f"{input_text}"}] # Có thể thêm prompt style vào đây nếu muốn
         }],
         "generationConfig": {
-            "responseModalities": ["AUDIO"], 
-            "speechConfig": {
-                "voiceConfig": {
-                    "prebuiltVoiceConfig": {
-                        "voiceName": voice_id
+            "responseModalities": ["audio"], # Python script dùng chữ thường 'audio', ta giữ nguyên
+            "temperature": 1,
+            "speech_config": {
+                "voice_config": {
+                    "prebuilt_voice_config": {
+                        "voice_name": voice_id # Thay thế voice name động
                     }
                 }
             }
@@ -736,22 +730,27 @@ def tts_gemini(text, voice_style_key="Nam 1 - Trầm Ấm (Charon)", region="Mi�
     }
     
     try:
+        # Streamlit không cần stream thật sự để hiển thị, nhưng endpoint yêu cầu
         response = requests.post(url, headers={"Content-Type": "application/json"}, json=payload)
         
         if response.status_code == 200:
             result = response.json()
-            if "candidates" in result and result["candidates"]:
-                candidate = result["candidates"][0]
-                if "content" in candidate and "parts" in candidate["content"]:
-                    for part in candidate["content"]["parts"]:
-                        if "inlineData" in part and "data" in part["inlineData"]:
-                            wav_data = _convert_to_wav(part["inlineData"]["data"])
-                            if wav_data:
-                                if is_test: return wav_data 
-                                return upload_to_catbox(wav_data, "gemini_voice.wav")
+            # Kết quả trả về là list (do stream), ta lấy phần tử đầu tiên
+            candidates_data = result[0] if isinstance(result, list) and len(result) > 0 else result
+            
+            if candidates_data and 'candidates' in candidates_data:
+                for candidate in candidates_data['candidates']:
+                    if 'content' in candidate and 'parts' in candidate['content']:
+                        for part in candidate['content']['parts']:
+                            if 'inlineData' in part and 'data' in part['inlineData']:
+                                # Convert Base64 sang WAV (Hàm cũ của bạn đã có)
+                                wav_data = _convert_to_wav(part['inlineData']['data'])
+                                if wav_data:
+                                    if is_test: return wav_data 
+                                    return upload_to_catbox(wav_data, "gemini_voice.wav")
             
             print(f"DEBUG GEMINI: {result}")
-            st.error("Gemini trả về thành công nhưng không có Audio. Hãy thử lại.")
+            st.error("Gemini không trả về dữ liệu âm thanh.")
         else:
             st.error(f"Lỗi API ({response.status_code}): {response.text}")
     except Exception as e: 
