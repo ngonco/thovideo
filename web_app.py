@@ -683,8 +683,7 @@ GEMINI_STYLES = {
 
 def tts_gemini(text, voice_style_key="Nam 1 - Trầm Ấm (Charon)", region="Miền Nam", is_test=False):
     """
-    Google Gemini TTS - Hỗ trợ Vùng miền & 10 Biến thể giọng
-    (Đã sửa lỗi JSON camelCase để tương thích API)
+    Google Gemini TTS - Sử dụng bản Experimental để đảm bảo có Audio
     """
     if "gemini" in st.secrets and "key" in st.secrets["gemini"]:
         api_key = st.secrets["gemini"]["key"]
@@ -697,41 +696,42 @@ def tts_gemini(text, voice_style_key="Nam 1 - Trầm Ấm (Charon)", region="Mi�
     voice_id = voice_config["id"]
     style_desc = voice_config["style"]
 
-    # --- LOGIC TÁCH 2 CÂU ĐẦU ĐỂ NGHE THỬ ---
+    # --- LOGIC TÁCH 2 CÂU ĐẦU ---
     if is_test:
         if not text or len(text.strip()) < 5:
-            # Nếu không có nội dung thì dùng câu mẫu
             input_text = f"Chào bạn, tôi là giọng đọc {region}, phong cách {style_desc}. Đây là mẫu thử giọng của tôi."
         else:
-            # Tách lấy 2 câu đầu tiên (dựa trên dấu chấm, hỏi, chấm than)
-            # Dùng regex để tách câu thông minh hơn
+            # Tách 2 câu đầu
             sentences = re.split(r'(?<=[.!?])\s+', text.strip())
-            # Lấy tối đa 2 câu đầu, ghép lại
             input_text = " ".join(sentences[:2])
     else:
         input_text = text
 
-    # Prompt điều khiển giọng & vùng miền
-    system_instruction = (
-        f"Bạn là một phát thanh viên chuyên nghiệp người {region} (Việt Nam). "
-        f"Hãy đọc văn bản sau với chất giọng {region} chuẩn xác, phong cách {style_desc}. "
-        f"Đọc trôi chảy, cảm xúc, ngắt nghỉ đúng chỗ. CHỈ TRẢ VỀ ÂM THANH."
+    # Prompt System (Chỉ dẫn vai trò)
+    system_prompt = (
+        f"Bạn là phát thanh viên chuyên nghiệp người {region} (Việt Nam). "
+        f"Đọc văn bản sau với giọng {region}, phong cách {style_desc}. "
+        f"Đọc trôi chảy, cảm xúc. CHỈ TRẢ VỀ ÂM THANH."
     )
     
-    # URL API Gemini 2.0 Flash
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
+    # [QUAN TRỌNG] Đổi sang model Experimental để hỗ trợ Audio tốt nhất
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key={api_key}"
     
-    # [QUAN TRỌNG] Payload phải dùng camelCase cho các Key JSON
+    # Payload chuẩn JSON (camelCase)
     payload = {
+        # Tách System Instruction ra riêng để đúng chuẩn API
+        "systemInstruction": {
+            "parts": [{"text": system_prompt}]
+        },
         "contents": [{
-            "parts": [{"text": f"{system_instruction}\n\nNội dung cần đọc: {input_text}"}]
+            "parts": [{"text": f"Nội dung cần đọc: {input_text}"}]
         }],
         "generationConfig": {
-            "responseModalities": ["AUDIO"],  # <-- Sửa từ response_modalities thành responseModalities
-            "speechConfig": {                 # <-- Sửa từ speech_config thành speechConfig
-                "voiceConfig": {              # <-- Sửa từ voice_config thành voiceConfig
-                    "prebuiltVoiceConfig": {  # <-- Sửa từ prebuilt_voice_config thành prebuiltVoiceConfig
-                        "voiceName": voice_id # <-- Sửa từ voice_name thành voiceName
+            "responseModalities": ["AUDIO"],  # Bắt buộc camelCase
+            "speechConfig": {
+                "voiceConfig": {
+                    "prebuiltVoiceConfig": {
+                        "voiceName": voice_id
                     }
                 }
             }
@@ -754,14 +754,12 @@ def tts_gemini(text, voice_style_key="Nam 1 - Trầm Ấm (Charon)", region="Mi�
                                 if is_test: return wav_data 
                                 return upload_to_catbox(wav_data, "gemini_voice.wav")
             
-            # Log lỗi nếu API trả về 200 nhưng không có nội dung audio
-            print(f"DEBUG GEMINI RESPONSE: {result}")
-            st.error("Gemini từ chối tạo âm thanh (Có thể do nội dung nhạy cảm).")
+            # Log lỗi nếu API trả về 200 nhưng rỗng
+            print(f"DEBUG GEMINI EMPTY: {result}")
+            st.error("Gemini không trả về âm thanh. Vui lòng thử lại nội dung khác.")
         else:
-            # In chi tiết lỗi ra màn hình để debug
-            error_msg = response.text
-            print(f"Lỗi API: {error_msg}")
-            st.error(f"Lỗi API Gemini ({response.status_code}): {error_msg}")
+            # Hiện lỗi chi tiết để debug
+            st.error(f"Lỗi API ({response.status_code}): {response.text}")
     except Exception as e: 
         st.error(f"Lỗi kết nối: {e}")
     return None
@@ -1765,13 +1763,12 @@ else:
             # 3. NGHE THỬ
             st.markdown("<div style='margin-bottom: 10px;'></div>", unsafe_allow_html=True)
             if st.button("▶️ Nghe thử giọng này", use_container_width=True):
-                # Lấy nội dung thực tế đang nhập trong ô Text Area
+                # Lấy nội dung thực tế
                 script_preview = st.session_state.get('main_content_area', "")
                 
                 with st.spinner(f"Đang tạo mẫu giọng {selected_region} (2 câu đầu)..."):
-                    # Gọi hàm với tham số vùng miền mới
                     sample_audio = tts_gemini(
-                        text=script_preview,  # Truyền nội dung thật vào
+                        text=script_preview, 
                         voice_style_key=selected_voice_key, 
                         region=selected_region, 
                         is_test=True
