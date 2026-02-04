@@ -2117,12 +2117,9 @@ else:
                 cur_hour = now_vn.hour
                 cur_minute = now_vn.minute
                 
-                # Logic: Giờ làm việc từ 7:00 đến 21:45
-                # Tức là: (Giờ >= 7 và Giờ < 21) HOẶC (Giờ == 21 và Phút <= 45)
+                # Logic: Giờ làm việc mới từ 7:00 đến 23:00
                 is_working_time = False
-                if 7 <= cur_hour < 21:
-                    is_working_time = True
-                elif cur_hour == 21 and cur_minute <= 45:
+                if 7 <= cur_hour < 23:
                     is_working_time = True
 
                 if is_working_time:
@@ -2132,7 +2129,7 @@ else:
                 else:
                     # Nếu ngoài giờ làm việc -> Thông báo chờ đến sáng mai
                     st.warning(f"✅ ĐÃ GỬI THÀNH CÔNG! Mã đơn: {order_id}")
-                    st.info("🌙 Nội dung của bạn đã được lưu vào danh sách, sáng mai quay lại sau 7h để tải video bạn nhé.\n\n(Hệ thống đang ở chế độ thử nghiệm nên chỉ tạo video nhanh từ 7h sáng đến 21h)")
+                    st.info("🌙 Nội dung của bạn đã được lưu vào danh sách, sáng mai quay lại sau 7h để tải video bạn nhé.\n\n(Hệ thống đang ở chế độ thử nghiệm nên chỉ tạo video nhanh từ 7h sáng đến 23h)")
                     st.balloons()
                     
                     # [QUAN TRỌNG] Dừng 4 giây để người dùng kịp đọc thông báo trước khi reload trang
