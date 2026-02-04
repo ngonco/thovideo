@@ -683,7 +683,7 @@ GEMINI_STYLES = {
 
 def tts_gemini(text, voice_style_key="Nam 1 - Trầm Ấm (Charon)", region="Miền Nam", is_test=False):
     """
-    Google Gemini TTS - Sử dụng bản Experimental để đảm bảo có Audio
+    Google Gemini TTS - Sử dụng v1alpha để truy cập tính năng Experimental Audio
     """
     if "gemini" in st.secrets and "key" in st.secrets["gemini"]:
         api_key = st.secrets["gemini"]["key"]
@@ -691,48 +691,38 @@ def tts_gemini(text, voice_style_key="Nam 1 - Trầm Ấm (Charon)", region="Mi�
         st.error("⚠️ Chưa cấu hình Gemini API Key!")
         return None
 
-    # Lấy thông tin cấu hình giọng
+    # Lấy cấu hình giọng
     voice_config = GEMINI_STYLES.get(voice_style_key, GEMINI_STYLES["Nam 1 - Trầm Ấm (Charon)"])
     voice_id = voice_config["id"]
     style_desc = voice_config["style"]
 
-    # --- LOGIC TÁCH 2 CÂU ĐẦU ---
+    # Xử lý nội dung (Tách 2 câu đầu nếu là test)
     if is_test:
         if not text or len(text.strip()) < 5:
-            input_text = f"Chào bạn, tôi là giọng đọc {region}, phong cách {style_desc}. Đây là mẫu thử giọng của tôi."
+            input_text = f"Chào bạn, tôi là giọng đọc {region}, phong cách {style_desc}."
         else:
-            # Tách 2 câu đầu
             sentences = re.split(r'(?<=[.!?])\s+', text.strip())
             input_text = " ".join(sentences[:2])
     else:
         input_text = text
 
-    # Prompt System (Chỉ dẫn vai trò)
     system_prompt = (
         f"Bạn là phát thanh viên chuyên nghiệp người {region} (Việt Nam). "
         f"Đọc văn bản sau với giọng {region}, phong cách {style_desc}. "
         f"Đọc trôi chảy, cảm xúc. CHỈ TRẢ VỀ ÂM THANH."
     )
     
-    # [QUAN TRỌNG] Đổi sang model Experimental để hỗ trợ Audio tốt nhất
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key={api_key}"
+    # [QUAN TRỌNG] Đổi sang v1alpha để tìm thấy model exp
+    url = f"https://generativelanguage.googleapis.com/v1alpha/models/gemini-2.0-flash-exp:generateContent?key={api_key}"
     
-    # Payload chuẩn JSON (camelCase)
     payload = {
-        # Tách System Instruction ra riêng để đúng chuẩn API
-        "systemInstruction": {
-            "parts": [{"text": system_prompt}]
-        },
-        "contents": [{
-            "parts": [{"text": f"Nội dung cần đọc: {input_text}"}]
-        }],
+        "systemInstruction": { "parts": [{"text": system_prompt}] },
+        "contents": [{ "parts": [{"text": f"Nội dung cần đọc: {input_text}"}] }],
         "generationConfig": {
-            "responseModalities": ["AUDIO"],  # Bắt buộc camelCase
+            "responseModalities": ["AUDIO"], 
             "speechConfig": {
                 "voiceConfig": {
-                    "prebuiltVoiceConfig": {
-                        "voiceName": voice_id
-                    }
+                    "prebuiltVoiceConfig": { "voiceName": voice_id }
                 }
             }
         }
@@ -745,20 +735,18 @@ def tts_gemini(text, voice_style_key="Nam 1 - Trầm Ấm (Charon)", region="Mi�
             result = response.json()
             if "candidates" in result and result["candidates"]:
                 candidate = result["candidates"][0]
+                # Kiểm tra cấu trúc trả về
                 if "content" in candidate and "parts" in candidate["content"]:
                     for part in candidate["content"]["parts"]:
                         if "inlineData" in part and "data" in part["inlineData"]:
-                            # Convert Base64 sang WAV
                             wav_data = _convert_to_wav(part["inlineData"]["data"])
                             if wav_data:
                                 if is_test: return wav_data 
                                 return upload_to_catbox(wav_data, "gemini_voice.wav")
-            
-            # Log lỗi nếu API trả về 200 nhưng rỗng
-            print(f"DEBUG GEMINI EMPTY: {result}")
-            st.error("Gemini không trả về âm thanh. Vui lòng thử lại nội dung khác.")
+            print(f"DEBUG EMPTY: {result}")
+            st.error("Gemini không trả về file âm thanh.")
         else:
-            # Hiện lỗi chi tiết để debug
+            # Nếu vẫn lỗi 404, ta sẽ biết ngay ở đây
             st.error(f"Lỗi API ({response.status_code}): {response.text}")
     except Exception as e: 
         st.error(f"Lỗi kết nối: {e}")
@@ -1792,7 +1780,40 @@ else:
 
             # Lưu ý cho người dùng
             st.info("💡 Mẹo: Gemini sẽ tự động điều chỉnh ngữ điệu miền Nam dựa trên yêu cầu ngầm định của hệ thống.")
-                    
+              
+            # --- [MỚI] DEBUG TOOL: KIỂM TRA MODEL ---
+            st.markdown("---")
+            with st.expander("🛠️ Công cụ Admin: Kiểm tra Danh sách Model"):
+                if st.button("🔍 Quét các Model khả dụng"):
+                    try:
+                        # Lấy key từ secrets
+                        api_key = st.secrets["gemini"]["key"]
+                        
+                        st.write("⏳ Đang kết nối Google server...")
+                        
+                        # 1. Kiểm tra v1beta
+                        st.caption("Checking v1beta...")
+                        r_beta = requests.get(f"https://generativelanguage.googleapis.com/v1beta/models?key={api_key}")
+                        if r_beta.status_code == 200:
+                            models = r_beta.json().get('models', [])
+                            # Lọc ra các model Gemini 2.0
+                            found_names = [m['name'] for m in models if 'gemini-2.0' in m['name']]
+                            st.success(f"✅ Beta có: {found_names}")
+                        else:
+                            st.warning(f"Beta error: {r_beta.status_code}")
+                        
+                        # 2. Kiểm tra v1alpha (Quan trọng nhất cho bản Audio)
+                        st.caption("Checking v1alpha...")
+                        r_alpha = requests.get(f"https://generativelanguage.googleapis.com/v1alpha/models?key={api_key}")
+                        if r_alpha.status_code == 200:
+                            models = r_alpha.json().get('models', [])
+                            found_names = [m['name'] for m in models if 'gemini-2.0' in m['name']]
+                            st.info(f"ℹ️ Alpha có: {found_names}")
+                        else:
+                            st.warning(f"Alpha error: {r_alpha.status_code}")
+                            
+                    except Exception as e:
+                        st.error(f"Lỗi kiểm tra: {e}")     
 
             if 'temp_ai_audio' in st.session_state and st.session_state['temp_ai_audio']:
                 st.audio(st.session_state['temp_ai_audio'])
