@@ -1735,7 +1735,12 @@ else:
                 current_script = st.session_state.get('main_content_area', "")
                 
                 if not current_script:
-                    st.warning("⚠️ Bạn chưa nhập nội dung ở Bước 1. Vui lòng quay lại nhập kịch bản trước khi thu!")
+                    # [ĐÃ SỬA] Dùng HTML tùy chỉnh để ép chữ màu Nâu, nền Vàng nhạt cho dễ đọc
+                    st.markdown("""
+                    <div style="background-color: #FFF9C4; color: #5D4037; padding: 15px; border-radius: 10px; border: 1px solid #FBC02D; margin-bottom: 20px; font-weight: bold;">
+                        ⚠️ Bạn chưa nhập nội dung ở Bước 1. Vui lòng quay lại nhập kịch bản trước khi thu!
+                    </div>
+                    """, unsafe_allow_html=True)
                 else:
                     # [ĐÃ SỬA] margin-bottom giảm từ 20px xuống 5px để sát lại gần nút thu âm
                     st.markdown(f"""
