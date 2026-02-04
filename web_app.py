@@ -683,7 +683,7 @@ GEMINI_STYLES = {
 
 def tts_gemini(text, voice_style_key="Nam 1 - Trầm Ấm (Charon)", region="Miền Nam", is_test=False):
     """
-    Google Gemini TTS - Sử dụng v1alpha để truy cập tính năng Experimental Audio
+    Google Gemini TTS - Sử dụng model gemini-2.0-flash chuẩn
     """
     if "gemini" in st.secrets and "key" in st.secrets["gemini"]:
         api_key = st.secrets["gemini"]["key"]
@@ -691,12 +691,12 @@ def tts_gemini(text, voice_style_key="Nam 1 - Trầm Ấm (Charon)", region="Mi�
         st.error("⚠️ Chưa cấu hình Gemini API Key!")
         return None
 
-    # Lấy cấu hình giọng
+    # Lấy thông tin cấu hình giọng
     voice_config = GEMINI_STYLES.get(voice_style_key, GEMINI_STYLES["Nam 1 - Trầm Ấm (Charon)"])
     voice_id = voice_config["id"]
     style_desc = voice_config["style"]
 
-    # Xử lý nội dung (Tách 2 câu đầu nếu là test)
+    # --- LOGIC TÁCH 2 CÂU ĐẦU ---
     if is_test:
         if not text or len(text.strip()) < 5:
             input_text = f"Chào bạn, tôi là giọng đọc {region}, phong cách {style_desc}."
@@ -712,17 +712,24 @@ def tts_gemini(text, voice_style_key="Nam 1 - Trầm Ấm (Charon)", region="Mi�
         f"Đọc trôi chảy, cảm xúc. CHỈ TRẢ VỀ ÂM THANH."
     )
     
-    # [QUAN TRỌNG] Đổi sang v1alpha để tìm thấy model exp
-    url = f"https://generativelanguage.googleapis.com/v1alpha/models/gemini-2.0-flash-exp:generateContent?key={api_key}"
+    # [QUAN TRỌNG] Dùng đúng tên model có trong danh sách của bạn
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
     
+    # [QUAN TRỌNG] Payload chuẩn JSON camelCase
     payload = {
-        "systemInstruction": { "parts": [{"text": system_prompt}] },
-        "contents": [{ "parts": [{"text": f"Nội dung cần đọc: {input_text}"}] }],
+        "systemInstruction": {
+            "parts": [{"text": system_prompt}]
+        },
+        "contents": [{
+            "parts": [{"text": f"Nội dung cần đọc: {input_text}"}]
+        }],
         "generationConfig": {
             "responseModalities": ["AUDIO"], 
             "speechConfig": {
                 "voiceConfig": {
-                    "prebuiltVoiceConfig": { "voiceName": voice_id }
+                    "prebuiltVoiceConfig": {
+                        "voiceName": voice_id
+                    }
                 }
             }
         }
@@ -735,7 +742,6 @@ def tts_gemini(text, voice_style_key="Nam 1 - Trầm Ấm (Charon)", region="Mi�
             result = response.json()
             if "candidates" in result and result["candidates"]:
                 candidate = result["candidates"][0]
-                # Kiểm tra cấu trúc trả về
                 if "content" in candidate and "parts" in candidate["content"]:
                     for part in candidate["content"]["parts"]:
                         if "inlineData" in part and "data" in part["inlineData"]:
@@ -743,10 +749,10 @@ def tts_gemini(text, voice_style_key="Nam 1 - Trầm Ấm (Charon)", region="Mi�
                             if wav_data:
                                 if is_test: return wav_data 
                                 return upload_to_catbox(wav_data, "gemini_voice.wav")
-            print(f"DEBUG EMPTY: {result}")
-            st.error("Gemini không trả về file âm thanh.")
+            
+            print(f"DEBUG GEMINI: {result}")
+            st.error("Gemini trả về thành công nhưng không có Audio. Hãy thử lại.")
         else:
-            # Nếu vẫn lỗi 404, ta sẽ biết ngay ở đây
             st.error(f"Lỗi API ({response.status_code}): {response.text}")
     except Exception as e: 
         st.error(f"Lỗi kết nối: {e}")
