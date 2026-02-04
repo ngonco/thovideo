@@ -708,7 +708,8 @@ def tts_gemini(text, voice_style_key="Nam 1 - Trầm Ấm (Charon)", region="Mi�
         input_text = text
 
     # [QUAN TRỌNG 1] Dùng đúng URL của model 2.5 Preview TTS (Dùng generateContent thay vì stream để ổn định hơn)
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key={api_key}"url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:streamGenerateContent?key={api_key}"
+    # [QUAN TRỌNG] Dùng đúng URL (generateContent)
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key={api_key}"
     
     # [QUAN TRỌNG 2] Payload giống hệt file Python của bạn
     payload = {
