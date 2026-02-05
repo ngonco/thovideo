@@ -883,24 +883,19 @@ def admin_dashboard():
     # [CẬP NHẬT] Thêm Tab thứ 3 là Quản lý User
     tab1, tab2, tab3 = st.tabs(["👥 Thêm User Mới", "🔄 Đồng bộ Kịch bản", "✏️ Sửa/Tìm User"])
     
-    # --- CẤU HÌNH CÁC GÓI CƯỚC (Đã cập nhật theo yêu cầu) ---
+    # --- CẤU HÌNH CÁC GÓI CƯỚC CHUẨN (Dùng chung cho cả Tab 1 và Tab 3) ---
+    # Tại đây quy định số video và mã code cho từng gói
     PLAN_CONFIG = {
             "Free (Miễn phí)":    {"quota_per_month": 10,  "code": "free"},
             "Gói 30k (Cơ bản)":   {"quota_per_month": 30,  "code": "basic"},
-            "Gói 60k (Nâng cao)": {"quota_per_month": 60,  "code": "pro"}, # Đã giảm từ 90 xuống 60
-            "Gói huynh đệ":       {"quota_per_month": 60,  "code": ""}
+            "Gói 60k (Nâng cao)": {"quota_per_month": 60,  "code": "pro"},     # 60k = 60 video
+            "Gói huynh đệ":       {"quota_per_month": 60,  "code": "huynhde"} # Dùng chung cấu hình
     }
 
     with tab1:
         st.subheader("Tạo tài khoản & Gia hạn")
         
-        # --- CẤU HÌNH CÁC GÓI CƯỚC (Đã cập nhật chuẩn) ---
-        PLAN_CONFIG = {
-            "Free (Miễn phí)":    {"quota_per_month": 10,  "code": "free"},
-            "Gói 30k (Cơ bản)":   {"quota_per_month": 30,  "code": "basic"},
-            "Gói 60k (Nâng cao)": {"quota_per_month": 90,  "code": "pro"},
-            "Gói huynh đệ":       {"quota_per_month": 60,  "code": "dacbiet"}
-        }
+        # (Đã xóa khai báo trùng lặp ở đây để tránh lỗi logic)
         
         DURATION_CONFIG = {
             "1 Tháng": 1,
