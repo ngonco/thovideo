@@ -2033,53 +2033,75 @@ else:
                         # Kiểm tra xem đã có nội dung chưa
                         current_script_full = st.session_state.get('main_content_area', "")
                         
+                        # --- [LOGIC MỚI] XỬ LÝ NÚT BẤM CÓ XÁC NHẬN ---
+                        
+                        # 1. Khởi tạo biến cờ để quyết định có chạy hay không
+                        should_run_process = False
+
+                        # 2. Xử lý nút bấm chính
                         if st.button("🎙️ TẠO GIỌNG ĐỌC ĐẦY ĐỦ (BẮT BUỘC)", type="primary", use_container_width=True):
-                            # 1. Kiểm tra nội dung
                             if not current_script_full or len(current_script_full.strip()) < 2:
                                 st.error("⚠️ Vui lòng nhập nội dung kịch bản ở Bước 1 trước!")
-                            
-                            # 2. [NEW] Kiểm tra hạn mức TTS
                             else:
-                                # [MỚI] KIỂM TRA ĐỘ DÀI KỊCH BẢN (TRÊN 700 TỪ)
+                                # Kiểm tra độ dài
                                 word_count_gemini = len(current_script_full.split())
                                 if word_count_gemini > 700:
-                                    st.warning(f"⚠️ Cảnh báo: Kịch bản dài {word_count_gemini} từ. Với văn bản trên 700 từ, giọng đọc Gemini có khả năng bị ngắt quãng giữa chừng.")
-
-                                is_enough, msg_or_count = check_tts_quota(user, current_script_full)
-                                if not is_enough:
-                                    st.error(msg_or_count) # Hiện thông báo lỗi hết hạn mức
+                                    # Nếu dài quá -> Bật cờ cảnh báo trong session, KHÔNG CHẠY NGAY
+                                    st.session_state['gemini_warning_active'] = True
                                 else:
-                                    # Hạn mức OK -> Tiến hành tạo
-                                    with st.spinner(f"⏳ Đang xử lý ({round(msg_or_count/1000, 1)} phút)... Vui lòng đợi!"):
-                                        # Gọi API 1 lần duy nhất ở đây
-                                        full_audio_link = tts_gemini(current_script_full, voice_style_key=selected_voice_key, region=selected_region, is_test=False)
-                                        
-                                        if full_audio_link:
-                                            # Lưu link vào session
-                                            st.session_state['gemini_full_audio_link'] = full_audio_link
-                                            st.session_state['gemini_voice_info'] = f"Gemini - {selected_region} - {selected_voice_key}"
-                                            
-                                            # 3. [NEW] TRỪ HẠN MỨC NGAY LẬP TỨC VÀO SUPABASE
-                                            new_usage = update_tts_usage_supabase(user['id'], msg_or_count)
-                                            if new_usage:
-                                                # Cập nhật session để thanh tiến trình nhảy ngay lập tức
-                                                st.session_state['user_info']['tts_usage'] = new_usage
-                                                st.toast(f"Đã trừ {round(msg_or_count/1000, 2)} phút vào tài khoản.", icon="📉")
-                                            
-                                            st.success("✅ Đã tạo xong! Hãy nghe lại bên dưới.")
-                                            time.sleep(1) # Đợi xíu cho UI cập nhật
-                                            st.rerun()
-                                        else:
-                                            st.error("❌ Lỗi khi tạo giọng. Vui lòng thử lại!")
-                                    # Hàm tts_gemini của bạn đã trả về Link Catbox (String)
+                                    # Nếu ngắn -> Chạy luôn
+                                    should_run_process = True
+
+                        # 3. Hiển thị CẢNH BÁO MÀU NÂU (Nếu cờ cảnh báo đang bật)
+                        if st.session_state.get('gemini_warning_active'):
+                            current_len = len(current_script_full.split())
+                            st.markdown(f"""
+                            <div style="background-color: #EFEBE9; border: 2px solid #5D4037; padding: 15px; border-radius: 10px; margin-bottom: 15px; margin-top: 10px;">
+                                <h4 style="color: #5D4037; margin: 0; font-size: 18px;">⚠️ Cảnh báo: Kịch bản quá dài ({current_len} từ)</h4>
+                                <p style="color: #3E2723; font-size: 16px; margin-top: 10px;">
+                                    Với văn bản trên 700 từ, giọng đọc Gemini có khả năng bị ngắt quãng hoặc mất nội dung giữa chừng.<br>
+                                    <b>💡 Gợi ý tốt nhất:</b> Bạn nên tách kịch bản thành 2 phần nhỏ để đảm bảo chất lượng.
+                                </p>
+                                <p style="color: #D32F2F; font-weight: bold; margin-top: 10px;">Bạn có chắc chắn muốn tiếp tục không?</p>
+                            </div>
+                            """, unsafe_allow_html=True)
+
+                            col_conf1, col_conf2 = st.columns(2)
+                            with col_conf1:
+                                if st.button("✅ Vẫn tạo (Chấp nhận rủi ro)", use_container_width=True):
+                                    should_run_process = True
+                                    st.session_state['gemini_warning_active'] = False # Tắt cảnh báo sau khi bấm
+                            with col_conf2:
+                                if st.button("❌ Hủy để tách kịch bản", use_container_width=True):
+                                    st.session_state['gemini_warning_active'] = False
+                                    st.rerun()
+
+                        # 4. THỰC THI LOGIC TẠO GIỌNG (Chỉ chạy khi cờ cho phép)
+                        if should_run_process:
+                            # Kiểm tra hạn mức TTS
+                            is_enough, msg_or_count = check_tts_quota(user, current_script_full)
+                            if not is_enough:
+                                st.error(msg_or_count) 
+                            else:
+                                # Hạn mức OK -> Tiến hành tạo
+                                with st.spinner(f"⏳ Đang xử lý ({round(msg_or_count/1000, 1)} phút)... Vui lòng đợi!"):
+                                    # Gọi API
                                     full_audio_link = tts_gemini(current_script_full, voice_style_key=selected_voice_key, region=selected_region, is_test=False)
                                     
                                     if full_audio_link:
                                         # Lưu link vào session
                                         st.session_state['gemini_full_audio_link'] = full_audio_link
-                                        # Lưu thông tin cài đặt để dùng sau này
                                         st.session_state['gemini_voice_info'] = f"Gemini - {selected_region} - {selected_voice_key}"
+                                        
+                                        # Trừ hạn mức
+                                        new_usage = update_tts_usage_supabase(user['id'], msg_or_count)
+                                        if new_usage:
+                                            st.session_state['user_info']['tts_usage'] = new_usage
+                                            st.toast(f"Đã trừ {round(msg_or_count/1000, 2)} phút.", icon="📉")
+                                        
                                         st.success("✅ Đã tạo xong! Hãy nghe lại bên dưới.")
+                                        time.sleep(1) 
+                                        st.rerun()
                                     else:
                                         st.error("❌ Lỗi khi tạo giọng. Vui lòng thử lại!")
 
