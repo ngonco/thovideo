@@ -1635,6 +1635,12 @@ else:
     # [MỚI] Thêm 3 dòng <br> để đẩy Bước 2 xuống xa hơn (Bạn có thể thêm bớt <br> tùy ý)
     st.markdown("<br><br>", unsafe_allow_html=True) 
 
+    # --- [LOGIC MỚI] KIỂM TRA BƯỚC 1 ---
+    # Nếu chưa có nội dung kịch bản -> Dừng lại và hiện cảnh báo
+    if not noi_dung_gui or len(noi_dung_gui.strip()) == 0:
+        st.warning("⚠️ Vui lòng hoàn thành BƯỚC 1 (Chọn hoặc Nhập kịch bản) để tiếp tục!")
+        st.stop() # <-- Lệnh này sẽ ẩn toàn bộ phần bên dưới đi
+
     st.markdown("""
         <div class="step-card">
             <span class="step-label"> BƯỚC 2️⃣: CHUẨN BỊ GIỌNG ĐỌC</span>
