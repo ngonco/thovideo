@@ -2038,13 +2038,32 @@ else:
                                     </div>
                                 """, unsafe_allow_html=True)
                             else:
-                                # Chỉ chạy AI khi đã có nội dung
-                                with st.spinner(f"Đang tạo mẫu giọng {selected_voice_key}..."):
-                                    sample_audio = tts_gemini(text=script_preview, voice_style_key=selected_voice_key, region="Miền Bắc", is_test=True)
-                                    if sample_audio:
-                                        st.audio(sample_audio, format="audio/wav")
-                                    else:
-                                        st.warning("Hệ thống đang bận, vui lòng thử lại.")
+                                # [LOGIC MỚI] Tính toán số ký tự nghe thử (chỉ lấy 2 câu đầu)
+                                sentences = re.split(r'(?<=[.!?])\s+', script_preview.strip())
+                                text_preview_only = " ".join(sentences[:2]) # Chỉ lấy 2 câu đầu để đọc
+                                char_count_preview = len(text_preview_only)
+
+                                # Kiểm tra quota trước
+                                is_enough, msg_preview = check_tts_quota(user, text_preview_only)
+                                
+                                if not is_enough:
+                                    st.error(msg_preview) # Báo hết tiền
+                                else:
+                                    # Chỉ chạy AI khi đủ tiền
+                                    with st.spinner(f"Đang tạo mẫu ({round(char_count_preview/1000, 2)} phút)..."):
+                                        # Gọi hàm tạo giọng (Lưu ý: is_test=True để prompt ngắn gọn)
+                                        sample_audio = tts_gemini(text=script_preview, voice_style_key=selected_voice_key, region="Miền Bắc", is_test=True)
+                                        
+                                        if sample_audio:
+                                            # [QUAN TRỌNG] Trừ tiền ngay sau khi tạo thành công
+                                            new_usage = update_tts_usage_supabase(user['id'], char_count_preview)
+                                            if new_usage:
+                                                st.session_state['user_info']['tts_usage'] = new_usage
+                                                st.toast(f"Đã trừ {char_count_preview} ký tự cho bản nghe thử.", icon="📉")
+
+                                            st.audio(sample_audio, format="audio/wav")
+                                        else:
+                                            st.warning("Hệ thống đang bận, vui lòng thử lại.")
 
                         st.markdown("---")
                         
@@ -2073,6 +2092,7 @@ else:
                                 else:
                                     # Hạn mức OK -> Tiến hành tạo
                                     with st.spinner(f"⏳ Đang xử lý ({round(msg_or_count/1000, 1)} phút)... Vui lòng đợi!"):
+                                        # Gọi API 1 lần duy nhất ở đây
                                         full_audio_link = tts_gemini(current_script_full, voice_style_key=selected_voice_key, region=selected_region, is_test=False)
                                         
                                         if full_audio_link:
@@ -2080,7 +2100,7 @@ else:
                                             st.session_state['gemini_full_audio_link'] = full_audio_link
                                             st.session_state['gemini_voice_info'] = f"Gemini - {selected_region} - {selected_voice_key}"
                                             
-                                            # 3. [NEW] TRỪ HẠN MỨC NGAY LẬP TỨC
+                                            # 3. [NEW] TRỪ HẠN MỨC NGAY LẬP TỨC VÀO SUPABASE
                                             new_usage = update_tts_usage_supabase(user['id'], msg_or_count)
                                             if new_usage:
                                                 # Cập nhật session để thanh tiến trình nhảy ngay lập tức
