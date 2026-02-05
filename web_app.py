@@ -243,6 +243,29 @@ def load_draft_from_supabase(email):
         pass
     return ""
 
+# --- [NEW] HÀM QUẢN LÝ LỊCH SỬ TTS (ĐỂ KHÔNG MẤT KHI F5) ---
+def save_tts_log(email, content, audio_link, voice_info):
+    try:
+        data = {
+            "email": email,
+            "content": content,
+            "audio_link": audio_link,
+            "voice_info": voice_info
+        }
+        supabase.table('tts_logs').insert(data).execute()
+    except Exception as e:
+        print(f"Lỗi lưu TTS log: {e}")
+
+def get_latest_tts_log(email):
+    try:
+        # Lấy file âm thanh mới nhất của user này
+        response = supabase.table('tts_logs').select("*").eq('email', email).order('created_at', desc=True).limit(1).execute()
+        if response.data:
+            return response.data[0]
+    except Exception as e:
+        print(f"Lỗi tải TTS log: {e}")
+    return None
+
 # --- [NEW] HÀM CALLBACK ĐỂ AUTO-SAVE ---
 def auto_save_callback():
     # Kiểm tra xem đã đăng nhập chưa
@@ -1973,6 +1996,18 @@ else:
 
                 # CASE 4: GIỌNG AI CHẤT LƯỢNG CAO
                 elif voice_method == "🤖 Giọng AI Gemini":
+
+                    # [MỚI] TỰ ĐỘNG KHÔI PHỤC FILE ÂM THANH NẾU VÔ TÌNH F5
+                    if 'gemini_full_audio_link' not in st.session_state:
+                        last_tts = get_latest_tts_log(user['email'])
+                        # Chỉ khôi phục nếu nội dung kịch bản hiện tại trùng khớp với file âm thanh cũ
+                        # (Tránh trường hợp sửa kịch bản rồi nhưng lại load file âm thanh cũ)
+                        current_content_check = st.session_state.get('main_content_area', "").strip()
+                        
+                        if last_tts and last_tts['content'] == current_content_check:
+                            st.session_state['gemini_full_audio_link'] = last_tts['audio_link']
+                            st.session_state['gemini_voice_info'] = last_tts['voice_info']
+                            st.toast("Đã khôi phục file âm thanh cũ! 🔊", icon="♻️")
                     
                     # --- [NEW] HIỂN THỊ HẠN MỨC SỬ DỤNG ---
                     # Lấy số liệu (xử lý None)
@@ -2099,6 +2134,9 @@ else:
                                             st.session_state['user_info']['tts_usage'] = new_usage
                                             st.toast(f"Đã trừ {round(msg_or_count/1000, 2)} phút.", icon="📉")
                                         
+                                        # [MỚI] Lưu ngay vào lịch sử để không mất khi F5
+                                        save_tts_log(user['email'], current_script_full, full_audio_link, f"Gemini - {selected_region} - {selected_voice_key}")
+
                                         st.success("✅ Đã tạo xong! Hãy nghe lại bên dưới.")
                                         time.sleep(1) 
                                         st.rerun()
