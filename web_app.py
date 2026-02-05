@@ -256,6 +256,19 @@ def save_tts_log(email, content, audio_link, voice_info):
     except Exception as e:
         print(f"Lỗi lưu TTS log: {e}")
 
+# --- [NEW] HÀM DỌN DẸP LOGS CŨ (TỰ ĐỘNG) ---
+def cleanup_old_tts_logs(days=7):
+    try:
+        # 1. Tính mốc thời gian (Hiện tại trừ đi 7 ngày)
+        threshold_date = (datetime.utcnow() - timedelta(days=days)).isoformat()
+        
+        # 2. Lệnh xóa các bản ghi có ngày tạo nhỏ hơn (cũ hơn) mốc trên
+        supabase.table('tts_logs').delete().lt('created_at', threshold_date).execute()
+        return True
+    except Exception as e:
+        print(f"Lỗi dọn dẹp logs: {e}")
+        return False
+
 def get_latest_tts_log(email):
     try:
         # Lấy file âm thanh mới nhất của user này
@@ -1461,6 +1474,23 @@ else:
     user = st.session_state['user_info']
 
     # --- [NEW] NÚT HỖ TRỢ KỸ THUẬT (FLOATING BAR - GÓC DƯỚI TRÁI) ---
+
+    # --- [FIX LỖI F5] TỰ ĐỘNG KHÔI PHỤC TTS GẦN NHẤT ---
+    if 'gemini_full_audio_link' not in st.session_state:
+        with st.spinner("Đang kiểm tra dữ liệu cũ..."):
+            last_tts = get_latest_tts_log(user['email'])
+            if last_tts:
+                # Lấy bản nháp mới nhất từ DB để so sánh
+                latest_draft = load_draft_from_supabase(user['email'])
+                
+                # So sánh (xóa khoảng trắng và xuống dòng để chính xác tuyệt đối)
+                content_in_db = str(last_tts.get('content', '')).strip()
+                current_draft = str(latest_draft).strip()
+                
+                if content_in_db == current_draft and current_draft != "":
+                    st.session_state['gemini_full_audio_link'] = last_tts['audio_link']
+                    st.session_state['gemini_voice_info'] = last_tts['voice_info']
+                    st.session_state['main_content_area'] = latest_draft # Đảm bảo kịch bản cũng được load
     st.markdown("""
         <a href="https://zalo.me/g/ivgedj736" target="_blank" rel="noopener noreferrer" style="text-decoration: none;">
             <div style="
@@ -1997,17 +2027,7 @@ else:
                 # CASE 4: GIỌNG AI CHẤT LƯỢNG CAO
                 elif voice_method == "🤖 Giọng AI Gemini":
 
-                    # [MỚI] TỰ ĐỘNG KHÔI PHỤC FILE ÂM THANH NẾU VÔ TÌNH F5
-                    if 'gemini_full_audio_link' not in st.session_state:
-                        last_tts = get_latest_tts_log(user['email'])
-                        # Chỉ khôi phục nếu nội dung kịch bản hiện tại trùng khớp với file âm thanh cũ
-                        # (Tránh trường hợp sửa kịch bản rồi nhưng lại load file âm thanh cũ)
-                        current_content_check = st.session_state.get('main_content_area', "").strip()
-                        
-                        if last_tts and last_tts['content'] == current_content_check:
-                            st.session_state['gemini_full_audio_link'] = last_tts['audio_link']
-                            st.session_state['gemini_voice_info'] = last_tts['voice_info']
-                            st.toast("Đã khôi phục file âm thanh cũ! 🔊", icon="♻️")
+                    
                     
                     # --- [NEW] HIỂN THỊ HẠN MỨC SỬ DỤNG ---
                     # Lấy số liệu (xử lý None)
