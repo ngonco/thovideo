@@ -1734,7 +1734,11 @@ else:
                     
                     # Nếu chưa có nội dung hoặc quá ngắn -> Hiện cảnh báo
                     if not current_script_upload or len(current_script_upload.strip()) < 5:
-                        st.warning("⚠️ Bạn chưa nhập kịch bản! Vui lòng quay lại Bước 1 viết nội dung trước khi tải file âm thanh.")
+                        st.markdown("""
+                            <div style="color: #3E2723; font-weight: bold; padding: 10px; background-color: #FFF3E0; border-radius: 5px; border-left: 5px solid #8B4513;">
+                                ⚠️ Bạn chưa nhập kịch bản! Vui lòng quay lại Bước 1 viết nội dung trước khi tải file âm thanh.
+                            </div>
+                        """, unsafe_allow_html=True)
                     else:
                         # Chỉ hiện công cụ upload khi đã có kịch bản
                         st.markdown("<b>Chọn file ghi âm từ máy của bạn (mp3, wav, m4a):</b>", unsafe_allow_html=True)
@@ -1798,8 +1802,12 @@ else:
                         
                         # [LOGIC MỚI] Nếu chưa có kịch bản -> CHỈ HIỆN CẢNH BÁO VÀ DỪNG
                         if not current_script or len(current_script.strip()) < 5:
-                            # Hiện cảnh báo đúng như yêu cầu
-                            st.warning("⚠️ Bạn chưa nhập kịch bản! Vui lòng quay lại Bước 1 viết nội dung trước khi tải file âm thanh.")
+                            # Hiện cảnh báo đúng như yêu cầu (Màu Nâu)
+                            st.markdown("""
+                                <div style="color: #3E2723; font-weight: bold; padding: 10px; background-color: #FFF3E0; border-radius: 5px; border-left: 5px solid #8B4513;">
+                                    ⚠️ Bạn chưa nhập kịch bản! Vui lòng quay lại Bước 1 viết nội dung trước khi tải file âm thanh.
+                                </div>
+                            """, unsafe_allow_html=True)
                         
                         else:
                             # NẾU ĐÃ CÓ KỊCH BẢN -> Mới hiện công cụ thu âm
@@ -1903,7 +1911,11 @@ else:
                     
                     # Nếu chưa có nội dung hoặc quá ngắn (< 5 ký tự) -> Hiện cảnh báo và DỪNG HIỂN THỊ
                     if not current_script_gemini or len(current_script_gemini.strip()) < 5:
-                         st.warning("⚠️ Bạn chưa nhập kịch bản! Vui lòng quay lại Bước 1 viết nội dung trước khi tải file âm thanh.")
+                         st.markdown("""
+                            <div style="color: #3E2723; font-weight: bold; padding: 10px; background-color: #FFF3E0; border-radius: 5px; border-left: 5px solid #8B4513;">
+                                ⚠️ Bạn chưa nhập kịch bản! Vui lòng quay lại Bước 1 viết nội dung trước khi tải file âm thanh.
+                            </div>
+                        """, unsafe_allow_html=True)
                     
                     else:
                         # [NẾU ĐÃ CÓ KỊCH BẢN] -> Mới hiển thị các công cụ bên dưới
@@ -1921,9 +1933,12 @@ else:
                             # [FIX] Lấy nội dung kịch bản từ Session
                             script_preview = st.session_state.get('main_content_area', "")
                             
-                            # [QUAN TRỌNG] Kiểm tra xem đã có nội dung chưa (ít nhất 5 ký tự)
                             if not script_preview or len(script_preview.strip()) < 5:
-                                st.warning("⚠️ Bạn chưa nhập kịch bản! Vui lòng quay lại Bước 1 viết nội dung trước khi nghe thử.")
+                                st.markdown("""
+                                    <div style="color: #3E2723; font-weight: bold; padding: 10px; background-color: #FFF3E0; border-radius: 5px; border-left: 5px solid #8B4513;">
+                                        ⚠️ Bạn chưa nhập kịch bản! Vui lòng quay lại Bước 1 viết nội dung trước khi nghe thử.
+                                    </div>
+                                """, unsafe_allow_html=True)
                             else:
                                 # Chỉ chạy AI khi đã có nội dung
                                 with st.spinner(f"Đang tạo mẫu giọng {selected_voice_key}..."):
