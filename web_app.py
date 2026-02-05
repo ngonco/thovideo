@@ -1824,7 +1824,9 @@ else:
             """, unsafe_allow_html=True)
 
             # [LOGIC MỚI] 1. Khôi phục lựa chọn cũ từ Settings
-            saved_method = user.get('settings', {}).get('last_voice_method')
+            # [FIX LỖI] Nếu settings là None thì ép về dict rỗng {} để không bị lỗi AttributeError
+            user_settings = user.get('settings') or {}
+            saved_method = user_settings.get('last_voice_method')
             default_method_idx = None
             
             # Tìm xem lựa chọn cũ nằm ở vị trí nào trong danh sách
