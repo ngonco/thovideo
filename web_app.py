@@ -1458,7 +1458,7 @@ else:
     """, unsafe_allow_html=True)
     
     # [MODIFIED] HEADER MỚI (Chỉ còn Tiêu đề)
-    st.markdown(f"<h1 style='text-align: center; border: none; margin: 0; padding: 0;'>hạt bụi nhỏ - làm video giùm bạn</h1>", unsafe_allow_html=True)
+    st.markdown(f"<h1 style='text-align: center; border: none; margin: 0; padding: 0;'>hạt bụi nhỏ làm video siêu dễ</h1>", unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True) # Tạo khoảng cách nhỏ
     # Tính toán quota
     quota_left = user['quota_max'] - user['quota_used']
