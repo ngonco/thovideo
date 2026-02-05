@@ -310,7 +310,7 @@ def get_app_style():
     /* [MỚI] XÓA LỀ NỘI DUNG BÊN TRONG EXPANDER */
     div[data-testid="stExpander"] div[role="group"] {{
         padding: 0px !important; /* Xóa khoảng trắng bao quanh nội dung */
-        gap: 10px !important;    /* Giảm khoảng cách giữa các phần tử con */
+        gap: 5px !important;    /* Giảm khoảng cách giữa các phần tử con */
     }}
 
     /* Chỉnh kích thước thanh tiêu đề (Cài đặt, Dòng lịch sử) */
