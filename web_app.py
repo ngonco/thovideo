@@ -1510,7 +1510,7 @@ else:
 
     # 2. Bọc toàn bộ vào Expander
     # expanded=False nghĩa là mặc định đóng lại cho gọn
-    with st.expander("📂 DANH SÁCH VIDEO ĐÃ TẠO (Bấm để xem)", expanded=False):
+    with st.expander("📂 DANH SÁCH VIDEO ĐÃ TẠO", expanded=False):
         
         # A. NẾU CHƯA TẢI DỮ LIỆU -> Hiện nút bấm
         if not st.session_state['history_lazy_loaded']:
@@ -1794,16 +1794,9 @@ else:
     # [MỚI] Thêm 3 dòng <br> để đẩy Bước 2 xuống xa hơn (Bạn có thể thêm bớt <br> tùy ý)
     st.markdown("<br><br>", unsafe_allow_html=True) 
 
-    # --- [LOGIC MỚI] KIỂM TRA BƯỚC 1 ---
-    # Nếu chưa có nội dung kịch bản -> Dừng lại và hiện cảnh báo
-    if not noi_dung_gui or len(noi_dung_gui.strip()) == 0:
-        # Thay st.warning bằng HTML để có chữ màu Nâu đậm
-        st.markdown("""
-        <div style="background-color: #FFF9C4; color: #5D4037; padding: 15px; border-radius: 10px; border: 1px solid #FBC02D; margin-bottom: 20px; font-weight: bold;">
-            Hoàn thành BƯỚC 1 (Chọn hoặc Nhập kịch bản) để tiếp tục!
-        </div>
-        """, unsafe_allow_html=True)
-        st.stop() # <-- Lệnh này sẽ ẩn toàn bộ phần bên dưới đi
+    # [ĐÃ SỬA] Bỏ đoạn chặn st.stop() để Bước 2 luôn hiển thị.
+    # Hệ thống sẽ kiểm tra nội dung khi người dùng thao tác trong Bước 2 sau.
+    pass
 
     # [MỚI] Gom Bước 2 vào Expander
     with st.expander("2️⃣ BƯỚC 2: CHUẨN BỊ GIỌNG ĐỌC & GỬI", expanded=True):
