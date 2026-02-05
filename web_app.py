@@ -1993,12 +1993,13 @@ else:
             with st.spinner("Đang xử lý bản thu..."):
                 link = upload_to_catbox(st.session_state['temp_record_file'], st.session_state['temp_record_name'])
                 if link: final_audio_link_to_send = link; ready_to_send = True
+        # [SỬA] Thêm dòng này để hệ thống biết chọn Gemini là hợp lệ, không cần file trước
+        elif voice_method == "🤖 Giọng AI Gemini":
+            ready_to_send = True
 
-        # --- [CẬP NHẬT] GIỚI HẠN ĐỘ DÀI THEO PHƯƠNG THỨC GIỌNG NÓI & GÓI CƯỚC ---
-        word_count = len(noi_dung_gui.split())
-        
-        if voice_method == "🤖 Giọng AI Google":
-            # Nếu dùng Gemini: Gói Pro/Huynhde cho 1100 từ, các gói còn lại (Basic/Free) cho 800 từ
+        # [NEW] CASE 3: Dùng giọng Gemini (Tự tạo)
+        elif voice_method == "🤖 Giọng AI Google":
+                    # Lấy thông tin từ session (đã lưu ở bước Nghe thử/Chốt)
             if user.get('plan') in ['pro', 'huynhde']:
                 MAX_WORDS = 1100
             else:
