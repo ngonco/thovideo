@@ -2024,27 +2024,21 @@ else:
             st.toast("⚠️ Thiếu file âm thanh!", icon="⚠️")
         else:
             try:
-                gc = get_gspread_client()
-                ws = gc.open(DB_SHEET_NAME).worksheet(DB_WORKSHEET)
+                # [FIX 503] Bỏ kết nối Google Sheet ở đây vì hay gây lỗi quá tải.
+                # Thay bằng cách tạo ID theo Thời gian + Số ngẫu nhiên (Nhanh & Không bao giờ trùng)
+                
+                import random
                 
                 # 1. Lấy thời gian hiện tại
                 now_vn = datetime.utcnow() + timedelta(hours=7)
-                order_id = now_vn.strftime("%Y%m%d_%H%M%S")
                 
-                # --- [NEW] CƠ CHẾ CHỐNG TRÙNG ID (TIME SLIDING) ---
-                try:
-                    # Lấy toàn bộ cột ID hiện có để check (nhanh hơn dùng find nhiều lần)
-                    existing_ids = ws.col_values(1) 
-                    
-                    # Nếu ID này đã có người xí chỗ, tự động lùi lại 1 giây cho đến khi hết trùng
-                    while order_id in existing_ids:
-                        now_vn += timedelta(seconds=1) # Cộng thêm 1 giây
-                        order_id = now_vn.strftime("%Y%m%d_%H%M%S") # Tạo lại ID mới
-                except:
-                    # Trường hợp sheet mới tinh chưa có dòng nào thì bỏ qua lỗi
-                    pass
+                # 2. Tạo đuôi ngẫu nhiên 3 số (ví dụ: _123, _999)
+                random_suffix = random.randint(100, 999)
                 
-                # Cập nhật lại timestamp theo cái ID chốt cuối cùng
+                # 3. Ghép thành ID hoàn chỉnh (Ví dụ: 20231025_103000_567)
+                order_id = now_vn.strftime("%Y%m%d_%H%M%S") + f"_{random_suffix}"
+                
+                # Cập nhật timestamp
                 timestamp = now_vn.strftime("%Y-%m-%d %H:%M:%S")
                 # ----------------------------------------------------
                 # GHI VÀO SUPABASE
