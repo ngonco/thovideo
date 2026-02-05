@@ -924,11 +924,12 @@ def admin_dashboard():
     # Tại đây quy định số video và mã code cho từng gói
     # --- CẤU HÌNH GÓI CƯỚC & GIỚI HẠN TTS ---
     # Quy ước: 1 phút giọng đọc ≈ 1000 ký tự (đã bao gồm khoảng nghỉ)
+    # [ĐÃ SỬA] Thêm trường "code" và đổi tên "video_quota" thành "quota_per_month" để khớp logic tính toán
     PLAN_CONFIG = {
-        "free":     {"name": "Free",     "video_quota": 10, "tts_chars": 10000},  # ~10 phút
-        "basic":    {"name": "Cơ bản",   "video_quota": 30, "tts_chars": 50000},  # ~50 phút
-        "pro":      {"name": "Nâng cao", "video_quota": 60, "tts_chars": 150000}, # ~150 phút
-        "huynhde":  {"name": "Huynh Đệ", "video_quota": 60, "tts_chars": 150000}, # ~150 phút
+        "free":     {"name": "Free",     "code": "free",    "quota_per_month": 10, "tts_chars": 10000}, 
+        "basic":    {"name": "Cơ bản",   "code": "basic",   "quota_per_month": 30, "tts_chars": 50000}, 
+        "pro":      {"name": "Nâng cao", "code": "pro",     "quota_per_month": 60, "tts_chars": 150000}, 
+        "huynhde":  {"name": "Huynh Đệ", "code": "huynhde", "quota_per_month": 60, "tts_chars": 150000}, 
     }
     # Mapping tên hiển thị cũ sang code mới để tương thích ngược
     PLAN_NAME_MAP = {
