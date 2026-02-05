@@ -1491,7 +1491,7 @@ else:
         saved_draft = load_draft_from_supabase(user['email'])
         if saved_draft and len(saved_draft) > 0:
             st.session_state['main_content_area'] = saved_draft
-            st.toast("Đã khôi phục bài viết đang dở! 📂", icon="magic")
+            st.toast("Đã khôi phục bài viết đang dở! 📂", icon="🪄")
         st.session_state['draft_restored'] = True # Đánh dấu đã khôi phục để không load lại liên tục
 
     # --- [NEW] NÚT HỖ TRỢ KỸ THUẬT (FLOATING BAR - GÓC DƯỚI TRÁI) ---
