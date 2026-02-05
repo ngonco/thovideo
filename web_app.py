@@ -1639,18 +1639,18 @@ else:
         # [ĐÃ SỬA] Đổi expanded=False để mặc định đóng lại
     with st.expander("1️⃣ BƯỚC 1: CHUẨN BỊ KỊCH BẢN", expanded=False):
             
-            # [FIX] Ép kiểu dữ liệu về Python chuẩn (int/float/str) để tránh lỗi API 500 do Numpy
+            # PHIÊN BẢN AN TOÀN: Dùng .get() để tránh lỗi AttributeError khi chưa khởi tạo xong
             settings = {
-                "clean_audio": bool(st.session_state.s_clean), 
-                "voice_vol": float(st.session_state.s_voice),
-                "music_vol": float(st.session_state.s_music), 
-                "font_name": str(st.session_state.s_font),
-                "font_size": int(st.session_state.s_size), 
-                "text_color": str(st.session_state.s_color),
-                "outline_color": str(st.session_state.s_outline), 
-                "border_width": int(st.session_state.s_border),
-                "margin_v": int(st.session_state.s_margin), 
-                "offset_x": int(st.session_state.s_offset)
+                "clean_audio": bool(st.session_state.get("s_clean", True)), 
+                "voice_vol": float(st.session_state.get("s_voice", 1.5)),
+                "music_vol": float(st.session_state.get("s_music", 0.2)), 
+                "font_name": str(st.session_state.get("s_font", "Agbalumo")),
+                "font_size": int(st.session_state.get("s_size", 110)), 
+                "text_color": str(st.session_state.get("s_color", "#FFFFFF")),
+                "outline_color": str(st.session_state.get("s_outline", "#000000")), 
+                "border_width": int(st.session_state.get("s_border", 3)),
+                "margin_v": int(st.session_state.get("s_margin", 650)), 
+                "offset_x": int(st.session_state.get("s_offset", 0))
             }
             
             # [ĐÃ SỬA] Thêm label_visibility="collapsed" để ẩn dòng chữ tiêu đề
