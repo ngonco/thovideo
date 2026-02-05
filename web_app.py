@@ -971,6 +971,8 @@ def admin_dashboard():
         
         # Tính tổng quota = (Quota tháng) x (Số tháng)
         calculated_quota = plan_info["quota_per_month"] * months
+        # [MỚI] Tính tổng TTS = (TTS tháng) x (Số tháng)
+        calculated_tts = plan_info["tts_chars"] * months
         
         # Tính ngày hết hạn
         expiry_date = datetime.utcnow() + timedelta(days=30 * months)
@@ -979,21 +981,24 @@ def admin_dashboard():
         # Hiển thị thông tin review
         st.success(f"""
         📊 **Review Cấu hình:**
-        - Gói: **{plan_info['code'].upper()}** ({plan_info['quota_per_month']} video/tháng)
-        - Thời hạn: **{months} tháng**
-        - Ngày hết hạn: **{expiry_str}**
+        - Gói: **{plan_info['code'].upper()}**
+        - Thời hạn: **{months} tháng** (Hết hạn: {expiry_str})
         """)
         
-        # [FIX] Tạo key động dựa trên tên gói và thời hạn
-        # Khi user đổi gói, key thay đổi -> ô nhập liệu reset về giá trị mới
-        dynamic_key_quota = f"quota_{selected_plan_name}_{selected_duration_name}"
+        # [FIX] Tạo key động dựa trên tên gói và thời hạn để auto-reload giá trị
+        dynamic_key = f"{selected_plan_name}_{selected_duration_name}"
 
-        # Ô nhập số (Tự động cập nhật giá trị theo gói đã chọn)
-        final_quota = st.number_input("Tổng số video (Quota Max) - Có thể sửa tay", 
-                                    value=calculated_quota,
-                                    min_value=0,
-                                    step=1,
-                                    key=dynamic_key_quota)
+        # CHIA 2 CỘT ĐỂ NHẬP LIỆU
+        col_inp1, col_inp2 = st.columns(2)
+        with col_inp1:
+            final_quota = st.number_input("Tổng Video (Quota Max)", 
+                                        value=calculated_quota, min_value=0, step=1,
+                                        key=f"quota_{dynamic_key}")
+        with col_inp2:
+            final_tts = st.number_input("Tổng TTS (Ký tự)", 
+                                        value=calculated_tts, min_value=0, step=5000,
+                                        key=f"tts_{dynamic_key}",
+                                        help="1 phút đọc ≈ 1000 ký tự")
         
         # Nút Lưu (Dùng st.button thường)
         if st.button("💾 LƯU USER VÀO SUPABASE", type="primary"):
@@ -1014,19 +1019,18 @@ def admin_dashboard():
                     data = {
                         "email": new_email,
                         "password": hashed,
-                        # [SỬA] Dùng selected_plan_name thay vì plan_info['code'] để tránh lỗi key
-                        "plan": selected_plan_name, 
+                        "plan": plan_info['code'], # Lưu mã code (free, basic...) thay vì tên hiển thị
                         "quota_max": final_quota,
                         "quota_used": 0,
-                        # [FIX QUAN TRỌNG] Thêm dòng này để lưu đúng hạn mức TTS theo gói
-                        "tts_limit": plan_info['tts_chars'],
-                        "tts_usage": 0, # Khởi tạo ban đầu là 0
+                        # [FIX] Lưu giá trị TTS từ ô nhập liệu (đã nhân theo tháng)
+                        "tts_limit": final_tts,
+                        "tts_usage": 0, 
                         "role": "user",
                         "stock_level": 1000
                     }
                     
                     supabase.table('users').insert(data).execute()
-                    st.success(f"✅ Đã tạo tài khoản thành công: {new_email}")
+                    st.success(f"✅ Đã tạo tài khoản thành công: {new_email} | Video: {final_quota} | TTS: {final_tts}")
                     st.balloons()
                     
                 except Exception as e:
