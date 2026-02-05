@@ -2356,13 +2356,26 @@ else:
         if not check_pending.empty:
             is_processing_real = True
 
-    # Chỉ hiển thị thông báo khi thực sự có video đang chạy
+    # [FIX] Chỉ hiển thị thông báo khi thực sự có video đang chạy
     if is_processing_real:
-        st.markdown("""
-        <div style="background-color: #FFF9C4; color: #5D4037; padding: 15px; border-radius: 10px; border: 1px solid #FBC02D; margin-bottom: 20px; font-weight: bold;">
-            ⏳ Đang tạo video. Vui lòng quay lại sau 5 phút và bấm nút "Xem danh sách video" hoặc nút "Làm mới"!
-        </div>
-        """, unsafe_allow_html=True)
+        # Lấy giờ hiện tại để quyết định nội dung thông báo
+        now_check = datetime.utcnow() + timedelta(hours=7)
+        
+        # Nếu đang trong giờ làm việc (7h - 23h) -> Báo đợi 5 phút
+        if 7 <= now_check.hour < 23:
+            st.markdown("""
+            <div style="background-color: #FFF9C4; color: #5D4037; padding: 15px; border-radius: 10px; border: 1px solid #FBC02D; margin-bottom: 20px; font-weight: bold;">
+                ⏳ Đang tạo video. Vui lòng quay lại sau 5 phút và bấm nút "Xem danh sách video" hoặc nút "Làm mới"!
+            </div>
+            """, unsafe_allow_html=True)
+        
+        # Nếu là ban đêm -> Báo đang chờ đến sáng (KHÔNG báo đang tạo)
+        else:
+            st.markdown("""
+            <div style="background-color: #E3F2FD; color: #0D47A1; padding: 15px; border-radius: 10px; border: 1px solid #90CAF9; margin-bottom: 20px; font-weight: bold;">
+                🌙 Đã nhận nội dung của bạn vào thời gian nghỉ. Video sẽ được tạo sau 7:00 sáng.
+            </div>
+            """, unsafe_allow_html=True)
 
     # Khởi tạo trạng thái
     if 'show_history_section' not in st.session_state:
