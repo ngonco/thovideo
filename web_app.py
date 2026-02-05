@@ -1683,114 +1683,114 @@ else:
             final_script_content = ""
             selected_library_audio = None
 
-    # 1.1 LOGIC TÌM KIẾM TRONG THƯ VIỆN
-    # 1.1 LOGIC TÌM KIẾM TRONG THƯ VIỆN (CHẠY TRỰC TIẾP TRÊN SUPABASE)
-    if source_opt == "📂 Tìm trong Thư viện":
-        st.info("💡Nhập tâm trạng hoặc từ khóa để tìm kịch bản phù hợp")
-        
-        with st.form(key="search_form"):
-            c_search1, c_search2 = st.columns([3, 1], vertical_alignment="center")
-            with c_search1:
-                search_kw = st.text_input("", label_visibility="collapsed", placeholder="Nhập từ khóa (Ví dụ: Nhân quả, chữa lành...)")
-            with c_search2:
-                btn_search = st.form_submit_button("🔍 TÌM NGAY", use_container_width=True)
-
-        if btn_search and search_kw:
-            with st.spinner("Đang lục tìm trong kho dữ liệu..."):
-                # Gửi lệnh cho Supabase tự tìm
-                st.session_state['search_results'] = search_global_library(search_kw)
-                st.session_state['has_searched'] = True
-                if 'last_picked_idx' in st.session_state:
-                    del st.session_state['last_picked_idx']
-
-        if st.session_state.get('has_searched'):
-            results = st.session_state.get('search_results', [])
-            if results:
-                preview_options = [f"[{item['source_sheet']}] {item['content'][:60]}..." for item in results]
-                selected_idx = st.selectbox("Chọn kịch bản phù hợp:", range(len(results)), 
-                                            format_func=lambda x: preview_options[x], key="sb_search_select")
+            # 1.1 LOGIC TÌM KIẾM TRONG THƯ VIỆN
+            # 1.1 LOGIC TÌM KIẾM TRONG THƯ VIỆN (CHẠY TRỰC TIẾP TRÊN SUPABASE)
+            if source_opt == "📂 Tìm trong Thư viện":
+                st.info("💡Nhập tâm trạng hoặc từ khóa để tìm kịch bản phù hợp")
                 
-                chosen_content = results[selected_idx]['content']
-                selected_library_audio = results[selected_idx].get('audio')
+                with st.form(key="search_form"):
+                    c_search1, c_search2 = st.columns([3, 1], vertical_alignment="center")
+                    with c_search1:
+                        search_kw = st.text_input("", label_visibility="collapsed", placeholder="Nhập từ khóa (Ví dụ: Nhân quả, chữa lành...)")
+                    with c_search2:
+                        btn_search = st.form_submit_button("🔍 TÌM NGAY", use_container_width=True)
 
-                # Cập nhật vào vùng soạn thảo nếu có thay đổi
-                if st.session_state.get('last_picked_idx') != selected_idx:
-                    st.session_state['main_content_area'] = chosen_content
-                    st.session_state['last_picked_idx'] = selected_idx
-                    st.rerun()
-                
-                final_script_content = chosen_content
-            else:
-                st.warning("⚠️ Không tìm thấy kết quả nào. Hãy thử từ khóa khác!")
+                if btn_search and search_kw:
+                    with st.spinner("Đang lục tìm trong kho dữ liệu..."):
+                        # Gửi lệnh cho Supabase tự tìm
+                        st.session_state['search_results'] = search_global_library(search_kw)
+                        st.session_state['has_searched'] = True
+                        if 'last_picked_idx' in st.session_state:
+                            del st.session_state['last_picked_idx']
 
-    elif source_opt == "✍️ Tự viết mới":
-        st.caption("Nhập nội dung kịch bản của bạn vào bên dưới:")
-    
-    # --- KHUNG HIỂN THỊ NỘI DUNG & BỘ ĐẾM TỪ ---
-    if source_opt:
-        # [ĐÃ SỬA] Cố định chiều cao khung nhập liệu (Bạn có thể sửa số 450 thành số khác tùy ý)
-        FIXED_HEIGHT = 450 
-        
-        # Text Area - [ĐÃ SỬA LỖI WARNING] Bỏ tham số 'value' để tránh xung đột với key
-        noi_dung_gui = st.text_area("", height=FIXED_HEIGHT, 
-                                    placeholder="Nội dung kịch bản sẽ hiện ở đây...", 
-                                    key="main_content_area")
-        
-        # [CHỈNH SỬA] Chỉ hiện các nút Nháp khi đang ở chế độ "Tự viết mới"
-        if source_opt == "✍️ Tự viết mới":
-            # [SỬA LỖI UI] Tăng tỷ lệ cột đầu từ 1 lên 1.5 để nút rộng hơn, không bị rớt dòng
-            c_draft1, c_draft2, c_draft3 = st.columns([1.5, 1.5, 4]) 
-            
-            # [SỬA LỖI API] Hàm xử lý riêng cho việc bấm nút (Callback)
-            def load_draft_callback():
-                saved_content = load_draft_from_supabase(user['email'])
-                if saved_content:
-                    st.session_state['main_content_area'] = saved_content
-                    st.toast("Đã tải lại bản nháp cũ!", icon="📂")
-                else:
-                    st.toast("Bạn chưa có bản nháp nào!", icon="⚠️")
+                if st.session_state.get('has_searched'):
+                    results = st.session_state.get('search_results', [])
+                    if results:
+                        preview_options = [f"[{item['source_sheet']}] {item['content'][:60]}..." for item in results]
+                        selected_idx = st.selectbox("Chọn kịch bản phù hợp:", range(len(results)), 
+                                                    format_func=lambda x: preview_options[x], key="sb_search_select")
+                        
+                        chosen_content = results[selected_idx]['content']
+                        selected_library_audio = results[selected_idx].get('audio')
 
-            with c_draft1:
-                if st.button("💾 Lưu nháp", use_container_width=True, key="btn_save_draft"):
-                    if noi_dung_gui:
-                        if save_draft_to_supabase(user['email'], noi_dung_gui):
-                            st.toast("Đã lưu nháp thành công!", icon="✅")
-                        else:
-                            st.error("Lỗi khi lưu nháp.")
+                        # Cập nhật vào vùng soạn thảo nếu có thay đổi
+                        if st.session_state.get('last_picked_idx') != selected_idx:
+                            st.session_state['main_content_area'] = chosen_content
+                            st.session_state['last_picked_idx'] = selected_idx
+                            st.rerun()
+                        
+                        final_script_content = chosen_content
                     else:
-                        st.warning("Chưa có nội dung để lưu!")
+                        st.warning("⚠️ Không tìm thấy kết quả nào. Hãy thử từ khóa khác!")
 
-            with c_draft2:
-                # [FIX] Dùng on_click gọi hàm callback để nạp dữ liệu an toàn
-                st.button("📂 Tải bản nháp", use_container_width=True, help="Tải lại nội dung cũ", key="btn_load_draft", on_click=load_draft_callback)
-        
-        # [NEW] LOGIC ĐẾM TỪ & THỜI GIAN (Tự động chạy khi nội dung thay đổi)
-        if noi_dung_gui:
-            # 1. Đếm số từ (tách theo khoảng trắng)
-            word_count = len(noi_dung_gui.split())
+            elif source_opt == "✍️ Tự viết mới":
+                st.caption("Nhập nội dung kịch bản của bạn vào bên dưới:")
+    
+            # --- KHUNG HIỂN THỊ NỘI DUNG & BỘ ĐẾM TỪ ---
+            if source_opt:
+                # [ĐÃ SỬA] Cố định chiều cao khung nhập liệu (Bạn có thể sửa số 450 thành số khác tùy ý)
+                FIXED_HEIGHT = 450 
+                
+                # Text Area - [ĐÃ SỬA LỖI WARNING] Bỏ tham số 'value' để tránh xung đột với key
+                noi_dung_gui = st.text_area("", height=FIXED_HEIGHT, 
+                                            placeholder="Nội dung kịch bản sẽ hiện ở đây...", 
+                                            key="main_content_area")
+                
+                # [CHỈNH SỬA] Chỉ hiện các nút Nháp khi đang ở chế độ "Tự viết mới"
+                if source_opt == "✍️ Tự viết mới":
+                    # [SỬA LỖI UI] Tăng tỷ lệ cột đầu từ 1 lên 1.5 để nút rộng hơn, không bị rớt dòng
+                    c_draft1, c_draft2, c_draft3 = st.columns([1.5, 1.5, 4]) 
+                    
+                    # [SỬA LỖI API] Hàm xử lý riêng cho việc bấm nút (Callback)
+                    def load_draft_callback():
+                        saved_content = load_draft_from_supabase(user['email'])
+                        if saved_content:
+                            st.session_state['main_content_area'] = saved_content
+                            st.toast("Đã tải lại bản nháp cũ!", icon="📂")
+                        else:
+                            st.toast("Bạn chưa có bản nháp nào!", icon="⚠️")
+
+                    with c_draft1:
+                        if st.button("💾 Lưu nháp", use_container_width=True, key="btn_save_draft"):
+                            if noi_dung_gui:
+                                if save_draft_to_supabase(user['email'], noi_dung_gui):
+                                    st.toast("Đã lưu nháp thành công!", icon="✅")
+                                else:
+                                    st.error("Lỗi khi lưu nháp.")
+                            else:
+                                st.warning("Chưa có nội dung để lưu!")
+
+                    with c_draft2:
+                        # [FIX] Dùng on_click gọi hàm callback để nạp dữ liệu an toàn
+                        st.button("📂 Tải bản nháp", use_container_width=True, help="Tải lại nội dung cũ", key="btn_load_draft", on_click=load_draft_callback)
+                
+                # [NEW] LOGIC ĐẾM TỪ & THỜI GIAN (Tự động chạy khi nội dung thay đổi)
+                if noi_dung_gui:
+                    # 1. Đếm số từ (tách theo khoảng trắng)
+                    word_count = len(noi_dung_gui.split())
+                    
+                    # 2. Tính thời gian (200 từ/phút => 1 từ = 0.3 giây)
+                    seconds = int((word_count / 200) * 60)
+                    
+                    # Quy đổi ra Phút:Giây cho dễ nhìn
+                    minutes = seconds // 60
+                    sec_rem = seconds % 60
+                    time_str = f"{minutes} phút {sec_rem} giây" if minutes > 0 else f"{seconds} giây"
+                    
+                    # Hiển thị thanh trạng thái
+                    st.markdown(f"""
+                    <div style="background-color: #EFEBE9; padding: 10px; border-radius: 5px; border-left: 5px solid #8D6E63; margin-top: 5px;">
+                        <span style="font-weight: bold; color: #3E2723;">📊</span> {word_count} từ 
+                        &nbsp;&nbsp;|&nbsp;&nbsp; 
+                        <span style="font-weight: bold; color: #3E2723;">⏱️ Thời lượng ước tính:</span> {time_str}
+                    </div>
+                    """, unsafe_allow_html=True)
+                else:
+                    # Nếu chưa có nội dung
+                    st.markdown(f"""<div style="color: #999; font-style: italic; margin-top: 5px;">(Hãy nhập nội dung để xem ước lượng thời gian)</div>""", unsafe_allow_html=True)
             
-            # 2. Tính thời gian (200 từ/phút => 1 từ = 0.3 giây)
-            seconds = int((word_count / 200) * 60)
-            
-            # Quy đổi ra Phút:Giây cho dễ nhìn
-            minutes = seconds // 60
-            sec_rem = seconds % 60
-            time_str = f"{minutes} phút {sec_rem} giây" if minutes > 0 else f"{seconds} giây"
-            
-            # Hiển thị thanh trạng thái
-            st.markdown(f"""
-            <div style="background-color: #EFEBE9; padding: 10px; border-radius: 5px; border-left: 5px solid #8D6E63; margin-top: 5px;">
-                <span style="font-weight: bold; color: #3E2723;">📊</span> {word_count} từ 
-                &nbsp;&nbsp;|&nbsp;&nbsp; 
-                <span style="font-weight: bold; color: #3E2723;">⏱️ Thời lượng ước tính:</span> {time_str}
-            </div>
-            """, unsafe_allow_html=True)
-        else:
-            # Nếu chưa có nội dung
-             st.markdown(f"""<div style="color: #999; font-style: italic; margin-top: 5px;">(Hãy nhập nội dung để xem ước lượng thời gian)</div>""", unsafe_allow_html=True)
-            
-    else:
-        noi_dung_gui = ""
+            else:
+                noi_dung_gui = ""
 
     # --- (B2) GIỌNG ĐỌC (GIAO DIỆN ẨN MẶC ĐỊNH) ---
     
