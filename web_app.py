@@ -2181,7 +2181,7 @@ else:
                                             "source": "Gemini AI",
                                             "content": sanitize_input(current_script_full),
                                             "audio_link": full_audio_link,
-                                            "status": "Có TTS Gemini", # Trạng thái mặc định như bạn yêu cầu
+                                            "status": "Đã có giọng AI Gemini", # Trạng thái mặc định như bạn yêu cầu
                                             "result_link": "",
                                             "settings": settings 
                                         }
@@ -2222,7 +2222,7 @@ else:
 
                             with col_confirm2:
                                 if st.button("💾 CHỈ LƯU GIỌNG NÓI", use_container_width=True):
-                                    # Trạng thái vẫn giữ nguyên là "Có TTS Gemini"
+                                    # Trạng thái vẫn giữ nguyên là "Đã có giọng AI Gemini"
                                     st.info("📂 Đã lưu vào lịch sử. Bạn có thể tạo video sau.")
                             
                             # Gán vào biến global để tương thích với các nút bấm khác (nếu cần)
