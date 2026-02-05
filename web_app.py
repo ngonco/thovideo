@@ -692,25 +692,21 @@ def _convert_to_wav(base64_raw_data):
         print(f"Lỗi convert WAV: {e}")
         return None
 
-# --- [NEW] CẤU HÌNH GIỌNG ĐỌC GEMINI (CHUẨN HÓA) ---
-# Google chỉ có 5 giọng gốc (Puck, Charon, Kore, Fenrir, Aoede).
-# Ta sẽ tạo 10 biến thể bằng cách kết hợp Giọng gốc + Phong cách (Prompt).
+# --- [NEW] CẤU HÌNH GIỌNG ĐỌC GEMINI (ĐÃ RÚT GỌN: HÀ NỘI TRẦM ẤM) ---
 GEMINI_STYLES = {
-    "Nam 1 - Trầm Ấm (Charon)":      {"id": "Charon", "style": "trầm ấm, dày, uy lực"},
-    "Nam 2 - Kể Chuyện (Fenrir)":    {"id": "Fenrir", "style": "tự nhiên, như đang kể chuyện đời thường"},
-    "Nam 3 - Nhẹ Nhàng (Puck)":      {"id": "Puck",   "style": "nhẹ nhàng, thư thái, chữa lành"},
-    "Nam 4 - Sâu Sắc (Charon Deep)": {"id": "Charon", "style": "rất trầm, sâu sắc, chậm rãi, suy tư"},
-    "Nam 5 - Năng Lượng (Fenrir)":   {"id": "Fenrir", "style": "nhanh nhẹn, vui vẻ, tràn đầy năng lượng"},
-    "Nam 6 - Truyền Cảm (Puck)":     {"id": "Puck",   "style": "truyền cảm, nhấn nhá rõ ràng"},
-    "Nữ 1 - Dịu Dàng (Aoede)":       {"id": "Aoede",  "style": "dịu dàng, ngọt ngào, như lời mẹ ru"},
-    "Nữ 2 - Nghiêm Túc (Kore)":      {"id": "Kore",   "style": "nghiêm túc, bản tin, rõ ràng"},
-    "Nữ 3 - Tự Nhiên (Aoede)":       {"id": "Aoede",  "style": "tự nhiên, như đang tâm sự"},
-    "Nữ 4 - Nhẹ Nhàng (Kore)":       {"id": "Kore",   "style": "nhẹ nhàng, thủ thỉ"}
+    "Nam Hà Nội - Trầm Ấm": {
+        "id": "Charon", 
+        "style": "hãy đọc bằng giọng nam Miền Bắc (Hà Nội), tông giọng trầm, dày, ấm áp, chậm rãi và truyền cảm"
+    },
+    "Nữ Hà Nội - Dịu Dàng": {
+        "id": "Aoede",  
+        "style": "hãy đọc bằng giọng nữ Miền Bắc (Hà Nội), tông giọng trầm ấm, nhẹ nhàng, như đang tâm sự thủ thỉ"
+    }
 }
 
-def tts_gemini(text, voice_style_key="Nam 1 - Trầm Ấm (Charon)", region="Miền Nam", is_test=False):
+def tts_gemini(text, voice_style_key="Nam Hà Nội - Trầm Ấm", region="Miền Bắc", is_test=False):
     """
-    Google Gemini TTS - Updated (Sửa lỗi thiếu base64 & Config chuẩn)
+    Google Gemini TTS - Updated (Rút gọn cho giọng Hà Nội Trầm Ấm)
     """
     if "gemini" in st.secrets and "key" in st.secrets["gemini"]:
         api_key = st.secrets["gemini"]["key"]
@@ -718,32 +714,25 @@ def tts_gemini(text, voice_style_key="Nam 1 - Trầm Ấm (Charon)", region="Mi�
         st.error("⚠️ Chưa cấu hình Gemini API Key!")
         return None
 
-    voice_config = GEMINI_STYLES.get(voice_style_key, GEMINI_STYLES["Nam 1 - Trầm Ấm (Charon)"])
+    # Lấy cấu hình giọng
+    voice_config = GEMINI_STYLES.get(voice_style_key, GEMINI_STYLES["Nam Hà Nội - Trầm Ấm"])
     voice_id = voice_config["id"]
+    style_prompt = voice_config["style"]
     
-    # --- [SỬA LỖI] CẬP NHẬT LOGIC XỬ LÝ TEXT VÀ VÙNG MIỀN ---
+    # Xử lý Text đầu vào
     if is_test:
         if not text or len(text.strip()) < 5:
-            input_text = f"Chào bạn, đây là giọng đọc {region} thử nghiệm."
+            input_text = f"Chào bạn, đây là thử nghiệm {voice_style_key}."
         else:
             sentences = re.split(r'(?<=[.!?])\s+', text.strip())
             input_text = " ".join(sentences[:2])
     else:
-        # [MỚI] Thêm "Lời nhắc hệ thống" (System Prompt) giả lập
-        # Gemini Generative có thể hiểu ngữ cảnh.
-        if region == "Miền Nam":
-            # Thêm chỉ dẫn ẩn hoặc ngữ điệu đặc trưng
-            input_text = f"Hãy đọc đoạn sau bằng giọng Miền Nam, trầm ấm, phát âm chuẩn Nam Bộ: {text}"
-        elif region == "Miền Trung":
-            input_text = f"Hãy đọc đoạn sau bằng giọng Miền Trung, trầm ấm: {text}"
-        else:
-            # Miền Bắc hoặc mặc định
-            input_text = text
+        # [QUAN TRỌNG] Gắn lời nhắc hệ thống (Prompt) để ép giọng Hà Nội
+        input_text = f"{style_prompt}: {text}"
 
-    # [CẬP NHẬT] URL generateContent (Bỏ key khỏi URL để bảo mật hơn)
+    # URL API
     url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent"
     
-    # [CẬP NHẬT] Gửi Key qua Header & Chuyển 'audio' thành 'AUDIO' (Viết hoa)
     headers = {
         "Content-Type": "application/json",
         "x-goog-api-key": api_key
@@ -755,7 +744,7 @@ def tts_gemini(text, voice_style_key="Nam 1 - Trầm Ấm (Charon)", region="Mi�
             "parts": [{"text": f"{input_text}"}]
         }],
         "generationConfig": {
-            "responseModalities": ["AUDIO"], # <--- SỬA THÀNH CHỮ HOA ĐỂ GOOGLE HIỂU RÕ
+            "responseModalities": ["AUDIO"],
             "temperature": 1,
             "speech_config": {
                 "voice_config": {
@@ -768,12 +757,10 @@ def tts_gemini(text, voice_style_key="Nam 1 - Trầm Ấm (Charon)", region="Mi�
     }
     
     try:
-        # Dùng requests.post với headers chuẩn
         response = requests.post(url, headers=headers, json=payload, timeout=30)
         
         if response.status_code == 200:
             result = response.json()
-            # Xử lý kết quả (Hỗ trợ cả dạng list và dict)
             candidates_data = result[0] if isinstance(result, list) and len(result) > 0 else result
             
             if candidates_data and 'candidates' in candidates_data:
@@ -781,15 +768,13 @@ def tts_gemini(text, voice_style_key="Nam 1 - Trầm Ấm (Charon)", region="Mi�
                     if 'content' in candidate and 'parts' in candidate['content']:
                         for part in candidate['content']['parts']:
                             if 'inlineData' in part and 'data' in part['inlineData']:
-                                # Convert Base64 sang WAV
                                 wav_data = _convert_to_wav(part['inlineData']['data'])
                                 if wav_data:
                                     if is_test: return wav_data 
-                                    return upload_to_catbox(wav_data, "gemini_voice.wav")
+                                    return upload_to_catbox(wav_data, "gemini_hanoi_voice.wav")
             
-            # Nếu chạy đến đây mà không return thì là lỗi dữ liệu rỗng
-            print(f"DEBUG GEMINI: {result}") # In ra log server để kiểm tra
-            st.error("Gemini không trả về dữ liệu âm thanh (Lỗi cấu trúc response).")
+            print(f"DEBUG GEMINI: {result}")
+            st.error("Gemini không trả về dữ liệu âm thanh.")
         else:
             st.error(f"Lỗi API ({response.status_code}): {response.text}")
     except Exception as e: 
@@ -1846,21 +1831,20 @@ else:
 
         # CASE 4: GIỌNG AI CHẤT LƯỢNG CAO
         elif voice_method == "🤖 Giọng AI Gemini":
-            st.markdown("##### 🔊 Chọn giọng đọc Gemini")
+            st.markdown("##### 🔊 Chọn giọng đọc Gemini (Hà Nội)")
             
-            # 1. CHỌN VÙNG MIỀN & GIỌNG
-            c_region, c_voice = st.columns([1, 2])
-            with c_region:
-                selected_region = st.selectbox("🌍 Vùng miền:", ["Miền Nam", "Miền Bắc", "Miền Trung"], index=0)
-            with c_voice:
-                selected_voice_key = st.selectbox("🗣️ Chất giọng:", list(GEMINI_STYLES.keys()))
+            # 1. CHỈ CÒN CHỌN GIỌNG (Bỏ vùng miền)
+            selected_voice_key = st.selectbox("🗣️ Chọn chất giọng:", list(GEMINI_STYLES.keys()))
+            
+            # Mặc định vùng miền là Bắc (để tương thích logic cũ)
+            selected_region = "Miền Bắc" 
 
             # 2. NGHE THỬ (SAMPLE)
             st.markdown("<div style='margin-bottom: 5px;'></div>", unsafe_allow_html=True)
             if st.button("▶️ Nghe thử (2 câu đầu)", use_container_width=True):
                 script_preview = st.session_state.get('main_content_area', "")
-                with st.spinner(f"Đang tạo mẫu giọng {selected_region}..."):
-                    sample_audio = tts_gemini(text=script_preview, voice_style_key=selected_voice_key, region=selected_region, is_test=True)
+                with st.spinner(f"Đang tạo mẫu giọng {selected_voice_key}..."):
+                    sample_audio = tts_gemini(text=script_preview, voice_style_key=selected_voice_key, region="Miền Bắc", is_test=True)
                     if sample_audio:
                         st.audio(sample_audio, format="audio/wav")
                     else:
