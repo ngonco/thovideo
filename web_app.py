@@ -1726,25 +1726,37 @@ else:
                         
                 # CASE 2: UPLOAD FILE
                 elif voice_method == "📤 Tải file lên":
-                    # [FIX] Kiểm tra xem đã có nội dung kịch bản chưa
+                    # [QUAN TRỌNG] Khởi tạo biến trước để tránh lỗi NameError nếu không hiện nút upload
+                    uploaded_file = None 
+                    
+                    # Kiểm tra xem đã có nội dung kịch bản chưa
                     current_script_upload = st.session_state.get('main_content_area', "")
                     
-                    # Nếu chưa có nội dung hoặc quá ngắn -> Hiện cảnh báo và KHÔNG hiện nút upload
+                    # Nếu chưa có nội dung hoặc quá ngắn -> Hiện cảnh báo
                     if not current_script_upload or len(current_script_upload.strip()) < 5:
                         st.warning("⚠️ Bạn chưa nhập kịch bản! Vui lòng quay lại Bước 1 viết nội dung trước khi tải file âm thanh.")
                     else:
                         # Chỉ hiện công cụ upload khi đã có kịch bản
                         st.markdown("<b>Chọn file ghi âm từ máy của bạn (mp3, wav, m4a):</b>", unsafe_allow_html=True)
-                        
-                        # [CẬP NHẬT] Thêm dòng nhắc nhở kích thước ngay trên nút upload
                         st.caption("⚠️ Lưu ý: Dung lượng tối đa 10MB/file")
+                        
+                        # Lúc này mới gán giá trị thực cho biến
                         uploaded_file = st.file_uploader("", type=['mp3', 'wav', 'm4a'], label_visibility="collapsed")
                         
-                        # [MỚI] Thêm ô tick chọn giọng AI
                         st.markdown("<div style='margin-top: 5px;'></div>", unsafe_allow_html=True)
                         is_ai_checked = st.checkbox("NHỚ TÍCH CHỌN NẾU UPLOAD GIỌNG AI", 
                                                 help="Tích vào đây nếu file này tạo từ AI (ElevenLabs, Vbee...) để hệ thống KHÔNG lọc ồn, tránh làm méo giọng.",
                                                 key="chk_ai_upload_flag")
+
+                    # [SỬA LỖI] Đoạn này nằm ngoài else, nên biến uploaded_file phải luôn tồn tại (dù là None)
+                    if uploaded_file:
+                        # ... (Giữ nguyên phần xử lý file bên dưới của bạn) ...
+                        # ... Logic kiểm tra dung lượng, đuôi file ...
+                        # (Bạn không cần thay đổi code bên trong này, chỉ cần đảm bảo dòng 'if uploaded_file:' chạy được)
+                        
+                        # [MẸO] Nếu bạn lỡ xóa đoạn xử lý file cũ, hãy copy lại từ đoạn code gốc của file web_app.py
+                        # Bắt đầu từ dòng: MAX_MB = 10 ...
+                        pass # <-- Dòng này chỉ để giữ chỗ, bạn hãy giữ nguyên logic xử lý file cũ của bạn ở đây
 
                     if uploaded_file:
                         # [BẢO MẬT] Cấu hình giới hạn
