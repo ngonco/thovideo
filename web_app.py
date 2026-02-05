@@ -1686,6 +1686,9 @@ else:
         # CASE 2: UPLOAD FILE
         elif voice_method == "📤 Tải file lên":
             st.markdown("<b>Chọn file ghi âm từ máy của bạn (mp3, wav, m4a):</b>", unsafe_allow_html=True)
+            
+            # [CẬP NHẬT] Thêm dòng nhắc nhở kích thước ngay trên nút upload
+            st.caption("⚠️ Lưu ý: Dung lượng tối đa 10MB/file")
             uploaded_file = st.file_uploader("", type=['mp3', 'wav', 'm4a'], label_visibility="collapsed")
             
             # [MỚI] Thêm ô tick chọn giọng AI
@@ -1696,27 +1699,31 @@ else:
 
             if uploaded_file:
                 # [BẢO MẬT] Cấu hình giới hạn
-                MAX_FILE_SIZE = 10 * 1024 * 1024 # 10MB
-                VALID_EXTS = ['mp3', 'wav', 'm4a', 'ogg', 'aac'] # Danh sách đuôi file cho phép
+                MAX_MB = 10
+                MAX_FILE_SIZE = MAX_MB * 1024 * 1024 # 10MB đổi ra bytes
+                VALID_EXTS = ['mp3', 'wav', 'm4a', 'ogg', 'aac'] 
                 
-                # Lấy đuôi file (ví dụ: "nhac.mp3" -> "mp3")
+                # [QUAN TRỌNG] Kiểm tra kích thước NGAY LẬP TỨC
+                if uploaded_file.size > MAX_FILE_SIZE:
+                    current_mb = uploaded_file.size / (1024 * 1024)
+                    st.error(f"❌ File quá lớn ({current_mb:.2f} MB). Hệ thống chỉ nhận file dưới {MAX_MB} MB.")
+                    st.session_state['temp_upload_file'] = None
+                    # [LỆNH MỚI] Dừng code tại đây, không cho chạy tiếp các đoạn xử lý phía sau
+                    st.stop()
+
+                # Lấy đuôi file
                 file_ext = uploaded_file.name.split('.')[-1].lower() if '.' in uploaded_file.name else ''
 
-                # 1. Kiểm tra loại file trước (Quan trọng)
+                # 1. Kiểm tra loại file
                 if file_ext not in VALID_EXTS:
-                    st.error(f"❌ Định dạng '{file_ext}' không hợp lệ! Chỉ chấp nhận: 'mp3', 'wav', 'm4a', 'ogg', 'aac'")
-                    st.session_state['temp_upload_file'] = None # Xóa ngay lập tức
-                
-                # 2. Kiểm tra kích thước file
-                elif uploaded_file.size > MAX_FILE_SIZE:
-                    st.error("⚠️ File quá lớn! Vui lòng chọn file dưới 10MB.")
+                    st.error(f"❌ Định dạng '{file_ext}' không hợp lệ! Chỉ chấp nhận: mp3, wav, m4a")
                     st.session_state['temp_upload_file'] = None
+                    st.stop()
                 
-                # 3. Hợp lệ -> Lưu vào session
-                else:
-                    st.session_state['temp_upload_file'] = uploaded_file
-                    st.session_state['temp_upload_name'] = uploaded_file.name
-                    st.success(f"✅ Đã chọn: {uploaded_file.name}")
+                # 2. Hợp lệ -> Lưu vào session
+                st.session_state['temp_upload_file'] = uploaded_file
+                st.session_state['temp_upload_name'] = uploaded_file.name
+                st.success(f"✅ Đã nhận file: {uploaded_file.name} ({uploaded_file.size / (1024*1024):.2f} MB)")
 
         # CASE 3: THU ÂM TRỰC TIẾP (GIAO DIỆN MÁY NHẮC CHỮ - ĐÃ SỬA KHOẢNG CÁCH)
         elif voice_method == "🎙️ Thu âm trực tiếp": 
