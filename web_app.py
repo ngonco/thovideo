@@ -1655,23 +1655,47 @@ else:
                 # Gọi hàm kiểm tra (có thể hơi chậm xíu nếu mạng yếu, nhưng đảm bảo chính xác)
                 has_valid_audio = check_link_exists(selected_library_audio)
 
-            # Tạo danh sách lựa chọn
-            # Tạo danh sách lựa chọn
-            voice_options = ["🎙️ Thu âm trực tiếp", "📤 Tải file lên", "🤖 Giọng AI Gemini"]
+            # --- [SỬA LẠI GIAO DIỆN 2 CỘT] ---
+            # 1. Tạo danh sách lựa chọn đầy đủ
+            all_options = {
+                "library": "🎵 Sử dụng giọng nói có sẵn",
+                "mic": "🎙️ Thu âm trực tiếp",
+                "upload": "📤 Tải file lên",
+                "gemini": "🤖 Giọng AI Gemini"
+            }
             
-            # Chỉ thêm lựa chọn này nếu file audio TỒN TẠI
-            if has_valid_audio: 
-                voice_options.insert(0, "🎵 Sử dụng giọng nói có sẵn")
-            
-            # [UX] Nếu có giọng mẫu xịn -> Chọn nó (index 0). 
-            # Nếu không có -> Mặc định chọn cái đầu tiên còn lại (Thu âm) để không bị lỗi UI
-            default_index = None
+            # Lọc bỏ giọng thư viện nếu link không tồn tại
+            if not has_valid_audio:
+                all_options.pop("library")
 
-            voice_method = st.radio("Chọn cách nhập giọng đọc:", 
-                                    voice_options, 
-                                    index=default_index,  # <-- Sửa chỗ này
-                                    horizontal=True,
-                                    key="radio_voice_method")
+            # 2. Chia thành 2 cột và tạo style khoảng cách
+            st.markdown("""
+                <style>
+                    /* Ép các lựa chọn radio thành lưới 2 cột */
+                    div[data-testid="stRadio"] > div {
+                        display: grid !important;
+                        grid-template-columns: 1fr 1fr !important; /* Chia 2 cột đều nhau */
+                        gap: 15px 20px !important; /* Khoảng cách: 15px dọc, 20px ngang */
+                    }
+                    /* Làm đẹp từng ô lựa chọn */
+                    div[data-testid="stRadio"] label {
+                        background-color: #FFF8DC !important;
+                        border: 1px solid #D7CCC8 !important;
+                        padding: 15px !important;
+                        border-radius: 10px !important;
+                        width: 100% !important;
+                        margin: 0 !important;
+                    }
+                </style>
+            """, unsafe_allow_html=True)
+
+            voice_method = st.radio(
+                "**Chọn cách nhập giọng đọc:**",
+                options=list(all_options.values()),
+                index=None,
+                horizontal=True,
+                key="radio_voice_method"
+            )
             
             final_audio_link_to_send = None 
             
