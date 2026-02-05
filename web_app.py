@@ -1497,7 +1497,7 @@ else:
                 <span style="font-size: 22px; color: {'#D32F2F' if is_out_of_quota else '#2E7D32'}; font-weight: bold;">
                     {user['quota_used']}/{user['quota_max']} video
                 </span><br>
-                <span style="color: #6D4C41; font-size: 16px; font-weight: bold;">(Còn lại: {days_display} ngày)</span>
+                <span style="color: #6D4C41; font-size: 16px; font-weight: regular;">(Còn lại: {days_display} ngày)</span>
             </div>
         </div>
     </div>
