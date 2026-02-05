@@ -1793,17 +1793,14 @@ else:
 
     # --- (B2) GIỌNG ĐỌC (GIAO DIỆN ẨN MẶC ĐỊNH) ---
     
-    # [MỚI] Thêm 3 dòng <br> để đẩy Bước 2 xuống xa hơn (Bạn có thể thêm bớt <br> tùy ý)
     st.markdown("<br><br>", unsafe_allow_html=True) 
 
-    # [ĐÃ SỬA] Bỏ đoạn chặn st.stop() để Bước 2 luôn hiển thị.
-    # Hệ thống sẽ kiểm tra nội dung khi người dùng thao tác trong Bước 2 sau.
-    pass
-
-    # [MỚI] Gom Bước 2 vào Expander
-    with st.expander("2️⃣ BƯỚC 2: CHUẨN BỊ GIỌNG ĐỌC & GỬI", expanded=True):
+    # [CẬP NHẬT] Gom Bước 2 vào Expander và MẶC ĐỊNH ĐÓNG (expanded=False)
+    with st.expander("2️⃣ BƯỚC 2: CHUẨN BỊ GIỌNG ĐỌC & GỬI", expanded=False):
         
-            # [QUAN TRỌNG] LÙI ĐẦU DÒNG (Tab) toàn bộ code bên dưới vào trong
+            # Kiểm tra nhanh nếu chưa có nội dung ở Bước 1 thì hiện cảnh báo nhẹ
+            if not st.session_state.get('main_content_area'):
+                st.warning("⚠️ Bạn cần nhập kịch bản ở Bước 1 trước khi chuẩn bị giọng đọc.")
             # --- [FIX] KIỂM TRA LINK TRƯỚC KHI HIỂN THỊ ---
             # Chỉ hiện tùy chọn "Giọng mẫu" nếu link đó thực sự tồn tại (Status 200)
             has_valid_audio = False
