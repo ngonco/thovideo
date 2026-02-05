@@ -1838,58 +1838,60 @@ else:
         elif voice_method == "🤖 Giọng AI Gemini":
             st.markdown("##### 🔊 Chọn giọng đọc Gemini")
             
-            # 1. CHỌN VÙNG MIỀN (MỚI)
+            # 1. CHỌN VÙNG MIỀN & GIỌNG
             c_region, c_voice = st.columns([1, 2])
             with c_region:
-                selected_region = st.selectbox(
-                    "🌍 Vùng miền:",
-                    ["Miền Nam", "Miền Bắc", "Miền Trung"],
-                    index=0 # Mặc định miền Nam
-                )
-            
-            # 2. CHỌN CHẤT GIỌNG (10 giọng)
+                selected_region = st.selectbox("🌍 Vùng miền:", ["Miền Nam", "Miền Bắc", "Miền Trung"], index=0)
             with c_voice:
-                selected_voice_key = st.selectbox(
-                    "🗣️ Chất giọng:", 
-                    list(GEMINI_STYLES.keys())
-                )
+                selected_voice_key = st.selectbox("🗣️ Chất giọng:", list(GEMINI_STYLES.keys()))
 
-            # 3. NGHE THỬ
-            st.markdown("<div style='margin-bottom: 10px;'></div>", unsafe_allow_html=True)
-            if st.button("▶️ Nghe thử giọng này", use_container_width=True):
-                # Lấy nội dung thực tế
+            # 2. NGHE THỬ (SAMPLE)
+            st.markdown("<div style='margin-bottom: 5px;'></div>", unsafe_allow_html=True)
+            if st.button("▶️ Nghe thử (2 câu đầu)", use_container_width=True):
                 script_preview = st.session_state.get('main_content_area', "")
-                
-                with st.spinner(f"Đang tạo mẫu giọng {selected_region} (2 câu đầu)..."):
-                    sample_audio = tts_gemini(
-                        text=script_preview, 
-                        voice_style_key=selected_voice_key, 
-                        region=selected_region, 
-                        is_test=True
-                    )
-                    
+                with st.spinner(f"Đang tạo mẫu giọng {selected_region}..."):
+                    sample_audio = tts_gemini(text=script_preview, voice_style_key=selected_voice_key, region=selected_region, is_test=True)
                     if sample_audio:
                         st.audio(sample_audio, format="audio/wav")
                     else:
-                        st.warning("Hệ thống đang bận, vui lòng thử lại sau giây lát.")
+                        st.warning("Hệ thống đang bận, vui lòng thử lại.")
 
-            # 4. XÁC NHẬN
             st.markdown("---")
-            if st.button("✨ CHỐT DÙNG GIỌNG NÀY", use_container_width=True, type="primary"):
-                 # Lưu trọn gói thông tin vào session
-                 st.session_state['selected_gemini_voice_key'] = selected_voice_key
-                 st.session_state['selected_gemini_region'] = selected_region
-                 
-                 # Tạo sẵn link mẫu để giả lập quy trình (hoặc để trống chờ bước Gửi)
-                 st.success(f"✅ Đã chọn: {selected_voice_key} ({selected_region})")
-                 st.info("👇 Bấm nút 'GỬI YÊU CẦU' bên dưới để bắt đầu tạo video!")
+            
+            # 3. TẠO GIỌNG ĐẦY ĐỦ (FULL) - THEO YÊU CẦU MỚI
+            st.markdown("##### 💿 Bước quan trọng: Tạo file âm thanh")
+            st.caption("Bạn phải bấm nút dưới đây để tạo file âm thanh đầy đủ cho toàn bộ kịch bản trước khi gửi.")
+            
+            # Kiểm tra xem đã có nội dung chưa
+            current_script_full = st.session_state.get('main_content_area', "")
+            
+            if st.button("🎙️ TẠO GIỌNG ĐỌC ĐẦY ĐỦ (BẮT BUỘC)", type="primary", use_container_width=True):
+                if not current_script_full or len(current_script_full.strip()) < 2:
+                    st.error("⚠️ Vui lòng nhập nội dung kịch bản ở Bước 1 trước!")
+                else:
+                    with st.spinner(f"⏳ Đang xử lý toàn bộ kịch bản với giọng {selected_voice_key}... Vui lòng đợi!"):
+                        # Gọi hàm tạo full (is_test=False)
+                        # Hàm tts_gemini của bạn đã trả về Link Catbox (String)
+                        full_audio_link = tts_gemini(current_script_full, voice_style_key=selected_voice_key, region=selected_region, is_test=False)
+                        
+                        if full_audio_link:
+                            # Lưu link vào session
+                            st.session_state['gemini_full_audio_link'] = full_audio_link
+                            # Lưu thông tin cài đặt để dùng sau này
+                            st.session_state['gemini_voice_info'] = f"Gemini - {selected_region} - {selected_voice_key}"
+                            st.success("✅ Đã tạo xong! Hãy nghe lại bên dưới.")
+                        else:
+                            st.error("❌ Lỗi khi tạo giọng. Vui lòng thử lại!")
 
-              
-        
-
-            if 'temp_ai_audio' in st.session_state and st.session_state['temp_ai_audio']:
-                st.audio(st.session_state['temp_ai_audio'])
-                final_audio_link_to_send = st.session_state['temp_ai_audio']
+            # 4. HIỂN THỊ PLAYER ĐỂ NGHE LẠI VÀ CHUẨN BỊ GỬI
+            if st.session_state.get('gemini_full_audio_link'):
+                st.audio(st.session_state['gemini_full_audio_link'], format="audio/wav")
+                st.info("👇 Âm thanh đã sẵn sàng. Bạn có thể bấm nút 'GỬI YÊU CẦU' dưới cùng ngay bây giờ!")
+                
+                # Gán vào biến global để nút Gửi nhận diện được
+                final_audio_link_to_send = st.session_state['gemini_full_audio_link']
+                
+                # Đánh dấu cờ là AI để tắt lọc ồn
                 st.session_state['chk_ai_upload_flag'] = True
 
 
@@ -2057,29 +2059,21 @@ else:
                     if float(settings.get('voice_vol', 1.0)) < 1.0:
                         settings['voice_vol'] = 1.5
 
-                # [NEW] CASE 3: Dùng giọng Gemini (Tự tạo)
-                elif voice_method == "🤖 Giọng AI Google":
-                    # Lấy thông tin từ session (đã lưu ở bước Nghe thử/Chốt)
-                    voice_key = st.session_state.get('selected_gemini_voice_key', "Nam 1 - Trầm Ấm (Charon)")
-                    region_val = st.session_state.get('selected_gemini_region', "Miền Nam")
-                    
-                    with st.spinner(f"🤖 Đang tạo giọng đọc {region_val} dài {len(noi_dung_gui.split())} từ..."):
-                        # Gọi hàm tạo giọng thật (is_test=False)
-                        ai_link = tts_gemini(noi_dung_gui, voice_style_key=voice_key, region=region_val, is_test=False)
+                # [NEW] CASE 3: Dùng giọng Gemini (Đã tạo sẵn ở bước trên)
+                # SỬA LỖI: Đổi tên so sánh thành "🤖 Giọng AI Gemini" cho khớp với menu
+                elif voice_method == "🤖 Giọng AI Gemini":
+                    # Kiểm tra xem người dùng đã bấm nút tạo file ở Bước 2 chưa
+                    if st.session_state.get('gemini_full_audio_link'):
+                        final_audio_link_to_send = st.session_state['gemini_full_audio_link']
+                        ready_to_send = True
                         
-                        if ai_link:
-                            final_audio_link_to_send = ai_link
-                            ready_to_send = True
-                            
-                            # Cài đặt cho giọng AI
-                            settings['is_ai_voice'] = True
-                            settings['clean_audio'] = False # Không lọc ồn
-                            
-                            # Lưu thông tin giọng vào settings để sau này xem lại
-                            settings['voice_info'] = f"Gemini - {region_val} - {voice_key}"
-                        else:
-                            st.error("❌ Không tạo được giọng đọc. Vui lòng thử lại!")
-                            st.stop()
+                        # Cài đặt cho giọng AI
+                        settings['is_ai_voice'] = True
+                        settings['clean_audio'] = False 
+                        settings['voice_info'] = st.session_state.get('gemini_voice_info', "Gemini AI")
+                    else:
+                        st.error("⚠️ Bạn chưa bấm nút 'TẠO GIỌNG ĐỌC ĐẦY ĐỦ' ở Bước 2!")
+                        st.stop()
                     
                 order_data = {
                     "id": order_id,
