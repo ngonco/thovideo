@@ -1836,8 +1836,8 @@ else:
         
 
         # CASE 4: GIỌNG AI CHẤT LƯỢNG CAO
-        elif voice_method == "🤖 Giọng AI Google":
-            st.markdown("##### 🔊 Cấu hình giọng đọc Gemini")
+        elif voice_method == "🤖 Giọng AI Gemini":
+            st.markdown("##### 🔊 Chọn giọng đọc Gemini")
             
             # 1. CHỌN VÙNG MIỀN (MỚI)
             c_region, c_voice = st.columns([1, 2])
