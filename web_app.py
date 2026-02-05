@@ -721,14 +721,24 @@ def tts_gemini(text, voice_style_key="Nam 1 - Trầm Ấm (Charon)", region="Mi�
     voice_config = GEMINI_STYLES.get(voice_style_key, GEMINI_STYLES["Nam 1 - Trầm Ấm (Charon)"])
     voice_id = voice_config["id"]
     
+    # --- [SỬA LỖI] CẬP NHẬT LOGIC XỬ LÝ TEXT VÀ VÙNG MIỀN ---
     if is_test:
         if not text or len(text.strip()) < 5:
-            input_text = f"Chào bạn, tôi là giọng đọc {region}."
+            input_text = f"Chào bạn, đây là giọng đọc {region} thử nghiệm."
         else:
             sentences = re.split(r'(?<=[.!?])\s+', text.strip())
             input_text = " ".join(sentences[:2])
     else:
-        input_text = text
+        # [MỚI] Thêm "Lời nhắc hệ thống" (System Prompt) giả lập
+        # Gemini Generative có thể hiểu ngữ cảnh.
+        if region == "Miền Nam":
+            # Thêm chỉ dẫn ẩn hoặc ngữ điệu đặc trưng
+            input_text = f"Hãy đọc đoạn sau bằng giọng Miền Nam, trầm ấm, phát âm chuẩn Nam Bộ: {text}"
+        elif region == "Miền Trung":
+            input_text = f"Hãy đọc đoạn sau bằng giọng Miền Trung, trầm ấm: {text}"
+        else:
+            # Miền Bắc hoặc mặc định
+            input_text = text
 
     # [CẬP NHẬT] URL generateContent (Bỏ key khỏi URL để bảo mật hơn)
     url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent"
