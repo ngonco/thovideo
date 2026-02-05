@@ -1498,21 +1498,237 @@ else:
             
             st.rerun()
 
+
+    # ==========================================
+    # [NEW] LỊCH SỬ VIDEO (LẤY TỪ ORDERS) - [OPTIMIZED LAZY LOAD]
+    # ==========================================
+    st.markdown("---")
+    
+    # [FIX] Lấy dữ liệu lịch sử ngay lập tức để kiểm tra trạng thái thực tế
+    history_df = get_user_history(user['email'])
+    
+    # Logic kiểm tra thông minh: Chỉ hiện thông báo nếu CÓ video đang Pending hoặc Processing
+    is_processing_real = False
+    if not history_df.empty and 'TrangThai' in history_df.columns:
+        # Kiểm tra trong 5 đơn mới nhất xem có đơn nào chưa xong không
+        check_pending = history_df.head(5)[history_df.head(5)['TrangThai'].isin(['Pending', 'Processing'])]
+        if not check_pending.empty:
+            is_processing_real = True
+
+    # Chỉ hiển thị thông báo khi thực sự có video đang chạy
+    if is_processing_real:
+        st.markdown("""
+        <div style="background-color: #FFF9C4; color: #5D4037; padding: 15px; border-radius: 10px; border: 1px solid #FBC02D; margin-bottom: 20px; font-weight: bold;">
+            ⏳ Đang tạo video. Vui lòng quay lại sau 5 phút và bấm nút "Xem danh sách video" hoặc nút "Làm mới"!
+        </div>
+        """, unsafe_allow_html=True)
+
+    # Khởi tạo trạng thái
+    if 'show_history_section' not in st.session_state:
+        st.session_state['show_history_section'] = False
+
+    # --- TRƯỜNG HỢP 1: CHƯA BẤM XEM (ẨN) ---
+    if not st.session_state['show_history_section']:
+        if st.button("📂 Xem danh sách video", use_container_width=True):
+            st.session_state['show_history_section'] = True
+            st.rerun()
+            
+    # --- TRƯỜNG HỢP 2: ĐÃ BẤM XEM (HIỆN) ---
+    else:
+        # 1. Header & Nút Làm mới
+        c_hist1, c_hist2 = st.columns([3, 1], vertical_alignment="center")
+        with c_hist1:
+            st.subheader("📜 Video của bạn")
+        with c_hist2:
+            if st.button("🔄 Làm mới", help="Cập nhật danh sách mới nhất"):
+                # get_all_orders_cached.clear() <-- ĐÃ TẮT DÒNG NÀY
+                st.rerun()
+        
+        # 2. Lấy dữ liệu
+        history_df = get_user_history(user['email'])
+        
+        # 3. Hiển thị danh sách
+        if not history_df.empty:
+            status_map = {
+                "Pending": "⏳ Đang chờ xử lý", "Processing": "⚙️ Đang tạo video...",
+                "Done": "✅ Hoàn thành - Bấm xem", "Error": "❌ Gặp lỗi", "": "❓ Chưa xác định"
+            }
+            
+            # Logic phân trang (Xem thêm / Thu gọn)
+            MAX_ITEMS = 3
+            if 'history_expanded' not in st.session_state: st.session_state['history_expanded'] = False
+            
+            # Cắt danh sách tùy theo trạng thái
+            df_display = history_df if st.session_state['history_expanded'] else history_df.head(MAX_ITEMS)
+            total_items = len(history_df)
+
+            # Vòng lặp hiển thị từng video
+            for index, row in df_display.iterrows():
+                # Lấy thông tin an toàn
+                date_str = row.get('NgayTao', '')
+                result_link = row.get('LinkKetQua', '')
+                raw_status = row.get('TrangThai', 'Pending')
+                order_id = row.get('ID', f'id_{index}')
+                old_audio_link = row.get('LinkGiongNoi', '')
+                old_content_script = row.get('NoiDung', '')
+
+                # Tạo trích dẫn ngắn
+                try:
+                    # Giải mã HTML trước khi hiển thị trích dẫn để người dùng đọc được ký tự gốc
+                    decoded_content = html.unescape(str(old_content_script))
+                    words = decoded_content.split()
+                    script_preview = " ".join(words[:10]) + "..." if len(words) > 10 else decoded_content
+                except: script_preview = ""
+
+                # Format ngày & Trạng thái (Đã sửa lỗi lệch múi giờ Việt Nam)
+                try:
+                    # Chuyển chuỗi chữ thành định dạng thời gian
+                    dt_obj = pd.to_datetime(date_str)
+                    
+                    # Nếu thời gian chưa có múi giờ, ta gán cho nó là UTC, sau đó chuyển sang giờ VN (+7)
+                    if dt_obj.tzinfo is None:
+                        dt_obj = dt_obj.tz_localize('UTC').tz_convert('Asia/Ho_Chi_Minh')
+                    else:
+                        dt_obj = dt_obj.tz_convert('Asia/Ho_Chi_Minh')
+                        
+                    display_date = dt_obj.strftime('%d/%m/%Y - %H:%M')
+                except Exception as e:
+                    display_date = str(date_str)
+                vn_status = status_map.get(raw_status, raw_status)
+
+                # HIỂN THỊ EXPANDER
+                with st.expander(f"{display_date} | {vn_status} | 📝 {script_preview}"):
+                    # A. Nếu có link kết quả -> Hiện nút Xem & Tải
+                    # [FIX] Kiểm tra độ dài thay vì bắt buộc phải có http ngay từ đầu
+                    if result_link and len(str(result_link)) > 5:
+                        # Tự động thêm https:// nếu link trong database bị thiếu
+                        if not str(result_link).startswith("http"):
+                            result_link = f"https://{result_link}"
+
+                        # Fix link tải cho iOS
+                        dl_link = result_link.replace("/upload/", "/upload/fl_attachment/") if "cloudinary" in str(result_link) else result_link
+                        
+                        col_btn1, col_btn2 = st.columns([1, 1], gap="small")
+                        btn_style = "width: 100%; padding: 10px; border-radius: 8px; text-align: center; font-weight: bold; text-decoration: none; display: block; box-shadow: 0 2px 3px rgba(0,0,0,0.1);"
+                        
+                        with col_btn1:
+                            st.markdown(f'<a href="{result_link}" target="_blank" style="{btn_style} background-color: #8D6E63; color: white;">▶️ XEM VIDEO</a>', unsafe_allow_html=True)
+                        with col_btn2:
+                            # --- PHƯƠNG ÁN SIÊU NHẸ: DIRECT LINK (ZERO RAM) ---
+                            
+                            # 1. Lấy link gốc
+                            direct_dl_link = dl_link
+                            
+                            # 2. [CLOUDINARY] Thêm 'fl_attachment' để ép tải về
+                            # Cloudinary hỗ trợ cái này mặc định, rất ngon.
+                            if "cloudinary" in str(direct_dl_link):
+                                direct_dl_link = direct_dl_link.replace("/upload/", "/upload/fl_attachment/")
+                            
+                            # 3. [BUNNY CDN]
+                            # [FIX] Đổi sang download=2 để né cache cũ trên điện thoại người dùng
+                            elif "b-cdn.net" in str(direct_dl_link):
+                                if "?" in direct_dl_link:
+                                    direct_dl_link += "&download=2" # <-- Sửa số 1 thành 2
+                                else:
+                                    direct_dl_link += "?download=2" # <-- Sửa số 1 thành 2
+
+                            # 4. HIỆN NÚT BẤM HTML THÔNG MINH (Tự đóng tab trên điện thoại)
+                            # Sử dụng JavaScript để kích hoạt tải về mà không để lại tab thừa
+                            download_script = f"""
+                            <a href="{direct_dl_link}" 
+                               onclick="setTimeout(function(){{ window.close(); }}, 500);" 
+                               target="_blank" 
+                               rel="noopener noreferrer" 
+                               download
+                               style="{btn_style} background-color: #2E7D32; color: white; border: 1px solid #1B5E20; text-decoration: none; display: block; text-align: center;">
+                                📥 TẢI VIDEO
+                            </a>
+                            """
+                            st.markdown(download_script, unsafe_allow_html=True)
+                    
+                    elif raw_status == "Error":
+                        st.error("Video này bị lỗi xử lý.")
+                    else:
+                        st.info("Hệ thống đang xử lý...")
+
+                    # B. Nút Tạo lại (Re-create)
+                    st.markdown('<div style="margin-top: 5px;"></div>', unsafe_allow_html=True) 
+                    if old_audio_link and str(old_audio_link).startswith("http"):
+                        # [FIX] Thêm _{index} vào key để đảm bảo không bao giờ bị trùng
+                        if st.button(f"♻️ Tạo lại bằng giọng nói này", key=f"recreate_{order_id}_{index}", disabled=is_out_of_quota, use_container_width=True):
+                            if not is_out_of_quota:
+                                try:
+                                    with st.spinner("Đang gửi lệnh tạo lại..."):
+                                        # 1. Tạo ID mới
+                                        now_vn = datetime.utcnow() + timedelta(hours=7)
+                                        new_id = now_vn.strftime("%Y%m%d_%H%M%S")
+                                        
+                                        # 2. Chuẩn bị dữ liệu cho Supabase
+                                        order_data = {
+                                            "id": new_id,
+                                            "created_at": datetime.utcnow().isoformat(),
+                                            "email": user['email'],
+                                            "source": "Re-created",
+                                            "content": old_content_script, # Dùng lại nội dung cũ
+                                            "audio_link": old_audio_link,  # Dùng lại link audio cũ
+                                            "status": "Pending",
+                                            "result_link": "",
+                                            "settings": settings 
+                                        }
+                                        
+                                        # 3. Gửi vào Supabase
+                                        supabase.table('orders').insert(order_data).execute()
+                                        
+                                        # 4. Cập nhật Quota (Trừ lượt dùng)
+                                        update_user_usage_supabase(user['id'], user['quota_used'])
+                                        
+                                        # Log & Update Quota
+                                        # [FIX] Chỉ log lịch sử, bỏ qua việc update row sheet cũ vì không còn biến row
+                                        log_history(new_id, user['email'], "", now_vn.strftime("%Y-%m-%d %H:%M:%S"))
+                                        # update_user_usage(user['row'], user['quota_used']) <--- DÒNG NÀY GÂY LỖI NÊN ĐÃ BỊ XÓA/COMMENT
+                                        
+                                        st.session_state['user_info']['quota_used'] += 1
+                                        # get_all_orders_cached.clear() <-- ĐÃ TẮT DÒNG NÀY
+                                        st.session_state['show_wait_message'] = True
+                                        st.success("✅ Đã gửi lệnh tạo lại!")
+                                        st.rerun()
+                                except Exception as e: st.error(f"Lỗi: {e}")
+
+            # 4. Nút Xem thêm / Thu gọn
+            if total_items > MAX_ITEMS:
+                st.markdown("---")
+                col_c = st.columns([1, 2, 1])[1]
+                with col_c:
+                    if not st.session_state['history_expanded']:
+                        if st.button(f"🔽 Xem thêm ({total_items - MAX_ITEMS} video cũ)", use_container_width=True):
+                            st.session_state['history_expanded'] = True
+                            st.rerun()
+                    else:
+                        if st.button("🔼 Thu gọn danh sách", use_container_width=True):
+                            st.session_state['history_expanded'] = False
+                            st.rerun()
+        else:
+            st.info("Bạn chưa có video nào.")
+
+        # 5. Nút Đóng danh sách
+        st.markdown("<br>", unsafe_allow_html=True)
+        if st.button("❌ Đóng lại", use_container_width=True):
+            st.session_state['show_history_section'] = False
+            st.rerun()
+
     # [ĐÃ SỬA] Đã xóa khoảng trắng <br> ở đây để Bước 1 đẩy lên cao hơn
 
     # --- (B1) EMAIL (ĐÃ ẨN GIAO DIỆN) ---
     # Chúng ta gán thẳng email từ session vào biến, không cần hiện input
     email = user['email']
 
-    # --- (B1) NGUỒN KỊCH BẢN (GIAO DIỆN TÌM KIẾM MỚI) ---
-    st.markdown("""
-        <div class="step-card">
-            <span class="step-label"> BƯỚC 1️⃣: CHUẨN BỊ KỊCH BẢN</span>
-        </div>
-    """, unsafe_allow_html=True)
-    
-    # [UX] index=None để ban đầu không chọn gì -> Ẩn các thao tác bên dưới
-    source_opt = st.radio("Chọn nguồn kịch bản:", 
+    # --- (B1) NGUỒN KỊCH BẢN (GIAO DIỆN EXPANDER) ---
+    # [MỚI] Mặc định mở (expanded=True)
+    with st.expander("1️⃣ BƯỚC 1: CHUẨN BỊ KỊCH BẢN", expanded=True):
+        
+        # [QUAN TRỌNG] Các dòng bên dưới phải LÙI ĐẦU DÒNG (Tab) vào trong
+        # [UX] index=None để ban đầu không chọn gì -> Ẩn các thao tác bên dưới
+        source_opt = st.radio("Chọn nguồn kịch bản:",
                           ["📂 Tìm trong Thư viện", "✍️ Tự viết mới"], 
                           index=None, 
                           horizontal=True,
@@ -1638,21 +1854,24 @@ else:
     # --- [LOGIC MỚI] KIỂM TRA BƯỚC 1 ---
     # Nếu chưa có nội dung kịch bản -> Dừng lại và hiện cảnh báo
     if not noi_dung_gui or len(noi_dung_gui.strip()) == 0:
-        st.warning("⚠️ Vui lòng hoàn thành BƯỚC 1 (Chọn hoặc Nhập kịch bản) để tiếp tục!")
+        # Thay st.warning bằng HTML để có chữ màu Nâu đậm
+        st.markdown("""
+        <div style="background-color: #FFF9C4; color: #5D4037; padding: 15px; border-radius: 10px; border: 1px solid #FBC02D; margin-bottom: 20px; font-weight: bold;">
+            Hoàn thành BƯỚC 1 (Chọn hoặc Nhập kịch bản) để tiếp tục!
+        </div>
+        """, unsafe_allow_html=True)
         st.stop() # <-- Lệnh này sẽ ẩn toàn bộ phần bên dưới đi
 
-    st.markdown("""
-        <div class="step-card">
-            <span class="step-label"> BƯỚC 2️⃣: CHUẨN BỊ GIỌNG ĐỌC</span>
-        </div>
-    """, unsafe_allow_html=True)
-    
-    # --- [FIX] KIỂM TRA LINK TRƯỚC KHI HIỂN THỊ ---
-    # Chỉ hiện tùy chọn "Giọng mẫu" nếu link đó thực sự tồn tại (Status 200)
-    has_valid_audio = False
-    if selected_library_audio and str(selected_library_audio).startswith("http"):
-        # Gọi hàm kiểm tra (có thể hơi chậm xíu nếu mạng yếu, nhưng đảm bảo chính xác)
-        has_valid_audio = check_link_exists(selected_library_audio)
+    # [MỚI] Gom Bước 2 vào Expander
+    with st.expander("2️⃣ BƯỚC 2: CHUẨN BỊ GIỌNG ĐỌC & GỬI", expanded=True):
+        
+        # [QUAN TRỌNG] LÙI ĐẦU DÒNG (Tab) toàn bộ code bên dưới vào trong
+        # --- [FIX] KIỂM TRA LINK TRƯỚC KHI HIỂN THỊ ---
+        # Chỉ hiện tùy chọn "Giọng mẫu" nếu link đó thực sự tồn tại (Status 200)
+        has_valid_audio = False
+        if selected_library_audio and str(selected_library_audio).startswith("http"):
+            # Gọi hàm kiểm tra (có thể hơi chậm xíu nếu mạng yếu, nhưng đảm bảo chính xác)
+            has_valid_audio = check_link_exists(selected_library_audio)
 
     # Tạo danh sách lựa chọn
     # Tạo danh sách lựa chọn
@@ -2147,221 +2366,4 @@ else:
             except Exception as e: st.error(f"Lỗi hệ thống: {e}")
 
     # --- KIỂM TRA KẾT QUẢ (Giữ nguyên, chỉ thêm chút style nếu cần) ---
-    
-
-    # ==========================================
-    # [NEW] LỊCH SỬ VIDEO (LẤY TỪ ORDERS) - [OPTIMIZED LAZY LOAD]
-    # ==========================================
-    st.markdown("---")
-    
-    # [FIX] Lấy dữ liệu lịch sử ngay lập tức để kiểm tra trạng thái thực tế
-    history_df = get_user_history(user['email'])
-    
-    # Logic kiểm tra thông minh: Chỉ hiện thông báo nếu CÓ video đang Pending hoặc Processing
-    is_processing_real = False
-    if not history_df.empty and 'TrangThai' in history_df.columns:
-        # Kiểm tra trong 5 đơn mới nhất xem có đơn nào chưa xong không
-        check_pending = history_df.head(5)[history_df.head(5)['TrangThai'].isin(['Pending', 'Processing'])]
-        if not check_pending.empty:
-            is_processing_real = True
-
-    # Chỉ hiển thị thông báo khi thực sự có video đang chạy
-    if is_processing_real:
-        st.markdown("""
-        <div style="background-color: #FFF9C4; color: #5D4037; padding: 15px; border-radius: 10px; border: 1px solid #FBC02D; margin-bottom: 20px; font-weight: bold;">
-            ⏳ Đang tạo video. Vui lòng quay lại sau 5 phút và bấm nút "Xem danh sách video" hoặc nút "Làm mới"!
-        </div>
-        """, unsafe_allow_html=True)
-
-    # Khởi tạo trạng thái
-    if 'show_history_section' not in st.session_state:
-        st.session_state['show_history_section'] = False
-
-    # --- TRƯỜNG HỢP 1: CHƯA BẤM XEM (ẨN) ---
-    if not st.session_state['show_history_section']:
-        if st.button("📂 Xem danh sách video", use_container_width=True):
-            st.session_state['show_history_section'] = True
-            st.rerun()
-            
-    # --- TRƯỜNG HỢP 2: ĐÃ BẤM XEM (HIỆN) ---
-    else:
-        # 1. Header & Nút Làm mới
-        c_hist1, c_hist2 = st.columns([3, 1], vertical_alignment="center")
-        with c_hist1:
-            st.subheader("📜 Video của bạn")
-        with c_hist2:
-            if st.button("🔄 Làm mới", help="Cập nhật danh sách mới nhất"):
-                # get_all_orders_cached.clear() <-- ĐÃ TẮT DÒNG NÀY
-                st.rerun()
-        
-        # 2. Lấy dữ liệu
-        history_df = get_user_history(user['email'])
-        
-        # 3. Hiển thị danh sách
-        if not history_df.empty:
-            status_map = {
-                "Pending": "⏳ Đang chờ xử lý", "Processing": "⚙️ Đang tạo video...",
-                "Done": "✅ Hoàn thành - Bấm xem", "Error": "❌ Gặp lỗi", "": "❓ Chưa xác định"
-            }
-            
-            # Logic phân trang (Xem thêm / Thu gọn)
-            MAX_ITEMS = 3
-            if 'history_expanded' not in st.session_state: st.session_state['history_expanded'] = False
-            
-            # Cắt danh sách tùy theo trạng thái
-            df_display = history_df if st.session_state['history_expanded'] else history_df.head(MAX_ITEMS)
-            total_items = len(history_df)
-
-            # Vòng lặp hiển thị từng video
-            for index, row in df_display.iterrows():
-                # Lấy thông tin an toàn
-                date_str = row.get('NgayTao', '')
-                result_link = row.get('LinkKetQua', '')
-                raw_status = row.get('TrangThai', 'Pending')
-                order_id = row.get('ID', f'id_{index}')
-                old_audio_link = row.get('LinkGiongNoi', '')
-                old_content_script = row.get('NoiDung', '')
-
-                # Tạo trích dẫn ngắn
-                try:
-                    # Giải mã HTML trước khi hiển thị trích dẫn để người dùng đọc được ký tự gốc
-                    decoded_content = html.unescape(str(old_content_script))
-                    words = decoded_content.split()
-                    script_preview = " ".join(words[:10]) + "..." if len(words) > 10 else decoded_content
-                except: script_preview = ""
-
-                # Format ngày & Trạng thái (Đã sửa lỗi lệch múi giờ Việt Nam)
-                try:
-                    # Chuyển chuỗi chữ thành định dạng thời gian
-                    dt_obj = pd.to_datetime(date_str)
-                    
-                    # Nếu thời gian chưa có múi giờ, ta gán cho nó là UTC, sau đó chuyển sang giờ VN (+7)
-                    if dt_obj.tzinfo is None:
-                        dt_obj = dt_obj.tz_localize('UTC').tz_convert('Asia/Ho_Chi_Minh')
-                    else:
-                        dt_obj = dt_obj.tz_convert('Asia/Ho_Chi_Minh')
-                        
-                    display_date = dt_obj.strftime('%d/%m/%Y - %H:%M')
-                except Exception as e:
-                    display_date = str(date_str)
-                vn_status = status_map.get(raw_status, raw_status)
-
-                # HIỂN THỊ EXPANDER
-                with st.expander(f"{display_date} | {vn_status} | 📝 {script_preview}"):
-                    # A. Nếu có link kết quả -> Hiện nút Xem & Tải
-                    # [FIX] Kiểm tra độ dài thay vì bắt buộc phải có http ngay từ đầu
-                    if result_link and len(str(result_link)) > 5:
-                        # Tự động thêm https:// nếu link trong database bị thiếu
-                        if not str(result_link).startswith("http"):
-                            result_link = f"https://{result_link}"
-
-                        # Fix link tải cho iOS
-                        dl_link = result_link.replace("/upload/", "/upload/fl_attachment/") if "cloudinary" in str(result_link) else result_link
-                        
-                        col_btn1, col_btn2 = st.columns([1, 1], gap="small")
-                        btn_style = "width: 100%; padding: 10px; border-radius: 8px; text-align: center; font-weight: bold; text-decoration: none; display: block; box-shadow: 0 2px 3px rgba(0,0,0,0.1);"
-                        
-                        with col_btn1:
-                            st.markdown(f'<a href="{result_link}" target="_blank" style="{btn_style} background-color: #8D6E63; color: white;">▶️ XEM VIDEO</a>', unsafe_allow_html=True)
-                        with col_btn2:
-                            # --- PHƯƠNG ÁN SIÊU NHẸ: DIRECT LINK (ZERO RAM) ---
-                            
-                            # 1. Lấy link gốc
-                            direct_dl_link = dl_link
-                            
-                            # 2. [CLOUDINARY] Thêm 'fl_attachment' để ép tải về
-                            # Cloudinary hỗ trợ cái này mặc định, rất ngon.
-                            if "cloudinary" in str(direct_dl_link):
-                                direct_dl_link = direct_dl_link.replace("/upload/", "/upload/fl_attachment/")
-                            
-                            # 3. [BUNNY CDN]
-                            # [FIX] Đổi sang download=2 để né cache cũ trên điện thoại người dùng
-                            elif "b-cdn.net" in str(direct_dl_link):
-                                if "?" in direct_dl_link:
-                                    direct_dl_link += "&download=2" # <-- Sửa số 1 thành 2
-                                else:
-                                    direct_dl_link += "?download=2" # <-- Sửa số 1 thành 2
-
-                            # 4. HIỆN NÚT BẤM HTML THÔNG MINH (Tự đóng tab trên điện thoại)
-                            # Sử dụng JavaScript để kích hoạt tải về mà không để lại tab thừa
-                            download_script = f"""
-                            <a href="{direct_dl_link}" 
-                               onclick="setTimeout(function(){{ window.close(); }}, 500);" 
-                               target="_blank" 
-                               rel="noopener noreferrer" 
-                               download
-                               style="{btn_style} background-color: #2E7D32; color: white; border: 1px solid #1B5E20; text-decoration: none; display: block; text-align: center;">
-                                📥 TẢI VIDEO
-                            </a>
-                            """
-                            st.markdown(download_script, unsafe_allow_html=True)
-                    
-                    elif raw_status == "Error":
-                        st.error("Video này bị lỗi xử lý.")
-                    else:
-                        st.info("Hệ thống đang xử lý...")
-
-                    # B. Nút Tạo lại (Re-create)
-                    st.markdown('<div style="margin-top: 5px;"></div>', unsafe_allow_html=True) 
-                    if old_audio_link and str(old_audio_link).startswith("http"):
-                        # [FIX] Thêm _{index} vào key để đảm bảo không bao giờ bị trùng
-                        if st.button(f"♻️ Tạo lại bằng giọng nói này", key=f"recreate_{order_id}_{index}", disabled=is_out_of_quota, use_container_width=True):
-                            if not is_out_of_quota:
-                                try:
-                                    with st.spinner("Đang gửi lệnh tạo lại..."):
-                                        # 1. Tạo ID mới
-                                        now_vn = datetime.utcnow() + timedelta(hours=7)
-                                        new_id = now_vn.strftime("%Y%m%d_%H%M%S")
-                                        
-                                        # 2. Chuẩn bị dữ liệu cho Supabase
-                                        order_data = {
-                                            "id": new_id,
-                                            "created_at": datetime.utcnow().isoformat(),
-                                            "email": user['email'],
-                                            "source": "Re-created",
-                                            "content": old_content_script, # Dùng lại nội dung cũ
-                                            "audio_link": old_audio_link,  # Dùng lại link audio cũ
-                                            "status": "Pending",
-                                            "result_link": "",
-                                            "settings": settings 
-                                        }
-                                        
-                                        # 3. Gửi vào Supabase
-                                        supabase.table('orders').insert(order_data).execute()
-                                        
-                                        # 4. Cập nhật Quota (Trừ lượt dùng)
-                                        update_user_usage_supabase(user['id'], user['quota_used'])
-                                        
-                                        # Log & Update Quota
-                                        # [FIX] Chỉ log lịch sử, bỏ qua việc update row sheet cũ vì không còn biến row
-                                        log_history(new_id, user['email'], "", now_vn.strftime("%Y-%m-%d %H:%M:%S"))
-                                        # update_user_usage(user['row'], user['quota_used']) <--- DÒNG NÀY GÂY LỖI NÊN ĐÃ BỊ XÓA/COMMENT
-                                        
-                                        st.session_state['user_info']['quota_used'] += 1
-                                        # get_all_orders_cached.clear() <-- ĐÃ TẮT DÒNG NÀY
-                                        st.session_state['show_wait_message'] = True
-                                        st.success("✅ Đã gửi lệnh tạo lại!")
-                                        st.rerun()
-                                except Exception as e: st.error(f"Lỗi: {e}")
-
-            # 4. Nút Xem thêm / Thu gọn
-            if total_items > MAX_ITEMS:
-                st.markdown("---")
-                col_c = st.columns([1, 2, 1])[1]
-                with col_c:
-                    if not st.session_state['history_expanded']:
-                        if st.button(f"🔽 Xem thêm ({total_items - MAX_ITEMS} video cũ)", use_container_width=True):
-                            st.session_state['history_expanded'] = True
-                            st.rerun()
-                    else:
-                        if st.button("🔼 Thu gọn danh sách", use_container_width=True):
-                            st.session_state['history_expanded'] = False
-                            st.rerun()
-        else:
-            st.info("Bạn chưa có video nào.")
-
-        # 5. Nút Đóng danh sách
-        st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("❌ Đóng lại", use_container_width=True):
-            st.session_state['show_history_section'] = False
-            st.rerun()
+    pass
