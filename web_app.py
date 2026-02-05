@@ -2185,6 +2185,9 @@ else:
         
         ready_to_send = False
         
+        # [FIX] Đặt giới hạn từ mặc định ban đầu là 2000 để tránh lỗi NameError
+        MAX_WORDS = 2000
+
         # Logic upload file giữ nguyên
         if voice_method == "🎵 Sử dụng giọng nói có sẵn" and final_audio_link_to_send:
             ready_to_send = True
