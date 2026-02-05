@@ -1953,12 +1953,18 @@ else:
                     # Cập nhật lại session để không bị load đè dữ liệu cũ
                     st.session_state['user_info']['settings'] = current_settings
     
+    # [FIX] Ép kiểu dữ liệu về Python chuẩn (int/float/str) để tránh lỗi API 500 do Numpy
     settings = {
-        "clean_audio": st.session_state.s_clean, "voice_vol": st.session_state.s_voice,
-        "music_vol": st.session_state.s_music, "font_name": st.session_state.s_font,
-        "font_size": st.session_state.s_size, "text_color": st.session_state.s_color,
-        "outline_color": st.session_state.s_outline, "border_width": st.session_state.s_border,
-        "margin_v": st.session_state.s_margin, "offset_x": st.session_state.s_offset
+        "clean_audio": bool(st.session_state.s_clean), 
+        "voice_vol": float(st.session_state.s_voice),
+        "music_vol": float(st.session_state.s_music), 
+        "font_name": str(st.session_state.s_font),
+        "font_size": int(st.session_state.s_size), 
+        "text_color": str(st.session_state.s_color),
+        "outline_color": str(st.session_state.s_outline), 
+        "border_width": int(st.session_state.s_border),
+        "margin_v": int(st.session_state.s_margin), 
+        "offset_x": int(st.session_state.s_offset)
     }
 
     # --- NÚT GỬI (ĐÃ SỬA ĐỂ CHECK QUOTA) ---
@@ -2087,8 +2093,16 @@ else:
                     "settings": settings 
                 }
                 
-                # Insert vào bảng orders
-                supabase.table('orders').insert(order_data).execute()
+                # Insert vào bảng orders (Có bắt lỗi 500)
+                try:
+                    supabase.table('orders').insert(order_data).execute()
+                except Exception as e:
+                    # Nếu lỗi 500, chờ 1 giây rồi thử lại 1 lần nữa (Cơ chế Retry)
+                    if "500" in str(e):
+                        time.sleep(1)
+                        supabase.table('orders').insert(order_data).execute()
+                    else:
+                        raise e # Nếu lỗi khác thì báo ra ngoài
 
                 # --- GIẢI PHÓNG RAM NGAY LẬP TỨC ---
                 # Xóa dữ liệu file nặng sau khi đã gửi lên Cloudinary và lưu DB thành công
