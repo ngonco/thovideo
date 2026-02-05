@@ -1511,11 +1511,12 @@ else:
         # [ĐÃ SỬA] Đổi expanded=False để mặc định đóng lại
     with st.expander("1️⃣ BƯỚC 1: CHUẨN BỊ KỊCH BẢN", expanded=False):
             
-            # [QUAN TRỌNG] Các dòng bên dưới phải LÙI ĐẦU DÒNG (Tab) vào trong
+            # [ĐÃ SỬA] Thêm label_visibility="collapsed" để ẩn dòng chữ tiêu đề
             source_opt = st.radio("Chọn nguồn kịch bản:",
                             ["📂 Tìm trong Thư viện", "✍️ Tự viết mới"], 
                             index=None, 
                             horizontal=True,
+                            label_visibility="collapsed", 
                             key="radio_source_opt")
 
             # --- [QUAN TRỌNG] ĐƯA CÁC BIẾN VÀ LOGIC VÀO TRONG EXPANDER ---
@@ -1639,7 +1640,7 @@ else:
     st.markdown("<br><br>", unsafe_allow_html=True) 
 
     # [CẬP NHẬT] Gom Bước 2 vào Expander và MẶC ĐỊNH ĐÓNG (expanded=False)
-    with st.expander("2️⃣ BƯỚC 2: CHUẨN BỊ GIỌNG ĐỌC & GỬI", expanded=False):
+    with st.expander("2️⃣ BƯỚC 2: CHUẨN BỊ GIỌNG ĐỌC", expanded=False):
         
             # Kiểm tra nhanh nếu chưa có nội dung ở Bước 1 thì hiện cảnh báo nhẹ (Màu nâu đậm)
             if not st.session_state.get('main_content_area'):
@@ -1689,11 +1690,13 @@ else:
                 </style>
             """, unsafe_allow_html=True)
 
+            # [ĐÃ SỬA] Thêm label_visibility="collapsed" để ẩn dòng chữ tiêu đề
             voice_method = st.radio(
                 "**Chọn cách nhập giọng đọc:**",
                 options=list(all_options.values()),
                 index=None,
                 horizontal=True,
+                label_visibility="collapsed",
                 key="radio_voice_method"
             )
             
