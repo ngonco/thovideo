@@ -1464,26 +1464,22 @@ else:
     # [MODIFIED] HEADER MỚI (Chỉ còn Tiêu đề)
     st.markdown(f"<h1 style='text-align: center; border: none; margin: 0; padding: 0;'>hạt bụi nhỏ làm video siêu dễ</h1>", unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True) # Tạo khoảng cách nhỏ
+    
+    
     # Tính toán quota
     quota_left = user['quota_max'] - user['quota_used']
     is_out_of_quota = quota_left <= 0
 
-    # [MỚI] LOGIC TÍNH NGÀY CÒN LẠI (Mặc định 30 ngày từ khi tạo)
+    # [LOGIC TÍNH NGÀY] (Giữ nguyên logic tính toán)
     try:
-        # Lấy ngày tạo từ thông tin user
         created_at_raw = user.get('created_at')
         if created_at_raw:
-            # Dùng pandas để xử lý thời gian cho an toàn (tự động nhận diện múi giờ)
             created_date = pd.to_datetime(created_at_raw)
-            # Cộng thêm 30 ngày (Chu kỳ gói cước)
-            expiry_date = created_date + timedelta(days=30)
-            
-            # Lấy thời gian hiện tại (có múi giờ tương ứng)
+            expiry_date = created_date + timedelta(days=30) # Giả định gói 30 ngày
             now_date = pd.Timestamp.now(tz=created_date.tz)
             
-            # Tính khoảng cách ngày
             days_left = (expiry_date - now_date).days
-            days_display = max(0, days_left) # Không hiển thị số âm
+            days_display = max(0, days_left)
         else:
             days_display = "?"
     except Exception as e:
@@ -1501,17 +1497,7 @@ else:
                 <span style="font-size: 18px; color: {'#D32F2F' if is_out_of_quota else '#2E7D32'}; font-weight: bold;">
                     {user['quota_used']}/{user['quota_max']} video
                 </span><br>
-                <div style="
-                    background-color: #1565C0; 
-                    color: white; 
-                    padding: 4px 10px; 
-                    border-radius: 5px; 
-                    font-size: 17px; 
-                    font-weight: bold; 
-                    display: inline-block; 
-                    margin-top: 5px;">
-                    (Còn lại: {days_display} ngày)
-                </div>
+                <small style="color: #888;">(Còn lại: {days_display} ngày)</small>
             </div>
         </div>
     </div>
