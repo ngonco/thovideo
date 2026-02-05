@@ -1490,11 +1490,11 @@ else:
     <div style="background-color: #FFF8DC; border: 2px dashed #8B4513; padding: 15px; border-radius: 10px; margin-bottom: 25px;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <div>
-                <span style="font-size: 20px; font-weight: bold; color: #3E2723;">👤 {user['email']}</span><br>
-                <span style="font-size: 15px; color: #6D4C41;">🏷️ Gói: <b>{user['plan']}</b></span>
+                <span style="font-size: 18px; font-weight: bold; color: #3E2723;">👤 {user['email']}</span><br>
+                <span style="font-size: 16px; color: #6D4C41;">🏷️ Gói: <b>{user['plan']}</b></span>
             </div>
             <div style="text-align: right;">
-                <span style="font-size: 20px; color: {'#D32F2F' if is_out_of_quota else '#2E7D32'}; font-weight: bold;">
+                <span style="font-size: 22px; color: {'#D32F2F' if is_out_of_quota else '#2E7D32'}; font-weight: bold;">
                     {user['quota_used']}/{user['quota_max']} video
                 </span><br>
                 <small style="color: #888;">(Còn lại: {days_display} ngày)</small>
