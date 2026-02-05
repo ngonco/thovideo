@@ -1514,8 +1514,7 @@ else:
         
         # A. NẾU CHƯA TẢI DỮ LIỆU -> Hiện nút bấm
         if not st.session_state['history_lazy_loaded']:
-            st.info("💡 Bấm nút bên dưới để tải dữ liệu (Giúp web chạy nhanh hơn).")
-            if st.button("📥 Tải danh sách ngay", use_container_width=True, key="btn_lazy_load_hist"):
+            if st.button("Bấm để xem danh sách ngay", use_container_width=True, key="btn_lazy_load_hist"):
                 st.session_state['history_lazy_loaded'] = True
                 st.rerun()
         
