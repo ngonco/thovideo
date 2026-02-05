@@ -1587,7 +1587,7 @@ else:
             
             # [SỬA LỖI API] Hàm xử lý riêng cho việc bấm nút (Callback)
             def load_draft_callback():
-                saved_content = load_draft_from_sheet(user['email'])
+                saved_content = load_draft_from_supabase(user['email'])
                 if saved_content:
                     st.session_state['main_content_area'] = saved_content
                     st.toast("Đã tải lại bản nháp cũ!", icon="📂")
@@ -1597,7 +1597,7 @@ else:
             with c_draft1:
                 if st.button("💾 Lưu nháp", use_container_width=True, key="btn_save_draft"):
                     if noi_dung_gui:
-                        if save_draft_to_sheet(user['email'], noi_dung_gui):
+                        if save_draft_to_supabase(user['email'], noi_dung_gui):
                             st.toast("Đã lưu nháp thành công!", icon="✅")
                         else:
                             st.error("Lỗi khi lưu nháp.")
@@ -1885,10 +1885,8 @@ else:
                  st.success(f"✅ Đã chọn: {selected_voice_key} ({selected_region})")
                  st.info("👇 Bấm nút 'GỬI YÊU CẦU' bên dưới để bắt đầu tạo video!")
 
-            # Lưu ý cho người dùng
-            st.info("💡 Mẹo: Gemini sẽ tự động điều chỉnh ngữ điệu miền Nam dựa trên yêu cầu ngầm định của hệ thống.")
               
-              
+        
 
             if 'temp_ai_audio' in st.session_state and st.session_state['temp_ai_audio']:
                 st.audio(st.session_state['temp_ai_audio'])
