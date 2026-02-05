@@ -304,8 +304,15 @@ def get_app_style():
         margin-bottom: 20px !important; /* Cách nhau 20px cho dễ bấm */
         border-radius: 10px !important;
         box-shadow: 0 2px 4px rgba(0,0,0,0.05); /* Đổ bóng nhẹ cho đẹp */
+        background-color: transparent !important; /* Nền trong suốt */
     }}
     
+    /* [MỚI] XÓA LỀ NỘI DUNG BÊN TRONG EXPANDER */
+    div[data-testid="stExpander"] div[role="group"] {{
+        padding: 0px !important; /* Xóa khoảng trắng bao quanh nội dung */
+        gap: 10px !important;    /* Giảm khoảng cách giữa các phần tử con */
+    }}
+
     /* Chỉnh kích thước thanh tiêu đề (Cài đặt, Dòng lịch sử) */
     div[data-testid="stExpander"] details > summary {{
         background-color: #FFF8DC !important; color: #3E2723 !important; 
