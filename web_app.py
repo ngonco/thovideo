@@ -1013,11 +1013,15 @@ def admin_dashboard():
                     data = {
                         "email": new_email,
                         "password": hashed,
-                        "plan": plan_info['code'],
+                        # [SỬA] Dùng selected_plan_name thay vì plan_info['code'] để tránh lỗi key
+                        "plan": selected_plan_name, 
                         "quota_max": final_quota,
-                        "quota_used": 0,  # Khởi tạo đã dùng = 0
+                        "quota_used": 0,
+                        # [FIX QUAN TRỌNG] Thêm dòng này để lưu đúng hạn mức TTS theo gói
+                        "tts_limit": plan_info['tts_chars'],
+                        "tts_usage": 0, # Khởi tạo ban đầu là 0
                         "role": "user",
-                        "stock_level": 1000 # Mặc định stock level
+                        "stock_level": 1000
                     }
                     
                     supabase.table('users').insert(data).execute()
