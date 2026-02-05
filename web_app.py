@@ -1726,17 +1726,25 @@ else:
                         
                 # CASE 2: UPLOAD FILE
                 elif voice_method == "📤 Tải file lên":
-                    st.markdown("<b>Chọn file ghi âm từ máy của bạn (mp3, wav, m4a):</b>", unsafe_allow_html=True)
+                    # [FIX] Kiểm tra xem đã có nội dung kịch bản chưa
+                    current_script_upload = st.session_state.get('main_content_area', "")
                     
-                    # [CẬP NHẬT] Thêm dòng nhắc nhở kích thước ngay trên nút upload
-                    st.caption("⚠️ Lưu ý: Dung lượng tối đa 10MB/file")
-                    uploaded_file = st.file_uploader("", type=['mp3', 'wav', 'm4a'], label_visibility="collapsed")
-                    
-                    # [MỚI] Thêm ô tick chọn giọng AI
-                    st.markdown("<div style='margin-top: 5px;'></div>", unsafe_allow_html=True)
-                    is_ai_checked = st.checkbox("NHỚ TÍCH CHỌN NẾU UPLOAD GIỌNG AI", 
-                                            help="Tích vào đây nếu file này tạo từ AI (ElevenLabs, Vbee...) để hệ thống KHÔNG lọc ồn, tránh làm méo giọng.",
-                                            key="chk_ai_upload_flag")
+                    # Nếu chưa có nội dung hoặc quá ngắn -> Hiện cảnh báo và KHÔNG hiện nút upload
+                    if not current_script_upload or len(current_script_upload.strip()) < 5:
+                        st.warning("⚠️ Bạn chưa nhập kịch bản! Vui lòng quay lại Bước 1 viết nội dung trước khi tải file âm thanh.")
+                    else:
+                        # Chỉ hiện công cụ upload khi đã có kịch bản
+                        st.markdown("<b>Chọn file ghi âm từ máy của bạn (mp3, wav, m4a):</b>", unsafe_allow_html=True)
+                        
+                        # [CẬP NHẬT] Thêm dòng nhắc nhở kích thước ngay trên nút upload
+                        st.caption("⚠️ Lưu ý: Dung lượng tối đa 10MB/file")
+                        uploaded_file = st.file_uploader("", type=['mp3', 'wav', 'm4a'], label_visibility="collapsed")
+                        
+                        # [MỚI] Thêm ô tick chọn giọng AI
+                        st.markdown("<div style='margin-top: 5px;'></div>", unsafe_allow_html=True)
+                        is_ai_checked = st.checkbox("NHỚ TÍCH CHỌN NẾU UPLOAD GIỌNG AI", 
+                                                help="Tích vào đây nếu file này tạo từ AI (ElevenLabs, Vbee...) để hệ thống KHÔNG lọc ồn, tránh làm méo giọng.",
+                                                key="chk_ai_upload_flag")
 
                     if uploaded_file:
                         # [BẢO MẬT] Cấu hình giới hạn
@@ -1890,13 +1898,20 @@ else:
                     # 2. NGHE THỬ (SAMPLE)
                     st.markdown("<div style='margin-bottom: 5px;'></div>", unsafe_allow_html=True)
                     if st.button("▶️ Nghe thử (2 câu đầu)", use_container_width=True):
+                        # [FIX] Lấy nội dung kịch bản từ Session
                         script_preview = st.session_state.get('main_content_area', "")
-                        with st.spinner(f"Đang tạo mẫu giọng {selected_voice_key}..."):
-                            sample_audio = tts_gemini(text=script_preview, voice_style_key=selected_voice_key, region="Miền Bắc", is_test=True)
-                            if sample_audio:
-                                st.audio(sample_audio, format="audio/wav")
-                            else:
-                                st.warning("Hệ thống đang bận, vui lòng thử lại.")
+                        
+                        # [QUAN TRỌNG] Kiểm tra xem đã có nội dung chưa (ít nhất 5 ký tự)
+                        if not script_preview or len(script_preview.strip()) < 5:
+                            st.warning("⚠️ Bạn chưa nhập kịch bản! Vui lòng quay lại Bước 1 viết nội dung trước khi nghe thử.")
+                        else:
+                            # Chỉ chạy AI khi đã có nội dung
+                            with st.spinner(f"Đang tạo mẫu giọng {selected_voice_key}..."):
+                                sample_audio = tts_gemini(text=script_preview, voice_style_key=selected_voice_key, region="Miền Bắc", is_test=True)
+                                if sample_audio:
+                                    st.audio(sample_audio, format="audio/wav")
+                                else:
+                                    st.warning("Hệ thống đang bận, vui lòng thử lại.")
 
                     st.markdown("---")
                     
