@@ -1798,9 +1798,13 @@ else:
     # [CẬP NHẬT] Gom Bước 2 vào Expander và MẶC ĐỊNH ĐÓNG (expanded=False)
     with st.expander("2️⃣ BƯỚC 2: CHUẨN BỊ GIỌNG ĐỌC & GỬI", expanded=False):
         
-            # Kiểm tra nhanh nếu chưa có nội dung ở Bước 1 thì hiện cảnh báo nhẹ
+            # Kiểm tra nhanh nếu chưa có nội dung ở Bước 1 thì hiện cảnh báo nhẹ (Màu nâu đậm)
             if not st.session_state.get('main_content_area'):
-                st.warning("⚠️ Bạn cần nhập kịch bản ở Bước 1 trước khi chuẩn bị giọng đọc.")
+                st.markdown("""
+                    <div style="color: #3E2723; font-weight: bold; padding: 10px; background-color: #FFF3E0; border-radius: 5px; border-left: 5px solid #8B4513;">
+                        ⚠️ Bạn cần nhập kịch bản ở Bước 1 trước khi chuẩn bị giọng đọc.
+                    </div>
+                """, unsafe_allow_html=True)
             # --- [FIX] KIỂM TRA LINK TRƯỚC KHI HIỂN THỊ ---
             # Chỉ hiện tùy chọn "Giọng mẫu" nếu link đó thực sự tồn tại (Status 200)
             has_valid_audio = False
