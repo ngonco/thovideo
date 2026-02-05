@@ -2025,52 +2025,11 @@ else:
                         # Mặc định vùng miền là Bắc (để tương thích logic cũ)
                         selected_region = "Miền Bắc" 
 
-                        # 2. NGHE THỬ (SAMPLE)
-                        st.markdown("<div style='margin-bottom: 5px;'></div>", unsafe_allow_html=True)
-                        if st.button("▶️ Nghe thử (2 câu đầu)", use_container_width=True):
-                            # [FIX] Lấy nội dung kịch bản từ Session
-                            script_preview = st.session_state.get('main_content_area', "")
-                            
-                            if not script_preview or len(script_preview.strip()) < 5:
-                                st.markdown("""
-                                    <div style="color: #3E2723; font-weight: bold; padding: 10px; background-color: #FFF3E0; border-radius: 5px; border-left: 5px solid #8B4513;">
-                                        ⚠️ Bạn chưa nhập kịch bản! Vui lòng quay lại Bước 1 viết nội dung trước khi nghe thử.
-                                    </div>
-                                """, unsafe_allow_html=True)
-                            else:
-                                # [LOGIC MỚI] Tính toán số ký tự nghe thử (chỉ lấy 2 câu đầu)
-                                sentences = re.split(r'(?<=[.!?])\s+', script_preview.strip())
-                                text_preview_only = " ".join(sentences[:2]) # Chỉ lấy 2 câu đầu để đọc
-                                char_count_preview = len(text_preview_only)
-
-                                # Kiểm tra quota trước
-                                is_enough, msg_preview = check_tts_quota(user, text_preview_only)
-                                
-                                if not is_enough:
-                                    st.error(msg_preview) # Báo hết tiền
-                                else:
-                                    # Chỉ chạy AI khi đủ tiền
-                                    with st.spinner(f"Đang tạo mẫu ({round(char_count_preview/1000, 2)} phút)..."):
-                                        # Gọi hàm tạo giọng (Lưu ý: is_test=True để prompt ngắn gọn)
-                                        sample_audio = tts_gemini(text=script_preview, voice_style_key=selected_voice_key, region="Miền Bắc", is_test=True)
-                                        
-                                        if sample_audio:
-                                            # [QUAN TRỌNG] Trừ tiền ngay sau khi tạo thành công
-                                            new_usage = update_tts_usage_supabase(user['id'], char_count_preview)
-                                            if new_usage:
-                                                st.session_state['user_info']['tts_usage'] = new_usage
-                                                st.toast(f"Đã trừ {char_count_preview} ký tự cho bản nghe thử.", icon="📉")
-
-                                            st.audio(sample_audio, format="audio/wav")
-                                        else:
-                                            st.warning("Hệ thống đang bận, vui lòng thử lại.")
+                        
 
                         st.markdown("---")
                         
                         # 3. TẠO GIỌNG ĐẦY ĐỦ (FULL) - THEO YÊU CẦU MỚI
-                        st.markdown("##### 💿 Bước quan trọng: Tạo file âm thanh")
-                        st.caption("Bạn phải bấm nút dưới đây để tạo file âm thanh đầy đủ cho toàn bộ kịch bản trước khi gửi.")
-                        
                         # Kiểm tra xem đã có nội dung chưa
                         current_script_full = st.session_state.get('main_content_area', "")
                         
