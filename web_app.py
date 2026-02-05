@@ -2062,6 +2062,11 @@ else:
                             
                             # 2. [NEW] Kiểm tra hạn mức TTS
                             else:
+                                # [MỚI] KIỂM TRA ĐỘ DÀI KỊCH BẢN (TRÊN 700 TỪ)
+                                word_count_gemini = len(current_script_full.split())
+                                if word_count_gemini > 700:
+                                    st.warning(f"⚠️ Cảnh báo: Kịch bản dài {word_count_gemini} từ. Với văn bản trên 700 từ, giọng đọc Gemini có khả năng bị ngắt quãng giữa chừng.")
+
                                 is_enough, msg_or_count = check_tts_quota(user, current_script_full)
                                 if not is_enough:
                                     st.error(msg_or_count) # Hiện thông báo lỗi hết hạn mức
