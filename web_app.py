@@ -1897,69 +1897,79 @@ else:
 
                 # CASE 4: GIỌNG AI CHẤT LƯỢNG CAO
                 elif voice_method == "🤖 Giọng AI Gemini":
-                    st.markdown("##### 🔊 Chọn giọng đọc Gemini (Hà Nội)")
                     
-                    # 1. CHỈ CÒN CHỌN GIỌNG (Bỏ vùng miền)
-                    selected_voice_key = st.selectbox("🗣️ Chọn chất giọng:", list(GEMINI_STYLES.keys()))
+                    # [LOGIC MỚI] Kiểm tra xem đã có kịch bản chưa
+                    current_script_gemini = st.session_state.get('main_content_area', "")
                     
-                    # Mặc định vùng miền là Bắc (để tương thích logic cũ)
-                    selected_region = "Miền Bắc" 
-
-                    # 2. NGHE THỬ (SAMPLE)
-                    st.markdown("<div style='margin-bottom: 5px;'></div>", unsafe_allow_html=True)
-                    if st.button("▶️ Nghe thử (2 câu đầu)", use_container_width=True):
-                        # [FIX] Lấy nội dung kịch bản từ Session
-                        script_preview = st.session_state.get('main_content_area', "")
+                    # Nếu chưa có nội dung hoặc quá ngắn (< 5 ký tự) -> Hiện cảnh báo và DỪNG HIỂN THỊ
+                    if not current_script_gemini or len(current_script_gemini.strip()) < 5:
+                         st.warning("⚠️ Bạn chưa nhập kịch bản! Vui lòng quay lại Bước 1 viết nội dung trước khi tải file âm thanh.")
+                    
+                    else:
+                        # [NẾU ĐÃ CÓ KỊCH BẢN] -> Mới hiển thị các công cụ bên dưới
+                        st.markdown("##### 🔊 Chọn giọng đọc Gemini (Hà Nội)")
                         
-                        # [QUAN TRỌNG] Kiểm tra xem đã có nội dung chưa (ít nhất 5 ký tự)
-                        if not script_preview or len(script_preview.strip()) < 5:
-                            st.warning("⚠️ Bạn chưa nhập kịch bản! Vui lòng quay lại Bước 1 viết nội dung trước khi nghe thử.")
-                        else:
-                            # Chỉ chạy AI khi đã có nội dung
-                            with st.spinner(f"Đang tạo mẫu giọng {selected_voice_key}..."):
-                                sample_audio = tts_gemini(text=script_preview, voice_style_key=selected_voice_key, region="Miền Bắc", is_test=True)
-                                if sample_audio:
-                                    st.audio(sample_audio, format="audio/wav")
-                                else:
-                                    st.warning("Hệ thống đang bận, vui lòng thử lại.")
-
-                    st.markdown("---")
-                    
-                    # 3. TẠO GIỌNG ĐẦY ĐỦ (FULL) - THEO YÊU CẦU MỚI
-                    st.markdown("##### 💿 Bước quan trọng: Tạo file âm thanh")
-                    st.caption("Bạn phải bấm nút dưới đây để tạo file âm thanh đầy đủ cho toàn bộ kịch bản trước khi gửi.")
-                    
-                    # Kiểm tra xem đã có nội dung chưa
-                    current_script_full = st.session_state.get('main_content_area', "")
-                    
-                    if st.button("🎙️ TẠO GIỌNG ĐỌC ĐẦY ĐỦ (BẮT BUỘC)", type="primary", use_container_width=True):
-                        if not current_script_full or len(current_script_full.strip()) < 2:
-                            st.error("⚠️ Vui lòng nhập nội dung kịch bản ở Bước 1 trước!")
-                        else:
-                            with st.spinner(f"⏳ Đang xử lý toàn bộ kịch bản với giọng {selected_voice_key}... Vui lòng đợi!"):
-                                # Gọi hàm tạo full (is_test=False)
-                                # Hàm tts_gemini của bạn đã trả về Link Catbox (String)
-                                full_audio_link = tts_gemini(current_script_full, voice_style_key=selected_voice_key, region=selected_region, is_test=False)
-                                
-                                if full_audio_link:
-                                    # Lưu link vào session
-                                    st.session_state['gemini_full_audio_link'] = full_audio_link
-                                    # Lưu thông tin cài đặt để dùng sau này
-                                    st.session_state['gemini_voice_info'] = f"Gemini - {selected_region} - {selected_voice_key}"
-                                    st.success("✅ Đã tạo xong! Hãy nghe lại bên dưới.")
-                                else:
-                                    st.error("❌ Lỗi khi tạo giọng. Vui lòng thử lại!")
-
-                    # 4. HIỂN THỊ PLAYER ĐỂ NGHE LẠI VÀ CHUẨN BỊ GỬI
-                    if st.session_state.get('gemini_full_audio_link'):
-                        st.audio(st.session_state['gemini_full_audio_link'], format="audio/wav")
-                        st.info("👇 Âm thanh đã sẵn sàng. Bạn có thể bấm nút 'GỬI YÊU CẦU' dưới cùng ngay bây giờ!")
+                        # 1. CHỈ CÒN CHỌN GIỌNG (Bỏ vùng miền)
+                        selected_voice_key = st.selectbox("🗣️ Chọn chất giọng:", list(GEMINI_STYLES.keys()))
                         
-                        # Gán vào biến global để nút Gửi nhận diện được
-                        final_audio_link_to_send = st.session_state['gemini_full_audio_link']
+                        # Mặc định vùng miền là Bắc (để tương thích logic cũ)
+                        selected_region = "Miền Bắc" 
+
+                        # 2. NGHE THỬ (SAMPLE)
+                        st.markdown("<div style='margin-bottom: 5px;'></div>", unsafe_allow_html=True)
+                        if st.button("▶️ Nghe thử (2 câu đầu)", use_container_width=True):
+                            # [FIX] Lấy nội dung kịch bản từ Session
+                            script_preview = st.session_state.get('main_content_area', "")
+                            
+                            # [QUAN TRỌNG] Kiểm tra xem đã có nội dung chưa (ít nhất 5 ký tự)
+                            if not script_preview or len(script_preview.strip()) < 5:
+                                st.warning("⚠️ Bạn chưa nhập kịch bản! Vui lòng quay lại Bước 1 viết nội dung trước khi nghe thử.")
+                            else:
+                                # Chỉ chạy AI khi đã có nội dung
+                                with st.spinner(f"Đang tạo mẫu giọng {selected_voice_key}..."):
+                                    sample_audio = tts_gemini(text=script_preview, voice_style_key=selected_voice_key, region="Miền Bắc", is_test=True)
+                                    if sample_audio:
+                                        st.audio(sample_audio, format="audio/wav")
+                                    else:
+                                        st.warning("Hệ thống đang bận, vui lòng thử lại.")
+
+                        st.markdown("---")
                         
-                        # Đánh dấu cờ là AI để tắt lọc ồn
-                        st.session_state['chk_ai_upload_flag'] = True
+                        # 3. TẠO GIỌNG ĐẦY ĐỦ (FULL) - THEO YÊU CẦU MỚI
+                        st.markdown("##### 💿 Bước quan trọng: Tạo file âm thanh")
+                        st.caption("Bạn phải bấm nút dưới đây để tạo file âm thanh đầy đủ cho toàn bộ kịch bản trước khi gửi.")
+                        
+                        # Kiểm tra xem đã có nội dung chưa
+                        current_script_full = st.session_state.get('main_content_area', "")
+                        
+                        if st.button("🎙️ TẠO GIỌNG ĐỌC ĐẦY ĐỦ (BẮT BUỘC)", type="primary", use_container_width=True):
+                            if not current_script_full or len(current_script_full.strip()) < 2:
+                                st.error("⚠️ Vui lòng nhập nội dung kịch bản ở Bước 1 trước!")
+                            else:
+                                with st.spinner(f"⏳ Đang xử lý toàn bộ kịch bản với giọng {selected_voice_key}... Vui lòng đợi!"):
+                                    # Gọi hàm tạo full (is_test=False)
+                                    # Hàm tts_gemini của bạn đã trả về Link Catbox (String)
+                                    full_audio_link = tts_gemini(current_script_full, voice_style_key=selected_voice_key, region=selected_region, is_test=False)
+                                    
+                                    if full_audio_link:
+                                        # Lưu link vào session
+                                        st.session_state['gemini_full_audio_link'] = full_audio_link
+                                        # Lưu thông tin cài đặt để dùng sau này
+                                        st.session_state['gemini_voice_info'] = f"Gemini - {selected_region} - {selected_voice_key}"
+                                        st.success("✅ Đã tạo xong! Hãy nghe lại bên dưới.")
+                                    else:
+                                        st.error("❌ Lỗi khi tạo giọng. Vui lòng thử lại!")
+
+                        # 4. HIỂN THỊ PLAYER ĐỂ NGHE LẠI VÀ CHUẨN BỊ GỬI
+                        if st.session_state.get('gemini_full_audio_link'):
+                            st.audio(st.session_state['gemini_full_audio_link'], format="audio/wav")
+                            st.info("👇 Âm thanh đã sẵn sàng. Bạn có thể bấm nút 'GỬI YÊU CẦU' dưới cùng ngay bây giờ!")
+                            
+                            # Gán vào biến global để nút Gửi nhận diện được
+                            final_audio_link_to_send = st.session_state['gemini_full_audio_link']
+                            
+                            # Đánh dấu cờ là AI để tắt lọc ồn
+                            st.session_state['chk_ai_upload_flag'] = True
 
 
 
