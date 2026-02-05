@@ -2144,34 +2144,75 @@ else:
                                     full_audio_link = tts_gemini(current_script_full, voice_style_key=selected_voice_key, region=selected_region, is_test=False)
                                     
                                     if full_audio_link:
-                                        # Lưu link vào session
+                                        # 1. Tạo ID đơn hàng ngay lập tức
+                                        import random
+                                        now_vn = datetime.utcnow() + timedelta(hours=7)
+                                        order_id = now_vn.strftime("%Y%m%d_%H%M%S") + f"_{random.randint(100, 999)}"
+                                        
+                                        # 2. Lưu thông tin vào session
                                         st.session_state['gemini_full_audio_link'] = full_audio_link
                                         st.session_state['gemini_voice_info'] = f"Gemini - {selected_region} - {selected_voice_key}"
+                                        st.session_state['current_order_id'] = order_id # Lưu ID để tí nữa update
                                         
-                                        # Trừ hạn mức
+                                        # 3. Trừ hạn mức TTS (Ký tự đọc)
                                         new_usage = update_tts_usage_supabase(user['id'], msg_or_count)
                                         if new_usage:
                                             st.session_state['user_info']['tts_usage'] = new_usage
-                                            st.toast(f"Đã trừ {round(msg_or_count/1000, 2)} phút.", icon="📉")
-                                        
-                                        # [MỚI] Lưu ngay vào lịch sử để không mất khi F5
-                                        save_tts_log(user['email'], current_script_full, full_audio_link, f"Gemini - {selected_region} - {selected_voice_key}")
 
-                                        st.success("✅ Đã tạo xong! Hãy nghe lại bên dưới.")
+                                        # 4. TỰ ĐỘNG TẠO ĐƠN HÀNG NHÁP (Trạng thái mặc định)
+                                        order_data = {
+                                            "id": order_id,
+                                            "created_at": datetime.utcnow().isoformat(),
+                                            "email": user['email'],
+                                            "source": "Gemini AI",
+                                            "content": sanitize_input(current_script_full),
+                                            "audio_link": full_audio_link,
+                                            "status": "Có TTS Gemini", # Trạng thái mặc định như bạn yêu cầu
+                                            "result_link": "",
+                                            "settings": settings 
+                                        }
+                                        supabase.table('orders').insert(order_data).execute()
+
+                                        st.success("✅ Đã tạo xong và tự động lưu đơn hàng nháp!")
                                         time.sleep(1) 
                                         st.rerun()
                                     else:
                                         st.error("❌ Lỗi khi tạo giọng. Vui lòng thử lại!")
 
-                        # 4. HIỂN THỊ PLAYER ĐỂ NGHE LẠI VÀ CHUẨN BỊ GỬI
+                        # 4. HIỂN THỊ PLAYER & XÁC NHẬN TẠO VIDEO
                         if st.session_state.get('gemini_full_audio_link'):
                             st.audio(st.session_state['gemini_full_audio_link'], format="audio/wav")
-                            st.info("👇 Âm thanh đã sẵn sàng. Bạn có thể bấm nút 'GỬI YÊU CẦU' dưới cùng ngay bây giờ!")
                             
-                            # Gán vào biến global để nút Gửi nhận diện được
+                            st.markdown("""
+                                <div style="background-color: #E8F5E9; padding: 15px; border-radius: 10px; border: 1px solid #2E7D32; margin-top: 10px;">
+                                    <p style="color: #2E7D32; font-weight: bold; margin: 0;">🎉 Giọng nói đã sẵn sàng!</p>
+                                    <p style="color: #3E2723; margin: 5px 0;">Bạn có muốn bắt đầu tạo Video từ kịch bản này luôn không?</p>
+                                </div>
+                            """, unsafe_allow_html=True)
+
+                            col_confirm1, col_confirm2 = st.columns(2)
+                            
+                            with col_confirm1:
+                                if st.button("🚀 ĐỒNG Ý TẠO VIDEO", type="primary", use_container_width=True):
+                                    # Update trạng thái thành Pending để máy chủ bắt đầu làm video
+                                    order_id = st.session_state.get('current_order_id')
+                                    if order_id:
+                                        supabase.table('orders').update({"status": "Pending"}).eq('id', order_id).execute()
+                                        # Trừ Quota Video
+                                        update_user_usage_supabase(user['id'], user['quota_used'])
+                                        st.session_state['user_info']['quota_used'] += 1
+                                        st.success("✅ Đã xác nhận! Video đang được tạo.")
+                                        st.balloons()
+                                        time.sleep(2)
+                                        st.rerun()
+
+                            with col_confirm2:
+                                if st.button("💾 CHỈ LƯU GIỌNG NÓI", use_container_width=True):
+                                    # Trạng thái vẫn giữ nguyên là "Có TTS Gemini"
+                                    st.info("📂 Đã lưu vào lịch sử. Bạn có thể tạo video sau.")
+                            
+                            # Gán vào biến global để tương thích với các nút bấm khác (nếu cần)
                             final_audio_link_to_send = st.session_state['gemini_full_audio_link']
-                            
-                            # Đánh dấu cờ là AI để tắt lọc ồn
                             st.session_state['chk_ai_upload_flag'] = True
 
 
