@@ -1996,16 +1996,16 @@ else:
         # [SỬA] Thêm dòng này để hệ thống biết chọn Gemini là hợp lệ, không cần file trước
         elif voice_method == "🤖 Giọng AI Gemini":
             ready_to_send = True
-
-        # [NEW] CASE 3: Dùng giọng Gemini (Tự tạo)
-        elif voice_method == "🤖 Giọng AI Google":
-                    # Lấy thông tin từ session (đã lưu ở bước Nghe thử/Chốt)
-            if user.get('plan') in ['pro', 'huynhde']:
+            # [FIX LỖI] Cài đặt giới hạn từ ngay tại đây để tránh lỗi NameError
+            # Nếu gói Pro hoặc Huynh đệ/Đặc biệt thì được 1100 từ, thường 800 từ
+            if user.get('plan') in ['pro', 'huynhde', 'dacbiet']:
                 MAX_WORDS = 1100
             else:
                 MAX_WORDS = 800
+
+        # [NEW] CASE 3: Các trường hợp khác (Giọng Google cũ, Tự thu, Upload...)
         else:
-            # Các phương thức khác (Tự thu âm, Tải file lên, Dùng giọng có sẵn) cho phép đến 2000 từ
+            # Các phương thức khác cho phép đến 2000 từ
             MAX_WORDS = 2000
             
         if not noi_dung_gui:
