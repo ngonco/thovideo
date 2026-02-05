@@ -1801,19 +1801,27 @@ else:
     pass
 
     # [MỚI] Gom Bước 2 vào Expander
-    with st.expander("2️⃣ BƯỚC 2: CHUẨN BỊ GIỌNG ĐỌC & GỬI", expanded=True):
+    # Sửa expanded=False nếu bạn muốn mặc định nó đóng lại khi mới vào web
+    with st.expander("2️⃣ BƯỚC 2: CHUẨN BỊ GIỌNG ĐỌC & GỬI", expanded=False):
         
-        # [QUAN TRỌNG] LÙI ĐẦU DÒNG (Tab) toàn bộ code bên dưới vào trong
         # --- [FIX] KIỂM TRA LINK TRƯỚC KHI HIỂN THỊ ---
-        # Chỉ hiện tùy chọn "Giọng mẫu" nếu link đó thực sự tồn tại (Status 200)
         has_valid_audio = False
         if selected_library_audio and str(selected_library_audio).startswith("http"):
-            # Gọi hàm kiểm tra (có thể hơi chậm xíu nếu mạng yếu, nhưng đảm bảo chính xác)
             has_valid_audio = check_link_exists(selected_library_audio)
 
         # Tạo danh sách lựa chọn
-        # Tạo danh sách lựa chọn
         voice_options = ["🎙️ Thu âm trực tiếp", "📤 Tải file lên", "🤖 Giọng AI Gemini"]
+        
+        # Chỉ thêm lựa chọn này nếu file audio TỒN TẠI
+        if has_valid_audio: 
+            voice_options.insert(0, "🎵 Sử dụng giọng nói có sẵn")
+        
+        # Radio button này bây giờ đã nằm TRONG expander nhờ thụt đầu dòng
+        voice_method = st.radio("Chọn cách nhập giọng đọc:", 
+                                voice_options, 
+                                index=None,
+                                horizontal=True,
+                                key="radio_voice_method")
         
         # Chỉ thêm lựa chọn này nếu file audio TỒN TẠI
         if has_valid_audio: 
