@@ -91,8 +91,8 @@ def sanitize_input(text):
     # 2. Xóa các ký tự điều khiển nguy hiểm (Null bytes...)
     text = text.replace('\0', '')
     
-    # 3. Mã hóa HTML (Chống XSS)
-    return html.escape(text)
+    # 3. Mã hóa HTML (Chống XSS) - quote=False để GIỮ NGUYÊN dấu " cho kịch bản
+    return html.escape(text, quote=False)
 
 # --- [NEW] HÀM MẬT KHẨU AN TOÀN ---
 def hash_password(plain_text_password):
