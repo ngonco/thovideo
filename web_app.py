@@ -2199,12 +2199,13 @@ else:
                             
                             st.markdown("""
                                 <div style="background-color: #E8F5E9; padding: 15px; border-radius: 10px; border: 1px solid #2E7D32; margin-top: 10px;">
-                                    <p style="color: #2E7D32; font-weight: bold; margin: 0;">🎉 Giọng nói đã sẵn sàng!</p>
-                                    <p style="color: #3E2723; margin: 5px 0;">Bạn có muốn bắt đầu tạo Video từ kịch bản này luôn không?</p>
+                                    <p style="color: #2E7D32; font-weight: bold; margin: 0;">🎉 Giọng nói đã lưu vào danh sách Video!</p>
+                                    <p style="color: #3E2723; margin: 5px 0;">Bạn có muốn tạo Video này luôn không?</p>
                                 </div>
                             """, unsafe_allow_html=True)
 
-                            col_confirm1, col_confirm2 = st.columns(2)
+                            # Chia thành 3 cột để thêm nút Tạo lại
+                            col_confirm1, col_confirm2, col_confirm3 = st.columns(3)
                             
                             with col_confirm1:
                                 if st.button("🚀 ĐỒNG Ý TẠO VIDEO", type="primary", use_container_width=True):
@@ -2224,6 +2225,15 @@ else:
                                 if st.button("💾 CHỈ LƯU GIỌNG NÓI", use_container_width=True):
                                     # Trạng thái vẫn giữ nguyên là "Đã có giọng AI Gemini"
                                     st.info("📂 Đã lưu vào lịch sử. Bạn có thể tạo video sau.")
+
+                            with col_confirm3:
+                                if st.button("🔄 TẠO LẠI TTS", use_container_width=True):
+                                    # Xóa link audio cũ trong session để hiện lại nút tạo ban đầu
+                                    st.session_state['gemini_full_audio_link'] = None
+                                    st.session_state['current_order_id'] = None
+                                    st.toast("Đã sẵn sàng để tạo lại giọng mới!", icon="🔄")
+                                    time.sleep(0.5)
+                                    st.rerun()
                             
                             # Gán vào biến global để tương thích với các nút bấm khác (nếu cần)
                             final_audio_link_to_send = st.session_state['gemini_full_audio_link']
