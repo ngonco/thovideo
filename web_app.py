@@ -112,6 +112,41 @@ def update_user_usage_supabase(user_id, current_used):
     except Exception as e:
         print(f"Lỗi update quota: {e}")
 
+
+# --- [NEW] QUẢN LÝ GIỚI HẠN TTS GEMINI ---
+
+def check_tts_quota(user_data, text_to_speak):
+    """Kiểm tra xem user còn đủ hạn mức để đọc đoạn văn này không"""
+    if not text_to_speak: return True, 0
+    
+    # Tính số ký tự của đoạn văn
+    char_count = len(text_to_speak)
+    
+    # Lấy thông tin từ user (xử lý trường hợp chưa có cột trong DB cũ)
+    current_usage = user_data.get('tts_usage') or 0
+    max_limit = user_data.get('tts_limit') or 10000 # Mặc định 10k nếu lỗi
+    
+    if current_usage + char_count > max_limit:
+        remaining_chars = max_limit - current_usage
+        remaining_mins = round(remaining_chars / 1000, 1)
+        return False, f"⚠️ Bạn đã hết thời lượng AI. Còn lại: {max(0, remaining_mins)} phút. Đoạn văn này cần {round(char_count/1000, 1)} phút."
+    
+    return True, char_count
+
+def update_tts_usage_supabase(user_id, added_chars):
+    """Cộng dồn số ký tự đã dùng vào Database"""
+    try:
+        # Lấy số liệu mới nhất từ DB để cộng cho chính xác (tránh race condition)
+        res = supabase.table('users').select("tts_usage").eq('id', user_id).execute()
+        if res.data:
+            current_val = res.data[0]['tts_usage'] or 0
+            new_val = current_val + added_chars
+            supabase.table('users').update({"tts_usage": new_val}).eq('id', user_id).execute()
+            return new_val
+    except Exception as e:
+        print(f"Lỗi update TTS: {e}")
+    return None
+
 # --- [NEW] LƯU CÀI ĐẶT NGƯỜI DÙNG ---
 def save_user_settings_supabase(user_id, settings_dict):
     try:
@@ -141,6 +176,8 @@ def check_login(email, password):
                 # Đảm bảo các trường số liệu không bị None để tránh lỗi cộng trừ sau này
                 if user_data.get('quota_used') is None: user_data['quota_used'] = 0
                 if user_data.get('quota_max') is None: user_data['quota_max'] = 10
+                if user_data.get('tts_usage') is None: user_data['tts_usage'] = 0
+                if user_data.get('tts_limit') is None: user_data['tts_limit'] = 10000 # Mặc định Free 10 phút
                 
                 # [FIX] Thêm dòng này: Nếu không có stock_level thì mặc định là 1000 kết quả
                 if user_data.get('stock_level') is None: user_data['stock_level'] = 1000 
@@ -885,11 +922,18 @@ def admin_dashboard():
     
     # --- CẤU HÌNH CÁC GÓI CƯỚC CHUẨN (Dùng chung cho cả Tab 1 và Tab 3) ---
     # Tại đây quy định số video và mã code cho từng gói
+    # --- CẤU HÌNH GÓI CƯỚC & GIỚI HẠN TTS ---
+    # Quy ước: 1 phút giọng đọc ≈ 1000 ký tự (đã bao gồm khoảng nghỉ)
     PLAN_CONFIG = {
-            "Free (Miễn phí)":    {"quota_per_month": 10,  "code": "free"},
-            "Gói 30k (Cơ bản)":   {"quota_per_month": 30,  "code": "basic"},
-            "Gói 60k (Nâng cao)": {"quota_per_month": 60,  "code": "pro"},     # 60k = 60 video
-            "Gói huynh đệ":       {"quota_per_month": 60,  "code": "huynhde"} # Dùng chung cấu hình
+        "free":     {"name": "Free",     "video_quota": 10, "tts_chars": 10000},  # ~10 phút
+        "basic":    {"name": "Cơ bản",   "video_quota": 30, "tts_chars": 50000},  # ~50 phút
+        "pro":      {"name": "Nâng cao", "video_quota": 60, "tts_chars": 150000}, # ~150 phút
+        "huynhde":  {"name": "Huynh Đệ", "video_quota": 60, "tts_chars": 150000}, # ~150 phút
+    }
+    # Mapping tên hiển thị cũ sang code mới để tương thích ngược
+    PLAN_NAME_MAP = {
+        "Free (Miễn phí)": "free", "Gói 30k (Cơ bản)": "basic", 
+        "Gói 60k (Nâng cao)": "pro", "Gói huynh đệ": "huynhde"
     }
 
     with tab1:
@@ -1030,18 +1074,20 @@ def admin_dashboard():
             # 1. Chọn gói
             selected_plan_name = st.selectbox("Chọn gói muốn đổi:", list(PLAN_CONFIG.keys()), key="sb_admin_plan_select")
             
-            # 2. Lấy số video mặc định của gói đó ngay lập tức
+            # 2. Lấy số liệu mặc định của gói
             suggested_quota = PLAN_CONFIG[selected_plan_name]["quota_per_month"]
+            suggested_tts = PLAN_CONFIG[selected_plan_name]["tts_chars"]
             
-            # 3. Ô nhập số (Sẽ tự đổi giá trị value theo suggested_quota)
-            final_quota_edit = st.number_input("Tổng số video (Quota Max) - Có thể sửa tay", 
-                                             value=suggested_quota, 
-                                             min_value=0,
-                                             step=1)
+            # 3. Ô nhập số (Sẽ tự đổi giá trị value theo gói)
+            c_edit1, c_edit2 = st.columns(2)
+            with c_edit1:
+                final_quota_edit = st.number_input("Tổng Video (Quota Max)", value=suggested_quota, step=1)
+            with c_edit2:
+                final_tts_edit = st.number_input("Tổng TTS (Ký tự)", value=suggested_tts, step=1000)
             
             st.caption(f"ℹ️ Gói **{selected_plan_name}** tương ứng **{suggested_quota}** video.")
 
-            # Nút lưu (Dùng st.button thường thay vì form_submit_button)
+            # Nút lưu
             if st.button("💾 LƯU THAY ĐỔI NGAY", type="primary"):
                 try:
                     plan_code = PLAN_CONFIG[selected_plan_name]["code"]
@@ -1049,7 +1095,8 @@ def admin_dashboard():
                     # Cập nhật vào Supabase
                     supabase.table('users').update({
                         "plan": plan_code,
-                        "quota_max": final_quota_edit
+                        "quota_max": final_quota_edit,
+                        "tts_limit": final_tts_edit # [MỚI] Cập nhật TTS limit
                     }).eq('email', user_edit['email']).execute()
                     
                     st.success(f"✅ Đã cập nhật thành công cho {user_edit['email']}!")
@@ -1901,6 +1948,36 @@ else:
                 # CASE 4: GIỌNG AI CHẤT LƯỢNG CAO
                 elif voice_method == "🤖 Giọng AI Gemini":
                     
+                    # --- [NEW] HIỂN THỊ HẠN MỨC SỬ DỤNG ---
+                    # Lấy số liệu (xử lý None)
+                    u_usage = user.get('tts_usage', 0) or 0
+                    u_limit = user.get('tts_limit', 10000) or 10000
+                    
+                    # Quy đổi ra phút (1000 char = 1 min)
+                    min_used = round(u_usage / 1000, 1)
+                    min_total = round(u_limit / 1000, 1)
+                    min_left = max(0, min_total - min_used)
+                    
+                    # Tính phần trăm để vẽ thanh bar
+                    progress = min(u_usage / u_limit, 1.0) if u_limit > 0 else 1.0
+                    bar_color = "red" if progress > 0.9 else ("orange" if progress > 0.7 else "green")
+
+                    st.markdown(f"""
+                    <div style="margin-bottom: 15px; padding: 10px; border: 1px solid #D7CCC8; border-radius: 8px; background: #FFF8E1;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px; font-weight: bold; color: #5D4037;">
+                            <span>⏱️ Thời lượng AI Gemini</span>
+                            <span>Còn lại: {min_left} phút</span>
+                        </div>
+                        <div style="width: 100%; background-color: #E0E0E0; border-radius: 5px; height: 10px;">
+                            <div style="width: {progress*100}%; background-color: {bar_color}; height: 10px; border-radius: 5px;"></div>
+                        </div>
+                        <div style="text-align: right; font-size: 12px; color: #888; margin-top: 3px;">
+                            ({min_used}/{min_total} phút)
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    # ----------------------------------------
+
                     # [LOGIC MỚI] Kiểm tra xem đã có kịch bản chưa
                     current_script_gemini = st.session_state.get('main_content_area', "")
                     
@@ -1953,11 +2030,37 @@ else:
                         current_script_full = st.session_state.get('main_content_area', "")
                         
                         if st.button("🎙️ TẠO GIỌNG ĐỌC ĐẦY ĐỦ (BẮT BUỘC)", type="primary", use_container_width=True):
+                            # 1. Kiểm tra nội dung
                             if not current_script_full or len(current_script_full.strip()) < 2:
                                 st.error("⚠️ Vui lòng nhập nội dung kịch bản ở Bước 1 trước!")
+                            
+                            # 2. [NEW] Kiểm tra hạn mức TTS
                             else:
-                                with st.spinner(f"⏳ Đang xử lý toàn bộ kịch bản với giọng {selected_voice_key}... Vui lòng đợi!"):
-                                    # Gọi hàm tạo full (is_test=False)
+                                is_enough, msg_or_count = check_tts_quota(user, current_script_full)
+                                if not is_enough:
+                                    st.error(msg_or_count) # Hiện thông báo lỗi hết hạn mức
+                                else:
+                                    # Hạn mức OK -> Tiến hành tạo
+                                    with st.spinner(f"⏳ Đang xử lý ({round(msg_or_count/1000, 1)} phút)... Vui lòng đợi!"):
+                                        full_audio_link = tts_gemini(current_script_full, voice_style_key=selected_voice_key, region=selected_region, is_test=False)
+                                        
+                                        if full_audio_link:
+                                            # Lưu link vào session
+                                            st.session_state['gemini_full_audio_link'] = full_audio_link
+                                            st.session_state['gemini_voice_info'] = f"Gemini - {selected_region} - {selected_voice_key}"
+                                            
+                                            # 3. [NEW] TRỪ HẠN MỨC NGAY LẬP TỨC
+                                            new_usage = update_tts_usage_supabase(user['id'], msg_or_count)
+                                            if new_usage:
+                                                # Cập nhật session để thanh tiến trình nhảy ngay lập tức
+                                                st.session_state['user_info']['tts_usage'] = new_usage
+                                                st.toast(f"Đã trừ {round(msg_or_count/1000, 2)} phút vào tài khoản.", icon="📉")
+                                            
+                                            st.success("✅ Đã tạo xong! Hãy nghe lại bên dưới.")
+                                            time.sleep(1) # Đợi xíu cho UI cập nhật
+                                            st.rerun()
+                                        else:
+                                            st.error("❌ Lỗi khi tạo giọng. Vui lòng thử lại!")
                                     # Hàm tts_gemini của bạn đã trả về Link Catbox (String)
                                     full_audio_link = tts_gemini(current_script_full, voice_style_key=selected_voice_key, region=selected_region, is_test=False)
                                     
