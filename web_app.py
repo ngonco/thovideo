@@ -1796,14 +1796,14 @@ else:
                         # 1. HIỆN KỊCH BẢN ĐỂ ĐỌC
                         current_script = st.session_state.get('main_content_area', "")
                         
-                        if not current_script:
-                            # [ĐÃ SỬA] Dùng HTML tùy chỉnh để ép chữ màu Nâu, nền Vàng nhạt cho dễ đọc
-                            st.markdown("""
-                            <div style="background-color: #FFF9C4; color: #5D4037; padding: 15px; border-radius: 10px; border: 1px solid #FBC02D; margin-bottom: 20px; font-weight: bold;">
-                                ⚠️ Bạn chưa nhập nội dung ở Bước 1. Vui lòng quay lại nhập kịch bản trước khi thu!
-                            </div>
-                            """, unsafe_allow_html=True)
+                        # [LOGIC MỚI] Nếu chưa có kịch bản -> CHỈ HIỆN CẢNH BÁO VÀ DỪNG
+                        if not current_script or len(current_script.strip()) < 5:
+                            # Hiện cảnh báo đúng như yêu cầu
+                            st.warning("⚠️ Bạn chưa nhập kịch bản! Vui lòng quay lại Bước 1 viết nội dung trước khi tải file âm thanh.")
+                        
                         else:
+                            # NẾU ĐÃ CÓ KỊCH BẢN -> Mới hiện công cụ thu âm
+                            
                             # [ĐÃ SỬA] margin-bottom giảm từ 20px xuống 5px để sát lại gần nút thu âm
                             st.markdown(f"""
                             <div style="
@@ -1824,77 +1824,75 @@ else:
                             </div>
                             """, unsafe_allow_html=True)
 
-                        # [ĐÃ XÓA] Dòng st.markdown("---") ở đây để bỏ khoảng trống thừa
+                            # 2. BẢNG ĐIỀU KHIỂN THU ÂM
+                            has_recording = 'temp_record_file' in st.session_state and st.session_state['temp_record_file'] is not None
 
-                        # 2. BẢNG ĐIỀU KHIỂN THU ÂM
-                        has_recording = 'temp_record_file' in st.session_state and st.session_state['temp_record_file'] is not None
-
-                        if not has_recording:
-                            c1, c2 = st.columns([1, 1], vertical_alignment="center") # [MỚI] Căn giữa theo chiều dọc
-                            with c1:
-                                # [ĐÃ SỬA] Thêm thẻ <br> để xuống dòng và sửa số 3 thành 5 giây
-                                st.markdown("""
-                                <div style="
-                                    background-color: #E3F2FD; 
-                                    padding: 15px; 
-                                    border-radius: 8px; 
-                                    color: #0D47A1; 
-                                    font-size: 20px; 
-                                    text-align: center;
-                                    border: 1px solid #90CAF9;
-                                    line-height: 1.4;
-                                ">
-                                    💡 Giữ im lặng 5 giây đầu<br>để lọc ồn tốt hơn.
-                                </div>
-                                """, unsafe_allow_html=True)
-                            
-                            with c2:
-                                # [CẬP NHẬT] Thêm hướng dẫn vào nút bấm
-                                audio_data = mic_recorder(
-                                    start_prompt="🔴 BẮT ĐẦU THU ",
-                                    stop_prompt="⏹️ KẾT THÚC THU)",
-                                    just_once=True, 
-                                    use_container_width=True,
-                                    format="wav", 
-                                    key="new_mic_recorder_v3"
-                                )
+                            if not has_recording:
+                                c1, c2 = st.columns([1, 1], vertical_alignment="center") # [MỚI] Căn giữa theo chiều dọc
+                                with c1:
+                                    # [ĐÃ SỬA] Thêm thẻ <br> để xuống dòng và sửa số 3 thành 5 giây
+                                    st.markdown("""
+                                    <div style="
+                                        background-color: #E3F2FD; 
+                                        padding: 15px; 
+                                        border-radius: 8px; 
+                                        color: #0D47A1; 
+                                        font-size: 20px; 
+                                        text-align: center;
+                                        border: 1px solid #90CAF9;
+                                        line-height: 1.4;
+                                    ">
+                                        💡 Giữ im lặng 5 giây đầu<br>để lọc ồn tốt hơn.
+                                    </div>
+                                    """, unsafe_allow_html=True)
                                 
-                                if audio_data:
-                                    # [QUAN TRỌNG] Hiện vòng quay xử lý ngay lập tức để người dùng không bấm lung tung
-                                    with st.spinner("💾 Đang lưu file... Vui lòng KHÔNG bấm gì thêm!"):
-                                        raw_bytes = audio_data['bytes']
-                                        # Kiểm tra: Nếu file > 20MB (khoảng 20 phút) thì từ chối
-                                        if len(raw_bytes) > 20 * 1024 * 1024:
-                                            st.error("⚠️ File ghi âm quá dài (>20MB). Vui lòng thu ngắn hơn!")
-                                        else:
-                                            st.session_state['temp_record_file'] = raw_bytes
-                                        st.session_state['temp_record_name'] = f"record_{datetime.now().strftime('%H%M%S')}.wav"
-                                        
-                                        # Ngủ nhẹ 1 giây để đảm bảo session kịp cập nhật trước khi reload trang
-                                        time.sleep(1) 
+                                with c2:
+                                    # [CẬP NHẬT] Thêm hướng dẫn vào nút bấm
+                                    audio_data = mic_recorder(
+                                        start_prompt="🔴 BẮT ĐẦU THU ",
+                                        stop_prompt="⏹️ KẾT THÚC THU)",
+                                        just_once=True, 
+                                        use_container_width=True,
+                                        format="wav", 
+                                        key="new_mic_recorder_v3"
+                                    )
+                                    
+                                    if audio_data:
+                                        # [QUAN TRỌNG] Hiện vòng quay xử lý ngay lập tức để người dùng không bấm lung tung
+                                        with st.spinner("💾 Đang lưu file... Vui lòng KHÔNG bấm gì thêm!"):
+                                            raw_bytes = audio_data['bytes']
+                                            # Kiểm tra: Nếu file > 20MB (khoảng 20 phút) thì từ chối
+                                            if len(raw_bytes) > 20 * 1024 * 1024:
+                                                st.error("⚠️ File ghi âm quá dài (>20MB). Vui lòng thu ngắn hơn!")
+                                            else:
+                                                st.session_state['temp_record_file'] = raw_bytes
+                                            st.session_state['temp_record_name'] = f"record_{datetime.now().strftime('%H%M%S')}.wav"
+                                            
+                                            # Ngủ nhẹ 1 giây để đảm bảo session kịp cập nhật trước khi reload trang
+                                            time.sleep(1) 
+                                            st.rerun()
+                            else:
+                                # Giao diện sau khi thu xong
+                                st.success("✅ Đã thu xong! Hãy nghe lại bên dưới:")
+                                st.audio(st.session_state['temp_record_file'], format="audio/wav")
+                                
+                                col_act1, col_act2 = st.columns(2)
+                                with col_act1:
+                                    if st.button("🔄 Thu lại từ đầu", use_container_width=True, type="secondary"):
+                                        st.session_state['temp_record_file'] = None
                                         st.rerun()
-                        else:
-                            # Giao diện sau khi thu xong
-                            st.success("✅ Đã thu xong! Hãy nghe lại bên dưới:")
-                            st.audio(st.session_state['temp_record_file'], format="audio/wav")
-                            
-                            col_act1, col_act2 = st.columns(2)
-                            with col_act1:
-                                if st.button("🔄 Thu lại từ đầu", use_container_width=True, type="secondary"):
-                                    st.session_state['temp_record_file'] = None
-                                    st.rerun()
-                            with col_act2:
-                                st.markdown("""
-                                <div style="
-                                    text-align: center; 
-                                    font-weight: bold; 
-                                    color: #2E7D32; 
-                                    padding: 8px; 
-                                    border: 1px dashed #2E7D32; 
-                                    border-radius: 5px;">
-                                    Nếu hài lòng, bấm GỬI TẠO VIDEO bên dưới!
-                                </div>
-                                """, unsafe_allow_html=True)
+                                with col_act2:
+                                    st.markdown("""
+                                    <div style="
+                                        text-align: center; 
+                                        font-weight: bold; 
+                                        color: #2E7D32; 
+                                        padding: 8px; 
+                                        border: 1px dashed #2E7D32; 
+                                        border-radius: 5px;">
+                                        Nếu hài lòng, bấm GỬI TẠO VIDEO bên dưới!
+                                    </div>
+                                    """, unsafe_allow_html=True)
                 
 
                 # CASE 4: GIỌNG AI CHẤT LƯỢNG CAO
