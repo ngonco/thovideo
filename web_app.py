@@ -1639,6 +1639,20 @@ else:
         # [ĐÃ SỬA] Đổi expanded=False để mặc định đóng lại
     with st.expander("1️⃣ BƯỚC 1: CHUẨN BỊ KỊCH BẢN", expanded=False):
             
+            # [FIX] Ép kiểu dữ liệu về Python chuẩn (int/float/str) để tránh lỗi API 500 do Numpy
+            settings = {
+                "clean_audio": bool(st.session_state.s_clean), 
+                "voice_vol": float(st.session_state.s_voice),
+                "music_vol": float(st.session_state.s_music), 
+                "font_name": str(st.session_state.s_font),
+                "font_size": int(st.session_state.s_size), 
+                "text_color": str(st.session_state.s_color),
+                "outline_color": str(st.session_state.s_outline), 
+                "border_width": int(st.session_state.s_border),
+                "margin_v": int(st.session_state.s_margin), 
+                "offset_x": int(st.session_state.s_offset)
+            }
+            
             # [ĐÃ SỬA] Thêm label_visibility="collapsed" để ẩn dòng chữ tiêu đề
             source_opt = st.radio("Chọn nguồn kịch bản:",
                             ["📂 Tìm trong Thư viện", "✍️ Tự viết mới"], 
@@ -2274,19 +2288,7 @@ else:
                     # Cập nhật lại session để không bị load đè dữ liệu cũ
                     st.session_state['user_info']['settings'] = current_settings
     
-    # [FIX] Ép kiểu dữ liệu về Python chuẩn (int/float/str) để tránh lỗi API 500 do Numpy
-    settings = {
-        "clean_audio": bool(st.session_state.s_clean), 
-        "voice_vol": float(st.session_state.s_voice),
-        "music_vol": float(st.session_state.s_music), 
-        "font_name": str(st.session_state.s_font),
-        "font_size": int(st.session_state.s_size), 
-        "text_color": str(st.session_state.s_color),
-        "outline_color": str(st.session_state.s_outline), 
-        "border_width": int(st.session_state.s_border),
-        "margin_v": int(st.session_state.s_margin), 
-        "offset_x": int(st.session_state.s_offset)
-    }
+    
 
     # --- NÚT GỬI (ĐÃ SỬA ĐỂ CHECK QUOTA) ---
     result_container = st.container()
