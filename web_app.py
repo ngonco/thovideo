@@ -280,31 +280,6 @@ def auto_save_callback():
         # Hiện thông báo nhỏ góc dưới (Toast) để người dùng yên tâm
         st.toast("Đã tự động lưu nháp! ✅")
 
-# --- [NEW] AUTO-SAVE CHO BƯỚC 2 (Lưu cấu hình giọng đọc) ---
-def auto_save_step2_config():
-    if 'user_info' in st.session_state and st.session_state['user_info']:
-        user = st.session_state['user_info']
-        
-        # Lấy các giá trị đang chọn từ Session
-        # Lưu ý: Dùng .get() để tránh lỗi nếu widget chưa khởi tạo
-        method = st.session_state.get("radio_voice_method")
-        gemini_voice = st.session_state.get("sb_gemini_voice_key") 
-        
-        # Lấy setting hiện tại (để không ghi đè mất cài đặt font chữ)
-        current_settings = user.get('settings') or {}
-        
-        # Cập nhật thêm thông tin Bước 2
-        current_settings.update({
-            "last_voice_method": method,
-            "last_gemini_voice": gemini_voice
-        })
-        
-        # Lưu vào Supabase
-        save_user_settings_supabase(user['id'], current_settings)
-        
-        # Cập nhật lại session ngay lập tức để đồng bộ
-        st.session_state['user_info']['settings'] = current_settings
-
 # --- [UPDATE] HÀM LẤY LỊCH SỬ TỪ SHEET ORDERS ---
 # [ĐÃ SỬA] Thêm Cache để không gọi API liên tục (ttl=300 nghĩa là lưu cache 300 giây/5 phút)
 # Sửa st.cache_data thành st.cache (để chạy được trên server cũ)
@@ -1485,15 +1460,6 @@ else:
     # ==========================================
     user = st.session_state['user_info']
 
-    # --- [MỚI] AUTO-RESTORE: TỰ ĐỘNG KHÔI PHỤC BẢN NHÁP KHI F5 ---
-    # Logic: Nếu trong session chưa có nội dung (do vừa F5), hãy tìm trong DB
-    if 'draft_restored' not in st.session_state:
-        saved_draft = load_draft_from_supabase(user['email'])
-        if saved_draft and len(saved_draft) > 0:
-            st.session_state['main_content_area'] = saved_draft
-            st.toast("Đã khôi phục bài viết đang dở! 📂", icon="magic")
-        st.session_state['draft_restored'] = True # Đánh dấu đã khôi phục để không load lại liên tục
-
     # --- [NEW] NÚT HỖ TRỢ KỸ THUẬT (FLOATING BAR - GÓC DƯỚI TRÁI) ---
     st.markdown("""
         <a href="https://zalo.me/g/ivgedj736" target="_blank" rel="noopener noreferrer" style="text-decoration: none;">
@@ -1706,11 +1672,10 @@ else:
                 # [ĐÃ SỬA] Cố định chiều cao khung nhập liệu (Bạn có thể sửa số 450 thành số khác tùy ý)
                 FIXED_HEIGHT = 450 
                 
-                # [NÂNG CẤP] Thêm on_change=auto_save_callback để TỰ ĐỘNG LƯU khi gõ xong
+                # Text Area - [ĐÃ SỬA LỖI WARNING] Bỏ tham số 'value' để tránh xung đột với key
                 noi_dung_gui = st.text_area("", height=FIXED_HEIGHT, 
                                             placeholder="Nội dung kịch bản sẽ hiện ở đây...", 
-                                            key="main_content_area",
-                                            on_change=auto_save_callback)
+                                            key="main_content_area")
                 
                 # [CHỈNH SỬA] Chỉ hiện các nút Nháp khi đang ở chế độ "Tự viết mới"
                 if source_opt == "✍️ Tự viết mới":
@@ -1823,23 +1788,14 @@ else:
                 </style>
             """, unsafe_allow_html=True)
 
-            # [LOGIC MỚI] 1. Khôi phục lựa chọn cũ từ Settings
-            saved_method = user.get('settings', {}).get('last_voice_method')
-            default_method_idx = None
-            
-            # Tìm xem lựa chọn cũ nằm ở vị trí nào trong danh sách
-            if saved_method in all_options.values():
-                default_method_idx = list(all_options.values()).index(saved_method)
-
-            # [LOGIC MỚI] 2. Thêm on_change để lưu ngay lập tức
+            # [ĐÃ SỬA] Thêm label_visibility="collapsed" để ẩn dòng chữ tiêu đề
             voice_method = st.radio(
                 "**Chọn cách nhập giọng đọc:**",
                 options=list(all_options.values()),
-                index=default_method_idx, # <--- Điền lại lựa chọn cũ
+                index=None,
                 horizontal=True,
                 label_visibility="collapsed",
-                key="radio_voice_method",
-                on_change=auto_save_step2_config # <--- Gọi hàm lưu khi đổi
+                key="radio_voice_method"
             )
             
             final_audio_link_to_send = None 
@@ -2098,22 +2054,8 @@ else:
                         # [NẾU ĐÃ CÓ KỊCH BẢN] -> Mới hiển thị các công cụ bên dưới
                         st.markdown("##### 🔊 Chọn giọng đọc Gemini (Hà Nội)")
                         
-                        # [LOGIC MỚI] Khôi phục giọng cũ
-                        saved_voice = user.get('settings', {}).get('last_gemini_voice')
-                        voice_idx = 0
-                        
-                        # Tìm vị trí giọng cũ
-                        if saved_voice in list(GEMINI_STYLES.keys()):
-                            voice_idx = list(GEMINI_STYLES.keys()).index(saved_voice)
-
-                        # 1. CHỈ CÒN CHỌN GIỌNG (Bỏ vùng miền) - Thêm key và on_change
-                        selected_voice_key = st.selectbox(
-                            "🗣️ Chọn chất giọng:", 
-                            list(GEMINI_STYLES.keys()),
-                            index=voice_idx, # <--- Chọn lại giọng cũ
-                            key="sb_gemini_voice_key",
-                            on_change=auto_save_step2_config # <--- Lưu ngay khi đổi giọng
-                        )
+                        # 1. CHỈ CÒN CHỌN GIỌNG (Bỏ vùng miền)
+                        selected_voice_key = st.selectbox("🗣️ Chọn chất giọng:", list(GEMINI_STYLES.keys()))
                         
                         # Mặc định vùng miền là Bắc (để tương thích logic cũ)
                         selected_region = "Miền Bắc" 
@@ -2447,15 +2389,6 @@ else:
                 is_working_time = False
                 if 7 <= cur_hour < 23:
                     is_working_time = True
-
-                # --- [MỚI] XÓA BẢN NHÁP VÌ ĐÃ GỬI THÀNH CÔNG ---
-                try:
-                    # Xóa trong Database
-                    supabase.table('drafts').delete().eq('email', user['email']).execute()
-                    # Xóa trong Session để làm sạch ô nhập liệu
-                    st.session_state['main_content_area'] = ""
-                except Exception as e:
-                    print(f"Lỗi xóa nháp: {e}")
 
                 if is_working_time:
                     st.success(f"✅ ĐÃ GỬI THÀNH CÔNG! Mã đơn: {order_id}. Vui lòng đợi 5 phút.")
