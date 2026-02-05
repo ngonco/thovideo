@@ -1801,270 +1801,262 @@ else:
     pass
 
     # [MỚI] Gom Bước 2 vào Expander
-    # Sửa expanded=False nếu bạn muốn mặc định nó đóng lại khi mới vào web
-    with st.expander("2️⃣ BƯỚC 2: CHUẨN BỊ GIỌNG ĐỌC & GỬI", expanded=False):
+    with st.expander("2️⃣ BƯỚC 2: CHUẨN BỊ GIỌNG ĐỌC & GỬI", expanded=True):
         
-        # --- [FIX] KIỂM TRA LINK TRƯỚC KHI HIỂN THỊ ---
-        has_valid_audio = False
-        if selected_library_audio and str(selected_library_audio).startswith("http"):
-            has_valid_audio = check_link_exists(selected_library_audio)
+            # [QUAN TRỌNG] LÙI ĐẦU DÒNG (Tab) toàn bộ code bên dưới vào trong
+            # --- [FIX] KIỂM TRA LINK TRƯỚC KHI HIỂN THỊ ---
+            # Chỉ hiện tùy chọn "Giọng mẫu" nếu link đó thực sự tồn tại (Status 200)
+            has_valid_audio = False
+            if selected_library_audio and str(selected_library_audio).startswith("http"):
+                # Gọi hàm kiểm tra (có thể hơi chậm xíu nếu mạng yếu, nhưng đảm bảo chính xác)
+                has_valid_audio = check_link_exists(selected_library_audio)
 
-        # Tạo danh sách lựa chọn
-        voice_options = ["🎙️ Thu âm trực tiếp", "📤 Tải file lên", "🤖 Giọng AI Gemini"]
-        
-        # Chỉ thêm lựa chọn này nếu file audio TỒN TẠI
-        if has_valid_audio: 
-            voice_options.insert(0, "🎵 Sử dụng giọng nói có sẵn")
-        
-        # Radio button này bây giờ đã nằm TRONG expander nhờ thụt đầu dòng
-        voice_method = st.radio("Chọn cách nhập giọng đọc:", 
-                                voice_options, 
-                                index=None,
-                                horizontal=True,
-                                key="radio_voice_method")
-        
-        # Chỉ thêm lựa chọn này nếu file audio TỒN TẠI
-        if has_valid_audio: 
-            voice_options.insert(0, "🎵 Sử dụng giọng nói có sẵn")
-        
-        # [UX] Nếu có giọng mẫu xịn -> Chọn nó (index 0). 
-        # Nếu không có -> Mặc định chọn cái đầu tiên còn lại (Thu âm) để không bị lỗi UI
-        default_index = None
-
-        voice_method = st.radio("Chọn cách nhập giọng đọc:", 
-                                voice_options, 
-                                index=default_index,  # <-- Sửa chỗ này
-                                horizontal=True,
-                                key="radio_voice_method")
-        
-        final_audio_link_to_send = None 
-        
-        # CHỈ HIỆN CÔNG CỤ KHI ĐÃ CHỌN RADIO
-        if voice_method:
-            st.markdown("---") # Đường kẻ ngăn cách nhẹ cho đẹp
+            # Tạo danh sách lựa chọn
+            # Tạo danh sách lựa chọn
+            voice_options = ["🎙️ Thu âm trực tiếp", "📤 Tải file lên", "🤖 Giọng AI Gemini"]
             
-            # CASE 1: DÙNG GIỌNG MẪU
-            if voice_method == "🎵 Sử dụng giọng nói có sẵn":
-                # [FIX] Đã kiểm tra link ở trên rồi, nên ở đây cứ thế mà hiện Player thôi
-                st.info("✅ Đang sử dụng giọng đọc từ kho.")
+            # Chỉ thêm lựa chọn này nếu file audio TỒN TẠI
+            if has_valid_audio: 
+                voice_options.insert(0, "🎵 Sử dụng giọng nói có sẵn")
+            
+            # [UX] Nếu có giọng mẫu xịn -> Chọn nó (index 0). 
+            # Nếu không có -> Mặc định chọn cái đầu tiên còn lại (Thu âm) để không bị lỗi UI
+            default_index = None
+
+            voice_method = st.radio("Chọn cách nhập giọng đọc:", 
+                                    voice_options, 
+                                    index=default_index,  # <-- Sửa chỗ này
+                                    horizontal=True,
+                                    key="radio_voice_method")
+            
+            final_audio_link_to_send = None 
+            
+            # CHỈ HIỆN CÔNG CỤ KHI ĐÃ CHỌN RADIO
+            if voice_method:
+                st.markdown("---") # Đường kẻ ngăn cách nhẹ cho đẹp
                 
-                # Buộc hiển thị Audio Player
-                st.audio(selected_library_audio, format="audio/mp3")
-                
-                # Gán link để gửi đi
-                final_audio_link_to_send = selected_library_audio
+                # CASE 1: DÙNG GIỌNG MẪU
+                if voice_method == "🎵 Sử dụng giọng nói có sẵn":
+                    # [FIX] Đã kiểm tra link ở trên rồi, nên ở đây cứ thế mà hiện Player thôi
+                    st.info("✅ Đang sử dụng giọng đọc từ kho.")
                     
-            # CASE 2: UPLOAD FILE
-            elif voice_method == "📤 Tải file lên":
-                st.markdown("<b>Chọn file ghi âm từ máy của bạn (mp3, wav, m4a):</b>", unsafe_allow_html=True)
-                
-                # [CẬP NHẬT] Thêm dòng nhắc nhở kích thước ngay trên nút upload
-                st.caption("⚠️ Lưu ý: Dung lượng tối đa 10MB/file")
-                uploaded_file = st.file_uploader("", type=['mp3', 'wav', 'm4a'], label_visibility="collapsed")
-                
-                # [MỚI] Thêm ô tick chọn giọng AI
-                st.markdown("<div style='margin-top: 5px;'></div>", unsafe_allow_html=True)
-                is_ai_checked = st.checkbox("NHỚ TÍCH CHỌN NẾU UPLOAD GIỌNG AI", 
-                                        help="Tích vào đây nếu file này tạo từ AI (ElevenLabs, Vbee...) để hệ thống KHÔNG lọc ồn, tránh làm méo giọng.",
-                                        key="chk_ai_upload_flag")
-
-                if uploaded_file:
-                    # [BẢO MẬT] Cấu hình giới hạn
-                    MAX_MB = 10
-                    MAX_FILE_SIZE = MAX_MB * 1024 * 1024 # 10MB đổi ra bytes
-                    VALID_EXTS = ['mp3', 'wav', 'm4a', 'ogg', 'aac'] 
+                    # Buộc hiển thị Audio Player
+                    st.audio(selected_library_audio, format="audio/mp3")
                     
-                    # [QUAN TRỌNG] Kiểm tra kích thước NGAY LẬP TỨC
-                    if uploaded_file.size > MAX_FILE_SIZE:
-                        current_mb = uploaded_file.size / (1024 * 1024)
-                        st.error(f"❌ File quá lớn ({current_mb:.2f} MB). Hệ thống chỉ nhận file dưới {MAX_MB} MB.")
-                        st.session_state['temp_upload_file'] = None
-                        # [LỆNH MỚI] Dừng code tại đây, không cho chạy tiếp các đoạn xử lý phía sau
-                        st.stop()
-
-                    # Lấy đuôi file
-                    file_ext = uploaded_file.name.split('.')[-1].lower() if '.' in uploaded_file.name else ''
-
-                    # 1. Kiểm tra loại file
-                    if file_ext not in VALID_EXTS:
-                        st.error(f"❌ Định dạng '{file_ext}' không hợp lệ! Chỉ chấp nhận: mp3, wav, m4a")
-                        st.session_state['temp_upload_file'] = None
-                        st.stop()
+                    # Gán link để gửi đi
+                    final_audio_link_to_send = selected_library_audio
+                        
+                # CASE 2: UPLOAD FILE
+                elif voice_method == "📤 Tải file lên":
+                    st.markdown("<b>Chọn file ghi âm từ máy của bạn (mp3, wav, m4a):</b>", unsafe_allow_html=True)
                     
-                    # 2. Hợp lệ -> Lưu vào session
-                    st.session_state['temp_upload_file'] = uploaded_file
-                    st.session_state['temp_upload_name'] = uploaded_file.name
-                    st.success(f"✅ Đã nhận file: {uploaded_file.name} ({uploaded_file.size / (1024*1024):.2f} MB)")
-
-            # CASE 3: THU ÂM TRỰC TIẾP (GIAO DIỆN MÁY NHẮC CHỮ - ĐÃ SỬA KHOẢNG CÁCH)
-            elif voice_method == "🎙️ Thu âm trực tiếp": 
-                
-                # Tạo một khung chứa riêng biệt
-                with st.container(border=True):
-                    st.markdown("<h3 style='text-align: center; color: #D32F2F; margin-bottom: 15px;'>🎙️ PHÒNG THU ÂM</h3>", unsafe_allow_html=True)
+                    # [CẬP NHẬT] Thêm dòng nhắc nhở kích thước ngay trên nút upload
+                    st.caption("⚠️ Lưu ý: Dung lượng tối đa 10MB/file")
+                    uploaded_file = st.file_uploader("", type=['mp3', 'wav', 'm4a'], label_visibility="collapsed")
                     
-                    # 1. HIỆN KỊCH BẢN ĐỂ ĐỌC
-                    current_script = st.session_state.get('main_content_area', "")
+                    # [MỚI] Thêm ô tick chọn giọng AI
+                    st.markdown("<div style='margin-top: 5px;'></div>", unsafe_allow_html=True)
+                    is_ai_checked = st.checkbox("NHỚ TÍCH CHỌN NẾU UPLOAD GIỌNG AI", 
+                                            help="Tích vào đây nếu file này tạo từ AI (ElevenLabs, Vbee...) để hệ thống KHÔNG lọc ồn, tránh làm méo giọng.",
+                                            key="chk_ai_upload_flag")
+
+                    if uploaded_file:
+                        # [BẢO MẬT] Cấu hình giới hạn
+                        MAX_MB = 10
+                        MAX_FILE_SIZE = MAX_MB * 1024 * 1024 # 10MB đổi ra bytes
+                        VALID_EXTS = ['mp3', 'wav', 'm4a', 'ogg', 'aac'] 
+                        
+                        # [QUAN TRỌNG] Kiểm tra kích thước NGAY LẬP TỨC
+                        if uploaded_file.size > MAX_FILE_SIZE:
+                            current_mb = uploaded_file.size / (1024 * 1024)
+                            st.error(f"❌ File quá lớn ({current_mb:.2f} MB). Hệ thống chỉ nhận file dưới {MAX_MB} MB.")
+                            st.session_state['temp_upload_file'] = None
+                            # [LỆNH MỚI] Dừng code tại đây, không cho chạy tiếp các đoạn xử lý phía sau
+                            st.stop()
+
+                        # Lấy đuôi file
+                        file_ext = uploaded_file.name.split('.')[-1].lower() if '.' in uploaded_file.name else ''
+
+                        # 1. Kiểm tra loại file
+                        if file_ext not in VALID_EXTS:
+                            st.error(f"❌ Định dạng '{file_ext}' không hợp lệ! Chỉ chấp nhận: mp3, wav, m4a")
+                            st.session_state['temp_upload_file'] = None
+                            st.stop()
+                        
+                        # 2. Hợp lệ -> Lưu vào session
+                        st.session_state['temp_upload_file'] = uploaded_file
+                        st.session_state['temp_upload_name'] = uploaded_file.name
+                        st.success(f"✅ Đã nhận file: {uploaded_file.name} ({uploaded_file.size / (1024*1024):.2f} MB)")
+
+                # CASE 3: THU ÂM TRỰC TIẾP (GIAO DIỆN MÁY NHẮC CHỮ - ĐÃ SỬA KHOẢNG CÁCH)
+                elif voice_method == "🎙️ Thu âm trực tiếp": 
                     
-                    if not current_script:
-                        # [ĐÃ SỬA] Dùng HTML tùy chỉnh để ép chữ màu Nâu, nền Vàng nhạt cho dễ đọc
-                        st.markdown("""
-                        <div style="background-color: #FFF9C4; color: #5D4037; padding: 15px; border-radius: 10px; border: 1px solid #FBC02D; margin-bottom: 20px; font-weight: bold;">
-                            ⚠️ Bạn chưa nhập nội dung ở Bước 1. Vui lòng quay lại nhập kịch bản trước khi thu!
-                        </div>
-                        """, unsafe_allow_html=True)
-                    else:
-                        # [ĐÃ SỬA] margin-bottom giảm từ 20px xuống 5px để sát lại gần nút thu âm
-                        st.markdown(f"""
-                        <div style="
-                            background-color: #fff; 
-                            color: #000; 
-                            padding: 20px; 
-                            border-radius: 10px; 
-                            border: 2px solid #5D4037; 
-                            font-size: 22px; 
-                            line-height: 1.6; 
-                            max-height: 400px; 
-                            overflow-y: auto; 
-                            margin-bottom: 10px; 
-                            box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
-                        ">
-                            <b>📝 Kịch bản cần đọc:</b><br><br>
-                            {current_script.replace(chr(10), '<br>')}
-                        </div>
-                        """, unsafe_allow_html=True)
-
-                    # [ĐÃ XÓA] Dòng st.markdown("---") ở đây để bỏ khoảng trống thừa
-
-                    # 2. BẢNG ĐIỀU KHIỂN THU ÂM
-                    has_recording = 'temp_record_file' in st.session_state and st.session_state['temp_record_file'] is not None
-
-                    if not has_recording:
-                        c1, c2 = st.columns([1, 1], vertical_alignment="center") # [MỚI] Căn giữa theo chiều dọc
-                        with c1:
-                            # [ĐÃ SỬA] Thêm thẻ <br> để xuống dòng và sửa số 3 thành 5 giây
+                    # Tạo một khung chứa riêng biệt
+                    with st.container(border=True):
+                        st.markdown("<h3 style='text-align: center; color: #D32F2F; margin-bottom: 15px;'>🎙️ PHÒNG THU ÂM</h3>", unsafe_allow_html=True)
+                        
+                        # 1. HIỆN KỊCH BẢN ĐỂ ĐỌC
+                        current_script = st.session_state.get('main_content_area', "")
+                        
+                        if not current_script:
+                            # [ĐÃ SỬA] Dùng HTML tùy chỉnh để ép chữ màu Nâu, nền Vàng nhạt cho dễ đọc
                             st.markdown("""
-                            <div style="
-                                background-color: #E3F2FD; 
-                                padding: 15px; 
-                                border-radius: 8px; 
-                                color: #0D47A1; 
-                                font-size: 20px; 
-                                text-align: center;
-                                border: 1px solid #90CAF9;
-                                line-height: 1.4;
-                            ">
-                                💡 Giữ im lặng 5 giây đầu<br>để lọc ồn tốt hơn.
+                            <div style="background-color: #FFF9C4; color: #5D4037; padding: 15px; border-radius: 10px; border: 1px solid #FBC02D; margin-bottom: 20px; font-weight: bold;">
+                                ⚠️ Bạn chưa nhập nội dung ở Bước 1. Vui lòng quay lại nhập kịch bản trước khi thu!
                             </div>
                             """, unsafe_allow_html=True)
-                        
-                        with c2:
-                            # [CẬP NHẬT] Thêm hướng dẫn vào nút bấm
-                            audio_data = mic_recorder(
-                                start_prompt="🔴 BẮT ĐẦU THU ",
-                                stop_prompt="⏹️ KẾT THÚC THU)",
-                                just_once=True, 
-                                use_container_width=True,
-                                format="wav", 
-                                key="new_mic_recorder_v3"
-                            )
-                            
-                            if audio_data:
-                                # [QUAN TRỌNG] Hiện vòng quay xử lý ngay lập tức để người dùng không bấm lung tung
-                                with st.spinner("💾 Đang lưu file... Vui lòng KHÔNG bấm gì thêm!"):
-                                    raw_bytes = audio_data['bytes']
-                                    # Kiểm tra: Nếu file > 20MB (khoảng 20 phút) thì từ chối
-                                    if len(raw_bytes) > 20 * 1024 * 1024:
-                                        st.error("⚠️ File ghi âm quá dài (>20MB). Vui lòng thu ngắn hơn!")
-                                    else:
-                                        st.session_state['temp_record_file'] = raw_bytes
-                                    st.session_state['temp_record_name'] = f"record_{datetime.now().strftime('%H%M%S')}.wav"
-                                    
-                                    # Ngủ nhẹ 1 giây để đảm bảo session kịp cập nhật trước khi reload trang
-                                    time.sleep(1) 
-                                    st.rerun()
-                    else:
-                        # Giao diện sau khi thu xong
-                        st.success("✅ Đã thu xong! Hãy nghe lại bên dưới:")
-                        st.audio(st.session_state['temp_record_file'], format="audio/wav")
-                        
-                        col_act1, col_act2 = st.columns(2)
-                        with col_act1:
-                            if st.button("🔄 Thu lại từ đầu", use_container_width=True, type="secondary"):
-                                st.session_state['temp_record_file'] = None
-                                st.rerun()
-                        with col_act2:
-                            st.markdown("""
-                            <div style="
-                                text-align: center; 
-                                font-weight: bold; 
-                                color: #2E7D32; 
-                                padding: 8px; 
-                                border: 1px dashed #2E7D32; 
-                                border-radius: 5px;">
-                                Nếu hài lòng, bấm GỬI TẠO VIDEO bên dưới!
-                            </div>
-                            """, unsafe_allow_html=True)
-            
-
-            # CASE 4: GIỌNG AI CHẤT LƯỢNG CAO
-            elif voice_method == "🤖 Giọng AI Gemini":
-                st.markdown("##### 🔊 Chọn giọng đọc Gemini (Hà Nội)")
-                
-                # 1. CHỈ CÒN CHỌN GIỌNG (Bỏ vùng miền)
-                selected_voice_key = st.selectbox("🗣️ Chọn chất giọng:", list(GEMINI_STYLES.keys()))
-                
-                # Mặc định vùng miền là Bắc (để tương thích logic cũ)
-                selected_region = "Miền Bắc" 
-
-                # 2. NGHE THỬ (SAMPLE)
-                st.markdown("<div style='margin-bottom: 5px;'></div>", unsafe_allow_html=True)
-                if st.button("▶️ Nghe thử (2 câu đầu)", use_container_width=True):
-                    script_preview = st.session_state.get('main_content_area', "")
-                    with st.spinner(f"Đang tạo mẫu giọng {selected_voice_key}..."):
-                        sample_audio = tts_gemini(text=script_preview, voice_style_key=selected_voice_key, region="Miền Bắc", is_test=True)
-                        if sample_audio:
-                            st.audio(sample_audio, format="audio/wav")
                         else:
-                            st.warning("Hệ thống đang bận, vui lòng thử lại.")
+                            # [ĐÃ SỬA] margin-bottom giảm từ 20px xuống 5px để sát lại gần nút thu âm
+                            st.markdown(f"""
+                            <div style="
+                                background-color: #fff; 
+                                color: #000; 
+                                padding: 20px; 
+                                border-radius: 10px; 
+                                border: 2px solid #5D4037; 
+                                font-size: 22px; 
+                                line-height: 1.6; 
+                                max-height: 400px; 
+                                overflow-y: auto; 
+                                margin-bottom: 10px; 
+                                box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
+                            ">
+                                <b>📝 Kịch bản cần đọc:</b><br><br>
+                                {current_script.replace(chr(10), '<br>')}
+                            </div>
+                            """, unsafe_allow_html=True)
 
-                st.markdown("---")
-                
-                # 3. TẠO GIỌNG ĐẦY ĐỦ (FULL) - THEO YÊU CẦU MỚI
-                st.markdown("##### 💿 Bước quan trọng: Tạo file âm thanh")
-                st.caption("Bạn phải bấm nút dưới đây để tạo file âm thanh đầy đủ cho toàn bộ kịch bản trước khi gửi.")
-                
-                # Kiểm tra xem đã có nội dung chưa
-                current_script_full = st.session_state.get('main_content_area', "")
-                
-                if st.button("🎙️ TẠO GIỌNG ĐỌC ĐẦY ĐỦ (BẮT BUỘC)", type="primary", use_container_width=True):
-                    if not current_script_full or len(current_script_full.strip()) < 2:
-                        st.error("⚠️ Vui lòng nhập nội dung kịch bản ở Bước 1 trước!")
-                    else:
-                        with st.spinner(f"⏳ Đang xử lý toàn bộ kịch bản với giọng {selected_voice_key}... Vui lòng đợi!"):
-                            # Gọi hàm tạo full (is_test=False)
-                            # Hàm tts_gemini của bạn đã trả về Link Catbox (String)
-                            full_audio_link = tts_gemini(current_script_full, voice_style_key=selected_voice_key, region=selected_region, is_test=False)
+                        # [ĐÃ XÓA] Dòng st.markdown("---") ở đây để bỏ khoảng trống thừa
+
+                        # 2. BẢNG ĐIỀU KHIỂN THU ÂM
+                        has_recording = 'temp_record_file' in st.session_state and st.session_state['temp_record_file'] is not None
+
+                        if not has_recording:
+                            c1, c2 = st.columns([1, 1], vertical_alignment="center") # [MỚI] Căn giữa theo chiều dọc
+                            with c1:
+                                # [ĐÃ SỬA] Thêm thẻ <br> để xuống dòng và sửa số 3 thành 5 giây
+                                st.markdown("""
+                                <div style="
+                                    background-color: #E3F2FD; 
+                                    padding: 15px; 
+                                    border-radius: 8px; 
+                                    color: #0D47A1; 
+                                    font-size: 20px; 
+                                    text-align: center;
+                                    border: 1px solid #90CAF9;
+                                    line-height: 1.4;
+                                ">
+                                    💡 Giữ im lặng 5 giây đầu<br>để lọc ồn tốt hơn.
+                                </div>
+                                """, unsafe_allow_html=True)
                             
-                            if full_audio_link:
-                                # Lưu link vào session
-                                st.session_state['gemini_full_audio_link'] = full_audio_link
-                                # Lưu thông tin cài đặt để dùng sau này
-                                st.session_state['gemini_voice_info'] = f"Gemini - {selected_region} - {selected_voice_key}"
-                                st.success("✅ Đã tạo xong! Hãy nghe lại bên dưới.")
-                            else:
-                                st.error("❌ Lỗi khi tạo giọng. Vui lòng thử lại!")
+                            with c2:
+                                # [CẬP NHẬT] Thêm hướng dẫn vào nút bấm
+                                audio_data = mic_recorder(
+                                    start_prompt="🔴 BẮT ĐẦU THU ",
+                                    stop_prompt="⏹️ KẾT THÚC THU)",
+                                    just_once=True, 
+                                    use_container_width=True,
+                                    format="wav", 
+                                    key="new_mic_recorder_v3"
+                                )
+                                
+                                if audio_data:
+                                    # [QUAN TRỌNG] Hiện vòng quay xử lý ngay lập tức để người dùng không bấm lung tung
+                                    with st.spinner("💾 Đang lưu file... Vui lòng KHÔNG bấm gì thêm!"):
+                                        raw_bytes = audio_data['bytes']
+                                        # Kiểm tra: Nếu file > 20MB (khoảng 20 phút) thì từ chối
+                                        if len(raw_bytes) > 20 * 1024 * 1024:
+                                            st.error("⚠️ File ghi âm quá dài (>20MB). Vui lòng thu ngắn hơn!")
+                                        else:
+                                            st.session_state['temp_record_file'] = raw_bytes
+                                        st.session_state['temp_record_name'] = f"record_{datetime.now().strftime('%H%M%S')}.wav"
+                                        
+                                        # Ngủ nhẹ 1 giây để đảm bảo session kịp cập nhật trước khi reload trang
+                                        time.sleep(1) 
+                                        st.rerun()
+                        else:
+                            # Giao diện sau khi thu xong
+                            st.success("✅ Đã thu xong! Hãy nghe lại bên dưới:")
+                            st.audio(st.session_state['temp_record_file'], format="audio/wav")
+                            
+                            col_act1, col_act2 = st.columns(2)
+                            with col_act1:
+                                if st.button("🔄 Thu lại từ đầu", use_container_width=True, type="secondary"):
+                                    st.session_state['temp_record_file'] = None
+                                    st.rerun()
+                            with col_act2:
+                                st.markdown("""
+                                <div style="
+                                    text-align: center; 
+                                    font-weight: bold; 
+                                    color: #2E7D32; 
+                                    padding: 8px; 
+                                    border: 1px dashed #2E7D32; 
+                                    border-radius: 5px;">
+                                    Nếu hài lòng, bấm GỬI TẠO VIDEO bên dưới!
+                                </div>
+                                """, unsafe_allow_html=True)
+                
 
-                # 4. HIỂN THỊ PLAYER ĐỂ NGHE LẠI VÀ CHUẨN BỊ GỬI
-                if st.session_state.get('gemini_full_audio_link'):
-                    st.audio(st.session_state['gemini_full_audio_link'], format="audio/wav")
-                    st.info("👇 Âm thanh đã sẵn sàng. Bạn có thể bấm nút 'GỬI YÊU CẦU' dưới cùng ngay bây giờ!")
+                # CASE 4: GIỌNG AI CHẤT LƯỢNG CAO
+                elif voice_method == "🤖 Giọng AI Gemini":
+                    st.markdown("##### 🔊 Chọn giọng đọc Gemini (Hà Nội)")
                     
-                    # Gán vào biến global để nút Gửi nhận diện được
-                    final_audio_link_to_send = st.session_state['gemini_full_audio_link']
+                    # 1. CHỈ CÒN CHỌN GIỌNG (Bỏ vùng miền)
+                    selected_voice_key = st.selectbox("🗣️ Chọn chất giọng:", list(GEMINI_STYLES.keys()))
                     
-                    # Đánh dấu cờ là AI để tắt lọc ồn
-                    st.session_state['chk_ai_upload_flag'] = True
+                    # Mặc định vùng miền là Bắc (để tương thích logic cũ)
+                    selected_region = "Miền Bắc" 
+
+                    # 2. NGHE THỬ (SAMPLE)
+                    st.markdown("<div style='margin-bottom: 5px;'></div>", unsafe_allow_html=True)
+                    if st.button("▶️ Nghe thử (2 câu đầu)", use_container_width=True):
+                        script_preview = st.session_state.get('main_content_area', "")
+                        with st.spinner(f"Đang tạo mẫu giọng {selected_voice_key}..."):
+                            sample_audio = tts_gemini(text=script_preview, voice_style_key=selected_voice_key, region="Miền Bắc", is_test=True)
+                            if sample_audio:
+                                st.audio(sample_audio, format="audio/wav")
+                            else:
+                                st.warning("Hệ thống đang bận, vui lòng thử lại.")
+
+                    st.markdown("---")
+                    
+                    # 3. TẠO GIỌNG ĐẦY ĐỦ (FULL) - THEO YÊU CẦU MỚI
+                    st.markdown("##### 💿 Bước quan trọng: Tạo file âm thanh")
+                    st.caption("Bạn phải bấm nút dưới đây để tạo file âm thanh đầy đủ cho toàn bộ kịch bản trước khi gửi.")
+                    
+                    # Kiểm tra xem đã có nội dung chưa
+                    current_script_full = st.session_state.get('main_content_area', "")
+                    
+                    if st.button("🎙️ TẠO GIỌNG ĐỌC ĐẦY ĐỦ (BẮT BUỘC)", type="primary", use_container_width=True):
+                        if not current_script_full or len(current_script_full.strip()) < 2:
+                            st.error("⚠️ Vui lòng nhập nội dung kịch bản ở Bước 1 trước!")
+                        else:
+                            with st.spinner(f"⏳ Đang xử lý toàn bộ kịch bản với giọng {selected_voice_key}... Vui lòng đợi!"):
+                                # Gọi hàm tạo full (is_test=False)
+                                # Hàm tts_gemini của bạn đã trả về Link Catbox (String)
+                                full_audio_link = tts_gemini(current_script_full, voice_style_key=selected_voice_key, region=selected_region, is_test=False)
+                                
+                                if full_audio_link:
+                                    # Lưu link vào session
+                                    st.session_state['gemini_full_audio_link'] = full_audio_link
+                                    # Lưu thông tin cài đặt để dùng sau này
+                                    st.session_state['gemini_voice_info'] = f"Gemini - {selected_region} - {selected_voice_key}"
+                                    st.success("✅ Đã tạo xong! Hãy nghe lại bên dưới.")
+                                else:
+                                    st.error("❌ Lỗi khi tạo giọng. Vui lòng thử lại!")
+
+                    # 4. HIỂN THỊ PLAYER ĐỂ NGHE LẠI VÀ CHUẨN BỊ GỬI
+                    if st.session_state.get('gemini_full_audio_link'):
+                        st.audio(st.session_state['gemini_full_audio_link'], format="audio/wav")
+                        st.info("👇 Âm thanh đã sẵn sàng. Bạn có thể bấm nút 'GỬI YÊU CẦU' dưới cùng ngay bây giờ!")
+                        
+                        # Gán vào biến global để nút Gửi nhận diện được
+                        final_audio_link_to_send = st.session_state['gemini_full_audio_link']
+                        
+                        # Đánh dấu cờ là AI để tắt lọc ồn
+                        st.session_state['chk_ai_upload_flag'] = True
 
 
 
