@@ -2218,6 +2218,14 @@ else:
                                         st.session_state['user_info']['quota_used'] += 1
                                         st.success("✅ Đã xác nhận! Video đang được tạo.")
                                         st.balloons()
+                                        
+                                        # --- [MỚI] DỌN DẸP SESSION ĐỂ THU GỌN GIAO DIỆN ---
+                                        # Xóa link audio và ID đơn hàng để giao diện Gemini quay về trạng thái ban đầu
+                                        st.session_state['gemini_full_audio_link'] = None
+                                        st.session_state['current_order_id'] = None
+                                        st.session_state['gemini_voice_info'] = None
+                                        # --------------------------------------------------
+
                                         time.sleep(2)
                                         st.rerun()
 
