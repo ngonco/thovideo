@@ -959,25 +959,16 @@ def admin_dashboard():
     # --- CẤU HÌNH CÁC GÓI CƯỚC CHUẨN (Dùng chung cho cả Tab 1 và Tab 3) ---
     # Tại đây quy định số video và mã code cho từng gói
     # --- CẤU HÌNH GÓI CƯỚC & GIỚI HẠN TTS ---
-    # Quy ước: 1 phút giọng đọc ≈ 1000 ký tự (đã bao gồm khoảng nghỉ)
-    # [ĐÃ SỬA] Thêm trường "code" và đổi tên "video_quota" thành "quota_per_month" để khớp logic tính toán
-    # --- CẤU HÌNH GÓI CƯỚC MỚI (Đã tính toán chi phí TTS 400đ/phút) ---
+    # [CẬP NHẬT] Đã sửa theo yêu cầu mới nhất
     PLAN_CONFIG = {
-        "free":     {"name": "Free (No TTS)", "code": "free",    "quota_per_month": 10, "tts_chars": 0}, 
-        "basic":    {"name": "Cơ bản (30k)",    "code": "basic",   "quota_per_month": 30, "tts_chars": 30000}, 
-        "pro":      {"name": "Nâng cao (60k)",  "code": "pro",     "quota_per_month": 60, "tts_chars": 70000}, 
-        "huynhde":  {"name": "Huynh Đệ (No TTS)", "code": "huynhde", "quota_per_month": 60, "tts_chars": 0}, 
-    }
-    # Mapping tên hiển thị cũ sang code mới để tương thích ngược
-    PLAN_NAME_MAP = {
-        "Free (Miễn phí)": "free", "Gói 30k (Cơ bản)": "basic", 
-        "Gói 60k (Nâng cao)": "pro", "Gói huynh đệ": "huynhde"
+        "free":     {"name": "Free (No TTS)",       "code": "free",    "quota_per_month": 10, "tts_chars": 0}, 
+        "basic":    {"name": "Cơ bản (30k)",        "code": "basic",   "quota_per_month": 30, "tts_chars": 30000}, 
+        "pro":      {"name": "Nâng cao (60k)",      "code": "pro",     "quota_per_month": 60, "tts_chars": 70000}, 
+        "huynhde":  {"name": "Huynh Đệ (No TTS)",   "code": "huynhde", "quota_per_month": 60, "tts_chars": 0}, 
     }
 
     with tab1:
         st.subheader("Tạo tài khoản & Gia hạn")
-        
-        # (Đã xóa khai báo trùng lặp ở đây để tránh lỗi logic)
         
         DURATION_CONFIG = {
             "1 Tháng": 1,
@@ -997,18 +988,24 @@ def admin_dashboard():
         
         c1, c2 = st.columns(2)
         with c1:
-            # Chọn gói - Tự động reload trang để cập nhật số video
-            selected_plan_name = st.selectbox("Loại gói cước", list(PLAN_CONFIG.keys()), key="sb_new_user_plan")
+            # [SỬA] Thêm format_func để hiển thị Tên gói (Cơ bản) thay vì Mã gói (basic)
+            selected_plan_key = st.selectbox(
+                "Loại gói cước", 
+                options=list(PLAN_CONFIG.keys()), 
+                format_func=lambda x: PLAN_CONFIG[x]['name'], # <-- Hiển thị tên đẹp
+                key="sb_new_user_plan"
+            )
         with c2:
             selected_duration_name = st.selectbox("Thời hạn đăng ký", list(DURATION_CONFIG.keys()), key="sb_new_user_duration")
         
         # --- LOGIC TÍNH TOÁN TỰ ĐỘNG ---
-        plan_info = PLAN_CONFIG[selected_plan_name]
+        # Dùng key đã chọn để lấy thông tin từ Config
+        plan_info = PLAN_CONFIG[selected_plan_key]
         months = DURATION_CONFIG[selected_duration_name]
         
         # Tính tổng quota = (Quota tháng) x (Số tháng)
         calculated_quota = plan_info["quota_per_month"] * months
-        # [MỚI] Tính tổng TTS = (TTS tháng) x (Số tháng)
+        # Tính tổng TTS = (TTS tháng) x (Số tháng)
         calculated_tts = plan_info["tts_chars"] * months
         
         # Tính ngày hết hạn
@@ -1018,26 +1015,27 @@ def admin_dashboard():
         # Hiển thị thông tin review
         st.success(f"""
         📊 **Review Cấu hình:**
-        - Gói: **{plan_info['code'].upper()}**
+        - Gói: **{plan_info['name']}**
         - Thời hạn: **{months} tháng** (Hết hạn: {expiry_str})
+        - Video cấp: **{calculated_quota}** | TTS cấp: **{calculated_tts}** ký tự
         """)
         
         # [FIX] Tạo key động dựa trên tên gói và thời hạn để auto-reload giá trị
-        dynamic_key = f"{selected_plan_name}_{selected_duration_name}"
+        dynamic_key = f"{selected_plan_key}_{selected_duration_name}"
 
-        # CHIA 2 CỘT ĐỂ NHẬP LIỆU
+        # CHIA 2 CỘT ĐỂ NHẬP LIỆU (Có thể sửa tay nếu muốn)
         col_inp1, col_inp2 = st.columns(2)
         with col_inp1:
             final_quota = st.number_input("Tổng Video (Quota Max)", 
-                                        value=calculated_quota, min_value=0, step=1,
+                                        value=int(calculated_quota), min_value=0, step=1,
                                         key=f"quota_{dynamic_key}")
         with col_inp2:
             final_tts = st.number_input("Tổng TTS (Ký tự)", 
-                                        value=calculated_tts, min_value=0, step=5000,
+                                        value=int(calculated_tts), min_value=0, step=1000,
                                         key=f"tts_{dynamic_key}",
                                         help="1 phút đọc ≈ 1000 ký tự")
         
-        # Nút Lưu (Dùng st.button thường)
+        # Nút Lưu
         if st.button("💾 LƯU USER VÀO SUPABASE", type="primary"):
             if not new_email or not new_pass:
                 st.warning("⚠️ Vui lòng điền Email và Mật khẩu!")
