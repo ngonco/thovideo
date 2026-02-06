@@ -122,9 +122,10 @@ def check_tts_quota(user_data, text_to_speak):
     # Tính số ký tự của đoạn văn
     char_count = len(text_to_speak)
     
-    # Lấy thông tin từ user (xử lý trường hợp chưa có cột trong DB cũ)
-    current_usage = user_data.get('tts_usage') or 0
-    max_limit = user_data.get('tts_limit') or 10000 # Mặc định 10k nếu lỗi
+    # [ĐÃ SỬA] Bỏ 'or ...' để chấp nhận giá trị 0
+    current_usage = user_data.get('tts_usage', 0)
+    # Nếu không tìm thấy key 'tts_limit' thì mới mặc định 10000, còn nếu là 0 thì giữ nguyên 0
+    max_limit = user_data.get('tts_limit', 10000)
     
     if current_usage + char_count > max_limit:
         remaining_chars = max_limit - current_usage
@@ -2043,9 +2044,9 @@ else:
                     
                     
                     # --- [NEW] HIỂN THỊ HẠN MỨC SỬ DỤNG ---
-                    # Lấy số liệu (xử lý None)
-                    u_usage = user.get('tts_usage', 0) or 0
-                    u_limit = user.get('tts_limit', 10000) or 10000
+                    # [ĐÃ SỬA] Bỏ 'or 10000' để hiển thị đúng khi giới hạn là 0
+                    u_usage = user.get('tts_usage', 0)
+                    u_limit = user.get('tts_limit', 10000)
                     
                     # Quy đổi ra phút (1000 char = 1 min)
                     min_used = round(u_usage / 1000, 1)
