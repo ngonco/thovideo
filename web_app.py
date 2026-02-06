@@ -961,11 +961,12 @@ def admin_dashboard():
     # --- CẤU HÌNH GÓI CƯỚC & GIỚI HẠN TTS ---
     # Quy ước: 1 phút giọng đọc ≈ 1000 ký tự (đã bao gồm khoảng nghỉ)
     # [ĐÃ SỬA] Thêm trường "code" và đổi tên "video_quota" thành "quota_per_month" để khớp logic tính toán
+    # --- CẤU HÌNH GÓI CƯỚC MỚI (Đã tính toán chi phí TTS 400đ/phút) ---
     PLAN_CONFIG = {
-        "free":     {"name": "Free",     "code": "free",    "quota_per_month": 10, "tts_chars": 10000}, 
-        "basic":    {"name": "Cơ bản",   "code": "basic",   "quota_per_month": 30, "tts_chars": 50000}, 
-        "pro":      {"name": "Nâng cao", "code": "pro",     "quota_per_month": 60, "tts_chars": 150000}, 
-        "huynhde":  {"name": "Huynh Đệ", "code": "huynhde", "quota_per_month": 60, "tts_chars": 150000}, 
+        "free":     {"name": "Free (No TTS)", "code": "free",    "quota_per_month": 10, "tts_chars": 0}, 
+        "basic":    {"name": "Cơ bản (30k)",    "code": "basic",   "quota_per_month": 30, "tts_chars": 30000}, 
+        "pro":      {"name": "Nâng cao (60k)",  "code": "pro",     "quota_per_month": 60, "tts_chars": 70000}, 
+        "huynhde":  {"name": "Huynh Đệ (No TTS)", "code": "huynhde", "quota_per_month": 60, "tts_chars": 0}, 
     }
     # Mapping tên hiển thị cũ sang code mới để tương thích ngược
     PLAN_NAME_MAP = {
