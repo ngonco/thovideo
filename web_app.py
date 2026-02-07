@@ -2683,48 +2683,77 @@ else:
                     else:
                         st.info("Hệ thống đang xử lý...")
 
-                    # B. Nút Tạo lại (Re-create)
+                    # B. Nút Tạo lại (Re-create) - [ĐÃ CẬP NHẬT: THÊM XÁC NHẬN BƯỚC 3]
                     st.markdown('<div style="margin-top: 5px;"></div>', unsafe_allow_html=True) 
                     if old_audio_link and str(old_audio_link).startswith("http"):
-                        # [FIX] Thêm _{index} vào key để đảm bảo không bao giờ bị trùng
-                        if st.button(f"♻️ Tạo lại bằng giọng nói này", key=f"recreate_{order_id}_{index}", disabled=is_out_of_quota, use_container_width=True):
-                            if not is_out_of_quota:
-                                try:
-                                    with st.spinner("Đang gửi lệnh tạo lại..."):
-                                        # 1. Tạo ID mới
-                                        now_vn = datetime.utcnow() + timedelta(hours=7)
-                                        new_id = now_vn.strftime("%Y%m%d_%H%M%S")
-                                        
-                                        # 2. Chuẩn bị dữ liệu cho Supabase
-                                        order_data = {
-                                            "id": new_id,
-                                            "created_at": datetime.utcnow().isoformat(),
-                                            "email": user['email'],
-                                            "source": "Re-created",
-                                            "content": old_content_script, # Dùng lại nội dung cũ
-                                            "audio_link": old_audio_link,  # Dùng lại link audio cũ
-                                            "status": "Pending",
-                                            "result_link": "",
-                                            "settings": settings 
-                                        }
-                                        
-                                        # 3. Gửi vào Supabase
-                                        supabase.table('orders').insert(order_data).execute()
-                                        
-                                        # 4. Cập nhật Quota (Trừ lượt dùng)
-                                        update_user_usage_supabase(user['id'], user['quota_used'])
-                                        
-                                        # Log & Update Quota
-                                        # [FIX] Chỉ log lịch sử, bỏ qua việc update row sheet cũ vì không còn biến row
-                                        log_history(new_id, user['email'], "", now_vn.strftime("%Y-%m-%d %H:%M:%S"))
-                                        # update_user_usage(user['row'], user['quota_used']) <--- DÒNG NÀY GÂY LỖI NÊN ĐÃ BỊ XÓA/COMMENT
-                                        
-                                        st.session_state['user_info']['quota_used'] += 1
-                                        # get_all_orders_cached.clear() <-- ĐÃ TẮT DÒNG NÀY
-                                        st.session_state['show_wait_message'] = True
-                                        st.success("✅ Đã gửi lệnh tạo lại!")
-                                        st.rerun()
-                                except Exception as e: st.error(f"Lỗi: {e}")
+                        
+                        # 1. Nút kích hoạt (Chưa xử lý ngay, chỉ mở form xác nhận)
+                        # Dùng key khác (pre_recreate) để tránh xung đột
+                        if st.button(f"♻️ Tạo lại bằng giọng nói này", key=f"pre_recreate_{order_id}_{index}", disabled=is_out_of_quota, use_container_width=True):
+                            # Lưu ID của đơn hàng đang muốn tạo lại vào session
+                            st.session_state['confirm_recreate_id'] = order_id
+                            st.rerun()
+
+                        # 2. Hiện khung cảnh báo & xác nhận (Chỉ hiện nếu đúng là đơn hàng này)
+                        if st.session_state.get('confirm_recreate_id') == order_id:
+                            st.markdown("""
+                            <div style="background-color: #FFF3E0; border: 2px solid #FF9800; padding: 15px; border-radius: 10px; margin-bottom: 10px; margin-top: 5px;">
+                                <h4 style="color: #E65100; margin: 0; font-size: 18px;">⚠️ LƯU Ý QUAN TRỌNG</h4>
+                                <p style="color: #5D4037; font-size: 16px; margin-top: 5px; line-height: 1.5;">
+                                    Hệ thống sẽ sử dụng <b>Cài đặt hiện tại ở BƯỚC 3</b> (Video nền, Chủ đề...) để tạo video mới này.<br>
+                                    👉 Nếu bạn muốn đổi kiểu video nền khác, hãy chỉnh lại ở <b>Bước 3</b> trước khi bấm xác nhận!
+                                </p>
+                            </div>
+                            """, unsafe_allow_html=True)
+                            
+                            col_conf1, col_conf2 = st.columns(2)
+                            with col_conf1:
+                                # Nút XÁC NHẬN THẬT (Code xử lý cũ nằm ở đây)
+                                if st.button("✅ ĐÃ HIỂU, TẠO NGAY", key=f"real_recreate_{order_id}_{index}", type="primary", use_container_width=True):
+                                    if not is_out_of_quota:
+                                        try:
+                                            with st.spinner("Đang gửi lệnh tạo lại..."):
+                                                # 1. Tạo ID mới
+                                                now_vn = datetime.utcnow() + timedelta(hours=7)
+                                                new_id = now_vn.strftime("%Y%m%d_%H%M%S")
+                                                
+                                                # 2. Chuẩn bị dữ liệu cho Supabase
+                                                order_data = {
+                                                    "id": new_id,
+                                                    "created_at": datetime.utcnow().isoformat(),
+                                                    "email": user['email'],
+                                                    "source": "Re-created",
+                                                    "content": old_content_script, # Dùng lại nội dung cũ
+                                                    "audio_link": old_audio_link,  # Dùng lại link audio cũ
+                                                    "status": "Pending",
+                                                    "result_link": "",
+                                                    "settings": settings # <--- QUAN TRỌNG: Dùng settings hiện tại của UI
+                                                }
+                                                
+                                                # 3. Gửi vào Supabase
+                                                supabase.table('orders').insert(order_data).execute()
+                                                
+                                                # 4. Cập nhật Quota (Trừ lượt dùng)
+                                                update_user_usage_supabase(user['id'], user['quota_used'])
+                                                
+                                                # 5. Log & Dọn dẹp
+                                                log_history(new_id, user['email'], "", now_vn.strftime("%Y-%m-%d %H:%M:%S"))
+                                                
+                                                st.session_state['user_info']['quota_used'] += 1
+                                                st.session_state['show_wait_message'] = True
+                                                
+                                                # Xóa trạng thái xác nhận để đóng form
+                                                del st.session_state['confirm_recreate_id']
+                                                
+                                                st.success("✅ Đã gửi lệnh tạo lại!")
+                                                st.rerun()
+                                        except Exception as e: st.error(f"Lỗi: {e}")
+
+                            with col_conf2:
+                                # Nút HỦY
+                                if st.button("❌ Hủy bỏ (Chỉnh lại)", key=f"cancel_recreate_{order_id}_{index}", use_container_width=True):
+                                    del st.session_state['confirm_recreate_id']
+                                    st.rerun()
 
             # 4. Nút Xem thêm / Thu gọn
             if total_items > MAX_ITEMS:
