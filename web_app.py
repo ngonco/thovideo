@@ -2251,19 +2251,18 @@ else:
     st.markdown("<br><br>", unsafe_allow_html=True)
     
     # [LƯU Ý] Dòng with này phải sát lề trái, thẳng hàng với các dòng if/else lớn
-    with st.expander("3️⃣ BƯỚC 3: CHỌN PHONG CÁCH VIDEO", expanded=True):
-        st.info("💡 Bạn muốn video minh họa như thế nào?")
+    with st.expander("3️⃣ BƯỚC 3: CÁCH CHỌN VIDEO MINH HỌA", expanded=False):
         
         # Radio chọn chế độ
         video_style = st.radio(
             "Chế độ video:",
-            ["🎲 Tự động (AI tự remix ngẫu nhiên)", "im_film 🎞️ Chọn chủ đề cụ thể"],
+            ["🎲 AI tự động chọn video", " 🎞️ Chọn chủ đề video cụ thể"],
             key="rb_video_style"
         )
         
         selected_topic_name = ""
         
-        if "Chọn chủ đề cụ thể" in video_style:
+        if "Chọn chủ đề video cụ thể" in video_style:
             # Danh sách chủ đề (Hardcode theo folder trên máy bạn)
             TOPIC_LIST = ["Luân Hồi Biến Hình", "Vũ Trụ"]
             
@@ -2272,7 +2271,7 @@ else:
                 TOPIC_LIST,
                 key="sb_topic_select"
             )
-            st.caption(f"👉 Hệ thống sẽ chỉ lấy video từ thư mục: **{selected_topic_name}**")
+            st.caption(f"👉 Chỉ lấy video từ chủ đề: **{selected_topic_name}**")
             
             # Cập nhật vào settings
             settings['video_mode'] = 'topic'
