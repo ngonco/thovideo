@@ -122,10 +122,9 @@ def check_tts_quota(user_data, text_to_speak):
     # Tính số ký tự của đoạn văn
     char_count = len(text_to_speak)
     
-    # [ĐÃ SỬA] Bỏ 'or ...' để chấp nhận giá trị 0
-    current_usage = user_data.get('tts_usage', 0)
-    # Nếu không tìm thấy key 'tts_limit' thì mới mặc định 10000, còn nếu là 0 thì giữ nguyên 0
-    max_limit = user_data.get('tts_limit', 10000)
+    # Lấy thông tin từ user (xử lý trường hợp chưa có cột trong DB cũ)
+    current_usage = user_data.get('tts_usage') or 0
+    max_limit = user_data.get('tts_limit') or 10000 # Mặc định 10k nếu lỗi
     
     if current_usage + char_count > max_limit:
         remaining_chars = max_limit - current_usage
@@ -960,16 +959,24 @@ def admin_dashboard():
     # --- CẤU HÌNH CÁC GÓI CƯỚC CHUẨN (Dùng chung cho cả Tab 1 và Tab 3) ---
     # Tại đây quy định số video và mã code cho từng gói
     # --- CẤU HÌNH GÓI CƯỚC & GIỚI HẠN TTS ---
-    # [CẬP NHẬT] Đã sửa theo yêu cầu mới nhất
+    # Quy ước: 1 phút giọng đọc ≈ 1000 ký tự (đã bao gồm khoảng nghỉ)
+    # [ĐÃ SỬA] Thêm trường "code" và đổi tên "video_quota" thành "quota_per_month" để khớp logic tính toán
     PLAN_CONFIG = {
-        "free":     {"name": "Free (No TTS)",       "code": "free",    "quota_per_month": 10, "tts_chars": 0}, 
-        "basic":    {"name": "Cơ bản (30k)",        "code": "basic",   "quota_per_month": 30, "tts_chars": 30000}, 
-        "pro":      {"name": "Nâng cao (60k)",      "code": "pro",     "quota_per_month": 60, "tts_chars": 70000}, 
-        "huynhde":  {"name": "Huynh Đệ (No TTS)",   "code": "huynhde", "quota_per_month": 60, "tts_chars": 0}, 
+        "free":     {"name": "Free",     "code": "free",    "quota_per_month": 10, "tts_chars": 10000}, 
+        "basic":    {"name": "Cơ bản",   "code": "basic",   "quota_per_month": 30, "tts_chars": 50000}, 
+        "pro":      {"name": "Nâng cao", "code": "pro",     "quota_per_month": 60, "tts_chars": 150000}, 
+        "huynhde":  {"name": "Huynh Đệ", "code": "huynhde", "quota_per_month": 60, "tts_chars": 150000}, 
+    }
+    # Mapping tên hiển thị cũ sang code mới để tương thích ngược
+    PLAN_NAME_MAP = {
+        "Free (Miễn phí)": "free", "Gói 30k (Cơ bản)": "basic", 
+        "Gói 60k (Nâng cao)": "pro", "Gói huynh đệ": "huynhde"
     }
 
     with tab1:
         st.subheader("Tạo tài khoản & Gia hạn")
+        
+        # (Đã xóa khai báo trùng lặp ở đây để tránh lỗi logic)
         
         DURATION_CONFIG = {
             "1 Tháng": 1,
@@ -989,24 +996,18 @@ def admin_dashboard():
         
         c1, c2 = st.columns(2)
         with c1:
-            # [SỬA] Thêm format_func để hiển thị Tên gói (Cơ bản) thay vì Mã gói (basic)
-            selected_plan_key = st.selectbox(
-                "Loại gói cước", 
-                options=list(PLAN_CONFIG.keys()), 
-                format_func=lambda x: PLAN_CONFIG[x]['name'], # <-- Hiển thị tên đẹp
-                key="sb_new_user_plan"
-            )
+            # Chọn gói - Tự động reload trang để cập nhật số video
+            selected_plan_name = st.selectbox("Loại gói cước", list(PLAN_CONFIG.keys()), key="sb_new_user_plan")
         with c2:
             selected_duration_name = st.selectbox("Thời hạn đăng ký", list(DURATION_CONFIG.keys()), key="sb_new_user_duration")
         
         # --- LOGIC TÍNH TOÁN TỰ ĐỘNG ---
-        # Dùng key đã chọn để lấy thông tin từ Config
-        plan_info = PLAN_CONFIG[selected_plan_key]
+        plan_info = PLAN_CONFIG[selected_plan_name]
         months = DURATION_CONFIG[selected_duration_name]
         
         # Tính tổng quota = (Quota tháng) x (Số tháng)
         calculated_quota = plan_info["quota_per_month"] * months
-        # Tính tổng TTS = (TTS tháng) x (Số tháng)
+        # [MỚI] Tính tổng TTS = (TTS tháng) x (Số tháng)
         calculated_tts = plan_info["tts_chars"] * months
         
         # Tính ngày hết hạn
@@ -1016,27 +1017,26 @@ def admin_dashboard():
         # Hiển thị thông tin review
         st.success(f"""
         📊 **Review Cấu hình:**
-        - Gói: **{plan_info['name']}**
+        - Gói: **{plan_info['code'].upper()}**
         - Thời hạn: **{months} tháng** (Hết hạn: {expiry_str})
-        - Video cấp: **{calculated_quota}** | TTS cấp: **{calculated_tts}** ký tự
         """)
         
         # [FIX] Tạo key động dựa trên tên gói và thời hạn để auto-reload giá trị
-        dynamic_key = f"{selected_plan_key}_{selected_duration_name}"
+        dynamic_key = f"{selected_plan_name}_{selected_duration_name}"
 
-        # CHIA 2 CỘT ĐỂ NHẬP LIỆU (Có thể sửa tay nếu muốn)
+        # CHIA 2 CỘT ĐỂ NHẬP LIỆU
         col_inp1, col_inp2 = st.columns(2)
         with col_inp1:
             final_quota = st.number_input("Tổng Video (Quota Max)", 
-                                        value=int(calculated_quota), min_value=0, step=1,
+                                        value=calculated_quota, min_value=0, step=1,
                                         key=f"quota_{dynamic_key}")
         with col_inp2:
             final_tts = st.number_input("Tổng TTS (Ký tự)", 
-                                        value=int(calculated_tts), min_value=0, step=1000,
+                                        value=calculated_tts, min_value=0, step=5000,
                                         key=f"tts_{dynamic_key}",
                                         help="1 phút đọc ≈ 1000 ký tự")
         
-        # Nút Lưu
+        # Nút Lưu (Dùng st.button thường)
         if st.button("💾 LƯU USER VÀO SUPABASE", type="primary"):
             if not new_email or not new_pass:
                 st.warning("⚠️ Vui lòng điền Email và Mật khẩu!")
@@ -1777,39 +1777,12 @@ else:
             else:
                 noi_dung_gui = ""
 
-    # --- (B3) CHỌN PHONG CÁCH VIDEO (MỚI) ---
-    st.markdown("<br><br>", unsafe_allow_html=True)
+    # --- (B2) GIỌNG ĐỌC (GIAO DIỆN ẨN MẶC ĐỊNH) ---
     
-    with st.expander("3️⃣ BƯỚC 3: CHỌN PHONG CÁCH VIDEO", expanded=True):
-        st.info("💡 Bạn muốn video minh họa như thế nào?")
-        
-        # Radio chọn chế độ
-        video_style = st.radio(
-            "Chế độ video:",
-            ["🎲 Tự động (AI tự remix ngẫu nhiên)", "im_film 🎞️ Chọn chủ đề cụ thể"],
-            key="rb_video_style"
-        )
-        
-        selected_topic_name = ""
-        
-        if "Chọn chủ đề cụ thể" in video_style:
-            # Danh sách chủ đề (Hardcode theo folder trên máy bạn)
-            # Sau này có thêm folder thì thêm tên vào list này
-            TOPIC_LIST = ["Luân Hồi Biến Hình", "Vũ Trụ"]
-            
-            selected_topic_name = st.selectbox(
-                "Chọn chủ đề mong muốn:",
-                TOPIC_LIST,
-                key="sb_topic_select"
-            )
-            st.caption(f"👉 Hệ thống sẽ chỉ lấy video từ thư mục: **{selected_topic_name}**")
-            
-            # Cập nhật vào settings
-            settings['video_mode'] = 'topic'
-            settings['topic_name'] = selected_topic_name
-        else:
-            settings['video_mode'] = 'auto'
-            settings['topic_name'] = ""
+    st.markdown("<br><br>", unsafe_allow_html=True) 
+
+    # [CẬP NHẬT] Gom Bước 2 vào Expander và MẶC ĐỊNH ĐÓNG (expanded=False)
+    with st.expander("2️⃣ BƯỚC 2: CHUẨN BỊ GIỌNG ĐỌC", expanded=False):
         
             # Kiểm tra nhanh nếu chưa có nội dung ở Bước 1 thì hiện cảnh báo nhẹ (Màu nâu đậm)
             if not st.session_state.get('main_content_area'):
@@ -2071,9 +2044,9 @@ else:
                     
                     
                     # --- [NEW] HIỂN THỊ HẠN MỨC SỬ DỤNG ---
-                    # [ĐÃ SỬA] Bỏ 'or 10000' để hiển thị đúng khi giới hạn là 0
-                    u_usage = user.get('tts_usage', 0)
-                    u_limit = user.get('tts_limit', 10000)
+                    # Lấy số liệu (xử lý None)
+                    u_usage = user.get('tts_usage', 0) or 0
+                    u_limit = user.get('tts_limit', 10000) or 10000
                     
                     # Quy đổi ra phút (1000 char = 1 min)
                     min_used = round(u_usage / 1000, 1)
@@ -2274,7 +2247,39 @@ else:
                             final_audio_link_to_send = st.session_state['gemini_full_audio_link']
                             st.session_state['chk_ai_upload_flag'] = True
 
-
+    # --- (B3) CHỌN PHONG CÁCH VIDEO (MỚI) ---
+    st.markdown("<br><br>", unsafe_allow_html=True)
+    
+    # [LƯU Ý] Dòng with này phải sát lề trái, thẳng hàng với các dòng if/else lớn
+    with st.expander("3️⃣ BƯỚC 3: CHỌN PHONG CÁCH VIDEO", expanded=True):
+        st.info("💡 Bạn muốn video minh họa như thế nào?")
+        
+        # Radio chọn chế độ
+        video_style = st.radio(
+            "Chế độ video:",
+            ["🎲 Tự động (AI tự remix ngẫu nhiên)", "im_film 🎞️ Chọn chủ đề cụ thể"],
+            key="rb_video_style"
+        )
+        
+        selected_topic_name = ""
+        
+        if "Chọn chủ đề cụ thể" in video_style:
+            # Danh sách chủ đề (Hardcode theo folder trên máy bạn)
+            TOPIC_LIST = ["Luân Hồi Biến Hình", "Vũ Trụ"]
+            
+            selected_topic_name = st.selectbox(
+                "Chọn chủ đề mong muốn:",
+                TOPIC_LIST,
+                key="sb_topic_select"
+            )
+            st.caption(f"👉 Hệ thống sẽ chỉ lấy video từ thư mục: **{selected_topic_name}**")
+            
+            # Cập nhật vào settings
+            settings['video_mode'] = 'topic'
+            settings['topic_name'] = selected_topic_name
+        else:
+            settings['video_mode'] = 'auto'
+            settings['topic_name'] = ""
 
     # --- SETTINGS (CẬP NHẬT: TỰ ĐỘNG LOAD TỪ DATABASE) ---
     st.markdown("---")
