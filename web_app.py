@@ -1777,12 +1777,39 @@ else:
             else:
                 noi_dung_gui = ""
 
-    # --- (B2) GIỌNG ĐỌC (GIAO DIỆN ẨN MẶC ĐỊNH) ---
+    # --- (B3) CHỌN PHONG CÁCH VIDEO (MỚI) ---
+    st.markdown("<br><br>", unsafe_allow_html=True)
     
-    st.markdown("<br><br>", unsafe_allow_html=True) 
-
-    # [CẬP NHẬT] Gom Bước 2 vào Expander và MẶC ĐỊNH ĐÓNG (expanded=False)
-    with st.expander("2️⃣ BƯỚC 2: CHUẨN BỊ GIỌNG ĐỌC", expanded=False):
+    with st.expander("3️⃣ BƯỚC 3: CHỌN PHONG CÁCH VIDEO", expanded=True):
+        st.info("💡 Bạn muốn video minh họa như thế nào?")
+        
+        # Radio chọn chế độ
+        video_style = st.radio(
+            "Chế độ video:",
+            ["🎲 Tự động (AI tự remix ngẫu nhiên)", "im_film 🎞️ Chọn chủ đề cụ thể"],
+            key="rb_video_style"
+        )
+        
+        selected_topic_name = ""
+        
+        if "Chọn chủ đề cụ thể" in video_style:
+            # Danh sách chủ đề (Hardcode theo folder trên máy bạn)
+            # Sau này có thêm folder thì thêm tên vào list này
+            TOPIC_LIST = ["Luân Hồi Biến Hình", "Vũ Trụ"]
+            
+            selected_topic_name = st.selectbox(
+                "Chọn chủ đề mong muốn:",
+                TOPIC_LIST,
+                key="sb_topic_select"
+            )
+            st.caption(f"👉 Hệ thống sẽ chỉ lấy video từ thư mục: **{selected_topic_name}**")
+            
+            # Cập nhật vào settings
+            settings['video_mode'] = 'topic'
+            settings['topic_name'] = selected_topic_name
+        else:
+            settings['video_mode'] = 'auto'
+            settings['topic_name'] = ""
         
             # Kiểm tra nhanh nếu chưa có nội dung ở Bước 1 thì hiện cảnh báo nhẹ (Màu nâu đậm)
             if not st.session_state.get('main_content_area'):
