@@ -2687,14 +2687,15 @@ else:
                     st.markdown('<div style="margin-top: 5px;"></div>', unsafe_allow_html=True) 
                     if old_audio_link and str(old_audio_link).startswith("http"):
                         
-                        # 1. Nút kích hoạt (Chưa xử lý ngay, chỉ mở form xác nhận)
-                        # Dùng key khác (pre_recreate) để tránh xung đột
-                        if st.button(f"♻️ Tạo lại bằng giọng nói này", key=f"pre_recreate_{order_id}_{index}", disabled=is_out_of_quota, use_container_width=True):
-                            # Lưu ID của đơn hàng đang muốn tạo lại vào session
-                            st.session_state['confirm_recreate_id'] = order_id
-                            st.rerun()
+                        # [LOGIC MỚI] 1. Kiểm tra: Nếu CHƯA bấm nút (hoặc đang bấm nút khác) -> Thì mới hiện nút "Tạo lại"
+                        if st.session_state.get('confirm_recreate_id') != order_id:
+                            # Nút kích hoạt
+                            if st.button(f"♻️ Tạo lại bằng giọng nói này", key=f"pre_recreate_{order_id}_{index}", disabled=is_out_of_quota, use_container_width=True):
+                                # Lưu ID của đơn hàng đang muốn tạo lại vào session
+                                st.session_state['confirm_recreate_id'] = order_id
+                                st.rerun()
 
-                        # 2. Hiện khung cảnh báo & xác nhận (Chỉ hiện nếu đúng là đơn hàng này)
+                        # 2. Nếu ĐÃ BẤM (ID khớp với session) -> Thì hiện khung xác nhận (ẩn nút trên đi)
                         if st.session_state.get('confirm_recreate_id') == order_id:
                             st.markdown("""
                             <div style="background-color: #FFF3E0; border: 2px solid #FF9800; padding: 15px; border-radius: 10px; margin-bottom: 10px; margin-top: 5px;">
