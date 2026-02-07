@@ -2700,8 +2700,8 @@ else:
                             <div style="background-color: #FFF3E0; border: 2px solid #FF9800; padding: 15px; border-radius: 10px; margin-bottom: 10px; margin-top: 5px;">
                                 <h4 style="color: #E65100; margin: 0; font-size: 18px;">⚠️ LƯU Ý QUAN TRỌNG</h4>
                                 <p style="color: #5D4037; font-size: 16px; margin-top: 5px; line-height: 1.5;">
-                                    Hệ thống sẽ sử dụng <b>Cài đặt hiện tại ở BƯỚC 3</b> (Video nền, Chủ đề...) để tạo video mới này.<br>
-                                    👉 Nếu bạn muốn đổi kiểu video nền khác, hãy chỉnh lại ở <b>Bước 3</b> trước khi bấm xác nhận!
+                                    <b>Cài đặt hiện tại ở BƯỚC 3</b> sẽ được dùng để tạo video mới này.<br>
+                                    👉 Nếu bạn muốn thay đổi, hãy chỉnh lại ở <b>Bước 3</b> trước khi bấm tạo lại.
                                 </p>
                             </div>
                             """, unsafe_allow_html=True)
