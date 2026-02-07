@@ -2701,7 +2701,7 @@ else:
                                 <h4 style="color: #E65100; margin: 0; font-size: 18px;">⚠️ LƯU Ý</h4>
                                 <p style="color: #5D4037; font-size: 16px; margin-top: 5px; line-height: 1.5;">
                                     <b>Cài đặt hiện tại ở BƯỚC 3</b> sẽ được dùng để tạo video mới này.<br>
-                                    👉 Nếu bạn muốn thay đổi, hãy chỉnh lại ở <b>Bước 3</b> trước khi bấm tạo lại.
+                                    👉 Nếu bạn muốn thay đổi, hãy chỉnh lại ở <b>Bước 3</b> trước khi bấm nút Tạo Ngay.
                                 </p>
                             </div>
                             """, unsafe_allow_html=True)
