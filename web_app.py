@@ -2257,7 +2257,7 @@ else:
         video_style = st.radio(
             "Chế độ video:",
             ["AI tự động chọn video", "Chọn chủ đề video cụ thể"],
-            key="rb_video_style"
+            key="rb_video_style",
             label_visibility="collapsed"
         )
         
