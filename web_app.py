@@ -2265,7 +2265,16 @@ else:
         
         if "Chọn chủ đề video cụ thể" in video_style:
             # Danh sách chủ đề (Hardcode theo folder trên máy bạn)
-            TOPIC_LIST = ["Luân Hồi Biến Hình", "Vũ Trụ"]
+            TOPIC_LIST = [
+                "AI bầu trời", "AI chùa", "AI sinh vật cute", "Anime", 
+                "Âu Mỹ", "Âu Mỹ home garden", "Bác Hồ", "Biển đại dương", 
+                "Chiến tranh người que", "Cô đơn giữa mây trời", "Cô gái và linh thú", 
+                "Con Đường", "Cyperpunk", "Đọc Sách", "Động vật cute", 
+                "Đức Phật 2026", "Đức Phật và Cờ VN", "Gọt trái cây", 
+                "Mặt trời lặn", "Mặt trời mọc", "Mùa hạ", "Mùa thu", 
+                "Mùa xuân", "Người tí hon", "Thiên nhiên", 
+                "Thực vật phát sáng", "Võ thuật", "Vũ Trụ"
+            ]
             
             selected_topic_name = st.selectbox(
                 "Chọn chủ đề mong muốn:",
