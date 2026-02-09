@@ -2266,8 +2266,8 @@ else:
         if "Chọn chủ đề video cụ thể" in video_style:
             # Danh sách chủ đề (Hardcode theo folder trên máy bạn)
             TOPIC_LIST = [
-                "0 Đọc sách bên hoa sen", "1 Người tí hon bên sen", "2 Đầm sen chill chill", "AI bầu trời", "AI chùa", "AI sinh vật cute", "Anime", 
-                "3 Ruộng bậc thang dưới ánh trăng", "Âu Mỹ", "Âu Mỹ home garden", "Bác Hồ", "Biển đại dương", 
+                "0 Đọc sách bên hoa sen", "1 Người tí hon bên sen", "2 Đầm sen chill chill", "3 Ruộng bậc thang dưới ánh trăng", "AI bầu trời", "AI chùa", "AI sinh vật cute", "Anime", 
+                "Âu Mỹ", "Âu Mỹ home garden", "Bác Hồ", "Biển đại dương", 
                 "Chiến tranh người que", "Cô đơn giữa mây trời", "Cô gái và linh thú", 
                 "Con Đường", "Cyperpunk", "Động vật cute", 
                 "Đức Phật 2026", "Đức Phật và Cờ VN", "Gọt trái cây", 
