@@ -16,6 +16,18 @@ import uuid # <--- Để tạo mã Token ngẫu nhiên
 import struct # <--- [MỚI] Để xử lý file âm thanh WAV
 import base64 # <--- [QUAN TRỌNG] Thêm dòng này để giải mã âm thanh
 
+
+# --- DANH SÁCH GIỌNG VIENEU-TTS ---
+# Lưu ý: Tên bên phải (Value) phải KHỚP CHÍNH XÁC với tên trong Dropdown của phần mềm trên máy bạn
+VIENEU_VOICES = [
+    "Ly (nữ miền Bắc)",
+    "Bình (nam miền Bắc)",
+    "Ngọc (nữ miền Bắc)",
+    "Tuyên (nam miền Bắc)",
+    "Vĩnh (nam miền Nam)",
+    "Đoan (nữ miền Nam)"
+]
+
 # --- THÊM ĐOẠN NÀY VÀO SAU CÁC DÒNG IMPORT ---
 # Hàm này giúp kết nối Supabase và giữ kết nối không bị ngắt
 # Dùng cache_resource cho KẾT NỐI (Database, ML models...)
@@ -1965,13 +1977,12 @@ else:
 
                 
 
-                # CASE 5: GIỌNG AI LOCAL (ĐÃ CÓ LIMIT)
-                elif voice_method == "🖥️ Giọng AI": # [SỬA LẠI] Phải khớp đúng tên hiển thị
+                # CASE 5: GIỌNG AI VIENEU (LOCAL PC)
+                elif voice_method == "🖥️ Giọng AI": 
                     
-                    # --- [NEW] HIỂN THỊ HẠN MỨC SỬ DỤNG (Tái sử dụng cột tts_usage) ---
+                    # --- THANH QUOTA (GIỮ NGUYÊN) ---
                     u_usage = user.get('tts_usage', 0) or 0
-                    u_limit = user.get('tts_limit', 10000) or 10000 # Mặc định 10k ký tự
-                    
+                    u_limit = user.get('tts_limit', 10000) or 10000 
                     min_used = round(u_usage / 1000, 1)
                     min_total = round(u_limit / 1000, 1)
                     min_left = max(0, min_total - min_used)
@@ -1987,60 +1998,62 @@ else:
                         <div style="width: 100%; background-color: #E0E0E0; border-radius: 5px; height: 10px;">
                             <div style="width: {progress*100}%; background-color: {bar_color}; height: 10px; border-radius: 5px;"></div>
                         </div>
-                        <div style="text-align: right; font-size: 12px; color: #888; margin-top: 3px;">
-                            ({u_usage}/{u_limit} ký tự)
-                        </div>
                     </div>
                     """, unsafe_allow_html=True)
 
-                    st.markdown("##### 🖥️ Cài đặt giọng")
+                    st.markdown("##### 🖥️ Chọn giọng đọc (VieNeu)")
                     
                     # Kiểm tra kịch bản
                     current_script_local = st.session_state.get('main_content_area', "")
                     if not current_script_local or len(current_script_local.strip()) < 2:
                         st.warning("⚠️ Vui lòng nhập nội dung kịch bản ở Bước 1 trước!")
                     else:
-                        c_loc1, c_loc2 = st.columns(2)
+                        c_loc1, c_loc2 = st.columns([2, 1])
                         with c_loc1:
-                            voice_id_input = st.number_input("Mã số giọng (Voice ID)", min_value=0, value=1, step=1)
+                            # [THAY ĐỔI] Dùng Selectbox chọn tên giọng thay vì nhập ID số
+                            selected_voice_name = st.selectbox("Chọn giọng đọc:", VIENEU_VOICES)
                         with c_loc2:
-                            speed_input = st.slider("Tốc độ đọc", 0.5, 2.0, 1.0, 0.1)
+                            # VieNeu-TTS hiện tại chưa hỗ trợ chỉnh tốc độ qua API chuẩn này (nó tự nhiên), 
+                            # nhưng cứ để đây nếu sau này cần mapping
+                            st.info("Tốc độ: Chuẩn (AI)")
 
                         if st.button("🎙️ GỬI YÊU CẦU TẠO GIỌNG", type="primary", use_container_width=True):
-                            # [QUAN TRỌNG] 1. Kiểm tra hạn mức trước
+                            # 1. Kiểm tra hạn mức
                             is_enough, msg_or_count = check_tts_quota(user, current_script_local)
                             
                             if not is_enough:
                                 st.error(msg_or_count)
                             else:
-                                # Nếu đủ hạn mức thì mới chạy
                                 with st.spinner("Đang gửi yêu cầu về máy Local..."):
                                     try:
+                                        # [QUAN TRỌNG] Lưu TÊN GIỌNG (String) vào cột voice_id 
+                                        # (Bạn cần vào Supabase đổi cột voice_id từ int sang text, HOẶC xem lưu ý bên dưới)
                                         res = supabase.table('tts_requests').insert({
                                             "email": user['email'],
                                             "content": sanitize_input(current_script_local),
-                                            "voice_id": int(voice_id_input),
-                                            "speed": speed_input,
+                                            "voice_id": selected_voice_name, # Lưu tên giọng: "Ly (nữ miền Bắc)"
+                                            "speed": 1.0,
                                             "status": "pending"
                                         }).execute()
                                         
                                         if res.data:
                                             req_id = res.data[0]['id']
                                             
-                                            # [QUAN TRỌNG] 2. Trừ hạn mức NGAY LẬP TỨC sau khi gửi thành công
+                                            # Trừ hạn mức
                                             new_val = update_tts_usage_supabase(user['id'], msg_or_count)
-                                            if new_val: user['tts_usage'] = new_val # Cập nhật hiển thị
+                                            if new_val: user['tts_usage'] = new_val
 
-                                            st.toast(f"Đã gửi yêu cầu #{req_id}. Đang chờ máy local xử lý...", icon="⏳")
+                                            st.toast(f"Đã gửi yêu cầu #{req_id}. Đang chờ VieNeu xử lý...", icon="⏳")
                                             
-                                            # 3. Vòng lặp chờ kết quả
+                                            # Vòng lặp chờ kết quả
                                             progress_text = "Đang kết nối với Cloud Bridge Local..."
                                             my_bar = st.progress(0, text=progress_text)
                                             found_link = None
                                             
-                                            for i in range(60): # Chờ 60s
+                                            # Chờ lâu hơn chút vì model này có thể mất thời gian load lần đầu
+                                            for i in range(90): 
                                                 time.sleep(1)
-                                                my_bar.progress((i+1)/60, text=f"Đang tạo giọng... ({i+1}s)")
+                                                my_bar.progress((i+1)/90, text=f"AI đang đọc... ({i+1}s)")
                                                 check = supabase.table('tts_requests').select("*").eq('id', req_id).execute()
                                                 if check.data:
                                                     status = check.data[0]['status']
@@ -2057,10 +2070,10 @@ else:
                                             if found_link:
                                                 st.success("✅ Đã tạo giọng thành công!")
                                                 st.session_state['local_ai_audio_link'] = found_link
-                                                st.session_state['local_ai_info'] = f"Local Voice ID: {voice_id_input}"
+                                                st.session_state['local_ai_info'] = f"Voice: {selected_voice_name}"
                                                 st.rerun()
                                             else:
-                                                st.error("❌ Hết thời gian chờ! Kiểm tra `cloud_bridge.py`.")
+                                                st.error("❌ Hết thời gian chờ! Kiểm tra xem máy Lubuntu có đang chạy Cloud Bridge không.")
                                                 
                                     except Exception as e:
                                         st.error(f"Lỗi kết nối Supabase: {e}")
