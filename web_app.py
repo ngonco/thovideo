@@ -1729,7 +1729,7 @@ else:
                 "library": "🎵 Sử dụng giọng nói có sẵn",
                 "mic": "🎙️ Thu âm trực tiếp",
                 "upload": "📤 Tải file lên",
-                "local_ai": "🖥️ Giọng AI (Local)" 
+                "local_ai": "🖥️ Giọng AI" 
             }
             
             # Lọc bỏ giọng thư viện nếu link không tồn tại
@@ -1966,7 +1966,7 @@ else:
                 
 
                 # CASE 5: GIỌNG AI LOCAL (ĐÃ CÓ LIMIT)
-                elif voice_method == "local_ai": # Đã đổi key cho khớp bước 1
+                elif voice_method == "🖥️ Giọng AI": # [SỬA LẠI] Phải khớp đúng tên hiển thị
                     
                     # --- [NEW] HIỂN THỊ HẠN MỨC SỬ DỤNG (Tái sử dụng cột tts_usage) ---
                     u_usage = user.get('tts_usage', 0) or 0
