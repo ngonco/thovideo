@@ -2166,14 +2166,13 @@ else:
                         
                         # NÚT 1: [ĐÃ SỬA] CHUYỂN HƯỚNG NGƯỜI DÙNG
                         with col_opt1:
-                            if st.button("🎬 Dùng giọng này tạo video", type="primary", use_container_width=True):
+                            if st.button("🎬 Dùng giọng này", type="primary", use_container_width=True):
                                 # Thay vì tạo đơn ngay, ta hiện thông báo và hướng dẫn xuống Bước 3
-                                st.toast("Đã chốt giọng! Hãy xuống Bước 3 chọn chủ đề 👇", icon="✅")
                                 
                                 st.markdown("""
                                 <div style="background-color: #E8F5E9; border: 1px solid #4CAF50; padding: 10px; border-radius: 5px; margin-top: 10px; color: #1B5E20;">
-                                    <b>✅ Đã chọn xong giọng đọc!</b><br>
-                                    👇 Vui lòng kéo xuống <b>BƯỚC 3</b> để chọn Video minh họa, sau đó bấm nút <b>GỬI YÊU CẦU</b> ở cuối trang.
+                                    <b>✅ Đã chọn giọng đọc!</b><br>
+                                    👇 Kéo xuống <b>BƯỚC 3</b> để chọn kiểu video minh họa, sau đó bấm nút <b>GỬI YÊU CẦU TẠO VIDEO</b>.
                                 </div>
                                 """, unsafe_allow_html=True)
                         
