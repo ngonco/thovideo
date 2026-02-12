@@ -2010,12 +2010,11 @@ else:
                     else:
                         c_loc1, c_loc2 = st.columns([2, 1])
                         with c_loc1:
-                            # [THAY ĐỔI] Dùng Selectbox chọn tên giọng thay vì nhập ID số
-                            selected_voice_name = st.selectbox("Chọn giọng đọc:", VIENEU_VOICES)
+                            # Hiển thị danh sách giọng đọc từ ảnh đính kèm
+                            selected_voice_name = st.selectbox("Chọn giọng đọc:", VIENEU_VOICES, index=1) # Mặc định chọn Ly
                         with c_loc2:
-                            # VieNeu-TTS hiện tại chưa hỗ trợ chỉnh tốc độ qua API chuẩn này (nó tự nhiên), 
-                            # nhưng cứ để đây nếu sau này cần mapping
-                            st.info("Tốc độ: Chuẩn (AI)")
+                            # Sửa tốc độ mặc định thành 0.6 theo yêu cầu
+                            speed_input = st.slider("Tốc độ đọc", 0.5, 2.0, 0.6, 0.1)
 
                         if st.button("🎙️ GỬI YÊU CẦU TẠO GIỌNG", type="primary", use_container_width=True):
                             # 1. Kiểm tra hạn mức
@@ -2029,12 +2028,12 @@ else:
                                         # [QUAN TRỌNG] Lưu TÊN GIỌNG (String) vào cột voice_id 
                                         # (Bạn cần vào Supabase đổi cột voice_id từ int sang text, HOẶC xem lưu ý bên dưới)
                                         res = supabase.table('tts_requests').insert({
-                                            "email": user['email'],
-                                            "content": sanitize_input(current_script_local),
-                                            "voice_id": selected_voice_name, # Lưu tên giọng: "Ly (nữ miền Bắc)"
-                                            "speed": 1.0,
-                                            "status": "pending"
-                                        }).execute()
+                                                "email": user['email'],
+                                                "content": sanitize_input(current_script_local),
+                                                "voice_id": selected_voice_name, # Lưu tên giọng
+                                                "speed": speed_input, # Gửi tốc độ người dùng chọn (mặc định 0.6)
+                                                "status": "pending"
+                                            }).execute()
                                         
                                         if res.data:
                                             req_id = res.data[0]['id']
