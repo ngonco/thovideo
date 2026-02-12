@@ -159,6 +159,58 @@ def update_tts_usage_supabase(user_id, added_chars):
         print(f"Lỗi update TTS: {e}")
     return None
 
+
+def create_order_logic(user, status, audio_link, content, settings):
+    import random
+    try:
+        # 1. Kiểm tra Quota (Nếu là tạo video)
+        if status == "Pending":
+            if user['quota_used'] >= user['quota_max']:
+                st.error("⚠️ Bạn đã hết lượt tạo video!")
+                return
+
+        # 2. Tạo ID đơn hàng
+        now_vn = datetime.utcnow() + timedelta(hours=7)
+        random_suffix = random.randint(100, 999)
+        order_id = now_vn.strftime("%Y%m%d_%H%M%S") + f"_{random_suffix}"
+        
+        # 3. Chuẩn bị dữ liệu
+        # Nếu chỉ lưu giọng, ta dùng settings hiện tại nhưng đánh dấu
+        final_settings = settings.copy()
+        final_settings['is_voice_only'] = (status == "VoiceOnly")
+
+        order_data = {
+            "id": order_id,
+            "created_at": datetime.utcnow().isoformat(),
+            "email": user['email'],
+            "source": "AI Gen",
+            "content": sanitize_input(content),
+            "audio_link": audio_link,
+            "status": status, # Pending hoặc VoiceOnly
+            "result_link": "",
+            "settings": final_settings
+        }
+
+        # 4. Gửi lên Supabase
+        supabase.table('orders').insert(order_data).execute()
+
+        # 5. Xử lý sau khi lưu
+        if status == "Pending":
+            # Trừ quota video
+            update_user_usage_supabase(user['id'], user['quota_used'])
+            st.session_state['user_info']['quota_used'] += 1
+            st.success(f"✅ Đã gửi yêu cầu tạo video! (Mã: {order_id})")
+        else:
+            st.toast("✅ Đã lưu bản thu vào lịch sử!", icon="💾")
+            st.success("Đã lưu giọng nói. Bạn có thể xem lại trong phần 'Danh sách video'.")
+
+        # Reload để cập nhật lịch sử
+        time.sleep(1.5)
+        st.rerun()
+
+    except Exception as e:
+        st.error(f"Lỗi lưu dữ liệu: {e}")
+
 # --- [NEW] LƯU CÀI ĐẶT NGƯỜI DÙNG ---
 def save_user_settings_supabase(user_id, settings_dict):
     try:
@@ -2096,12 +2148,39 @@ else:
                                     except Exception as e:
                                         st.error(f"Lỗi kết nối Supabase: {e}")
 
-                    # Hiển thị kết quả
+                    # Hiển thị kết quả & Các tùy chọn
                     if st.session_state.get('local_ai_audio_link'):
+                        # 1. Phát âm thanh
                         st.audio(st.session_state['local_ai_audio_link'], format="audio/wav")
-                        st.info(f"Đang sử dụng: {st.session_state.get('local_ai_info')}")
+                        st.caption(f"ℹ️ {st.session_state.get('local_ai_info')}")
+                        
+                        # 2. Gán link để sẵn sàng sử dụng
                         final_audio_link_to_send = st.session_state['local_ai_audio_link']
                         st.session_state['chk_ai_upload_flag'] = True
+
+                        # 3. HIỂN THỊ 3 NÚT CHỨC NĂNG
+                        st.markdown("---")
+                        st.write("👉 **Bạn muốn làm gì tiếp theo?**")
+                        
+                        col_opt1, col_opt2, col_opt3 = st.columns(3)
+                        
+                        # NÚT 1: TẠO VIDEO NGAY
+                        with col_opt1:
+                            if st.button("🎬 Tạo Video Ngay", type="primary", use_container_width=True):
+                                # Gọi hàm xử lý tạo đơn hàng (Status=Pending)
+                                create_order_logic(user, "Pending", final_audio_link_to_send, current_script_local, settings)
+                        
+                        # NÚT 2: CHỈ LƯU GIỌNG
+                        with col_opt2:
+                            if st.button("💾 Chỉ lưu giọng", use_container_width=True):
+                                # Tạo đơn hàng nhưng set Status='VoiceOnly'
+                                create_order_logic(user, "VoiceOnly", final_audio_link_to_send, current_script_local, settings)
+
+                        # NÚT 3: TẠO LẠI (RESET)
+                        with col_opt3:
+                            if st.button("🔄 Tạo lại giọng", use_container_width=True):
+                                st.session_state['local_ai_audio_link'] = None
+                                st.rerun()
 
 
     # --- (B3) CHỌN PHONG CÁCH VIDEO (MỚI) ---
@@ -2465,21 +2544,21 @@ else:
         # 3. Hiển thị danh sách
         if not history_df.empty:
             status_map = {
-                "Pending": "⏳ Đang chờ xử lý", "Processing": "⚙️ Đang tạo video...",
-                "Done": "✅ Hoàn thành - Bấm xem", "Error": "❌ Gặp lỗi", "": "❓ Chưa xác định"
+                "Pending": "⏳ Đang chờ", 
+                "Processing": "⚙️ Đang tạo...",
+                "Done": "✅ Hoàn thành", 
+                "VoiceOnly": "💾 Bản thu",
+                "Error": "❌ Lỗi", 
+                "": "❓ Không rõ"
             }
             
-            # Logic phân trang (Xem thêm / Thu gọn)
             MAX_ITEMS = 3
             if 'history_expanded' not in st.session_state: st.session_state['history_expanded'] = False
             
-            # Cắt danh sách tùy theo trạng thái
             df_display = history_df if st.session_state['history_expanded'] else history_df.head(MAX_ITEMS)
             total_items = len(history_df)
 
-            # Vòng lặp hiển thị từng video
             for index, row in df_display.iterrows():
-                # Lấy thông tin an toàn
                 date_str = row.get('NgayTao', '')
                 result_link = row.get('LinkKetQua', '')
                 raw_status = row.get('TrangThai', 'Pending')
@@ -2487,32 +2566,61 @@ else:
                 old_audio_link = row.get('LinkGiongNoi', '')
                 old_content_script = row.get('NoiDung', '')
 
-                # Tạo trích dẫn ngắn
+                # [QUAN TRỌNG] Tạo biến vn_status để không bị lỗi
+                vn_status = status_map.get(raw_status, "❓ Chờ xử lý")
+
                 try:
-                    # Giải mã HTML trước khi hiển thị trích dẫn để người dùng đọc được ký tự gốc
                     decoded_content = html.unescape(str(old_content_script))
                     words = decoded_content.split()
                     script_preview = " ".join(words[:10]) + "..." if len(words) > 10 else decoded_content
-                except: script_preview = ""
+                except: script_preview = "Kịch bản..."
 
-                # Format ngày & Trạng thái (Đã sửa lỗi lệch múi giờ Việt Nam)
                 try:
-                    # Chuyển chuỗi chữ thành định dạng thời gian
                     dt_obj = pd.to_datetime(date_str)
-                    
-                    # Nếu thời gian chưa có múi giờ, ta gán cho nó là UTC, sau đó chuyển sang giờ VN (+7)
                     if dt_obj.tzinfo is None:
                         dt_obj = dt_obj.tz_localize('UTC').tz_convert('Asia/Ho_Chi_Minh')
                     else:
                         dt_obj = dt_obj.tz_convert('Asia/Ho_Chi_Minh')
-                        
                     display_date = dt_obj.strftime('%d/%m/%Y - %H:%M')
-                except Exception as e:
+                except:
                     display_date = str(date_str)
-                vn_status = status_map.get(raw_status, raw_status)
 
-                # HIỂN THỊ EXPANDER
+                # --- HIỂN THỊ CHI TIẾT VIDEO ---
                 with st.expander(f"{display_date} | {vn_status} | 📝 {script_preview}"):
+                    
+                    # CASE A: NẾU LÀ "CHỈ LƯU GIỌNG" (VoiceOnly)
+                    if raw_status == "VoiceOnly":
+                        st.info("💾 Đây là bản lưu giọng nói (Chưa tạo video).")
+                        
+                        # 1. Hiện Audio Player để nghe lại
+                        if old_audio_link:
+                            st.audio(old_audio_link, format="audio/wav")
+                        
+                        # 2. Nút chuyển đổi thành Video
+                        if st.button("🎬 Chuyển thành Video ngay", key=f"btn_convert_{order_id}"):
+                            # Update trạng thái từ VoiceOnly -> Pending
+                            try:
+                                supabase.table('orders').update({"status": "Pending"}).eq('id', order_id).execute()
+                                # Trừ quota
+                                update_user_usage_supabase(user['id'], user['quota_used'])
+                                st.session_state['user_info']['quota_used'] += 1
+                                st.success("✅ Đã đẩy sang hàng chờ xử lý video!")
+                                time.sleep(1)
+                                st.rerun()
+                            except Exception as e:
+                                st.error(f"Lỗi: {e}")
+
+                    # CASE B: VIDEO ĐÃ HOÀN THÀNH (Done)
+                    elif result_link and len(str(result_link)) > 5:
+                        # ... (Giữ nguyên code hiển thị nút Xem Video/Tải Video cũ ở đây) ...
+                        # ...
+                        pass # Xóa dòng pass này khi paste code cũ vào
+
+                    # CASE C: ĐANG XỬ LÝ / LỖI
+                    elif raw_status == "Error":
+                        st.error("Video này bị lỗi xử lý.")
+                    else:
+                        st.info("Hệ thống đang xử lý video này...")
                     # A. Nếu có link kết quả -> Hiện nút Xem & Tải
                     # [FIX] Kiểm tra độ dài thay vì bắt buộc phải có http ngay từ đầu
                     if result_link and len(str(result_link)) > 5:
