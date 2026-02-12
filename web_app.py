@@ -2434,6 +2434,20 @@ else:
                 # Insert vào bảng orders (Có bắt lỗi 500)
                 try:
                     supabase.table('orders').insert(order_data).execute()
+                    
+                    # --- [MỚI] TÍNH TOÁN HÀNG CHỜ ---
+                    # Đếm số lượng đơn đang chờ hoặc đang chạy
+                    # count='exact' giúp Supabase chỉ trả về số lượng (rất nhanh), không tải dữ liệu nặng
+                    queue_res = supabase.table('orders').select('*', count='exact').in_('status', ['Pending', 'Processing']).execute()
+                    current_queue = queue_res.count if queue_res.count else 1
+                    est_wait_time = current_queue * 3 # Giả sử trung bình 3 phút/video
+                    
+                    st.session_state['queue_info'] = {
+                        "position": current_queue,
+                        "wait_time": est_wait_time
+                    }
+                    # --------------------------------
+                    
                 except Exception as e:
                     # Nếu lỗi 500, chờ 1 giây rồi thử lại 1 lần nữa (Cơ chế Retry)
                     if "500" in str(e):
@@ -2472,8 +2486,35 @@ else:
                     is_working_time = True
 
                 if is_working_time:
-                    st.success(f"✅ ĐÃ GỬI THÀNH CÔNG! Mã đơn: {order_id}. Vui lòng đợi 5 phút.")
+                    # Lấy thông tin hàng chờ
+                    q_info = st.session_state.get('queue_info', {'position': 1, 'wait_time': 5})
+                    
+                    # --- [LOGIC MỚI] ẨN SỐ LƯỢNG NẾU QUÁ ĐÔNG ---
+                    real_pos = q_info['position']
+                    
+                    if real_pos > 10:
+                        pos_display = "Hơn 10 người"
+                        sub_text = "Hệ thống đang xử lý nhiều đơn hàng trước bạn"
+                    else:
+                        pos_display = f"Thứ {real_pos}"
+                        sub_text = f"Hệ thống đang xử lý {real_pos} đơn hàng trước bạn"
+                    # ---------------------------------------------
+
+                    st.success(f"✅ ĐÃ GỬI THÀNH CÔNG! Mã đơn: {order_id}")
+                    
+                    # Hiển thị thông báo (Dùng biến pos_display thay vì số thực)
+                    st.markdown(f"""
+                    <div style="background-color: #E3F2FD; padding: 15px; border-radius: 10px; border: 2px solid #2196F3; margin-top: 10px; margin-bottom: 10px;">
+                        <h4 style="color: #0D47A1; margin: 0;">🔢 Vị trí trong hàng chờ: {pos_display}</h4>
+                        <p style="color: #1565C0; margin-top: 5px; font-size: 18px;">
+                            ⏳ Thời gian chờ ước tính: <b>{q_info['wait_time']} phút</b><br>
+                            <span style="font-size: 14px;">({sub_text})</span>
+                        </p>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
                     st.balloons()
+                    time.sleep(5) 
                     st.rerun()
                 else:
                     # [ĐÃ SỬA] Dùng st.success và st.rerun giống hệt bên trên, chỉ khác nội dung
