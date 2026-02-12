@@ -675,10 +675,13 @@ def upload_to_catbox(file_obj, custom_name=None):
         url = f"https://api.cloudinary.com/v1_1/{CLOUD_NAME}/video/upload"
         
         # 1. Xử lý file (Tương tự logic cũ)
-        if custom_name:
-            filename = custom_name
-        else:
-            filename = getattr(file_obj, "name", "audio.wav")
+        import uuid
+        # Luôn tạo tên mới ngẫu nhiên để tránh lỗi bảo mật tên file
+        ext = "wav"
+        if hasattr(file_obj, "name") and "." in file_obj.name:
+            ext = file_obj.name.split(".")[-1]
+        
+        filename = f"{uuid.uuid4()}.{ext}"
             
         if isinstance(file_obj, bytes):
             file_stream = io.BytesIO(file_obj)
@@ -1639,6 +1642,14 @@ else:
                         if st.session_state.get('last_picked_idx') != selected_idx:
                             st.session_state['main_content_area'] = chosen_content
                             st.session_state['last_picked_idx'] = selected_idx
+                            
+                            # --- [MỚI] RESET FILE ÂM THANH KHI ĐỔI KỊCH BẢN ---
+                            if 'gemini_full_audio_link' in st.session_state: 
+                                st.session_state['gemini_full_audio_link'] = None
+                            if 'local_ai_audio_link' in st.session_state:
+                                st.session_state['local_ai_audio_link'] = None
+                            # --------------------------------------------------
+                            
                             st.rerun()
                         
                         final_script_content = chosen_content
@@ -1653,10 +1664,18 @@ else:
                 # [ĐÃ SỬA] Cố định chiều cao khung nhập liệu (Bạn có thể sửa số 450 thành số khác tùy ý)
                 FIXED_HEIGHT = 450 
                 
-                # Text Area - [ĐÃ SỬA LỖI WARNING] Bỏ tham số 'value' để tránh xung đột với key
+                # --- [MỚI] Hàm xóa âm thanh khi nội dung thay đổi ---
+                def clear_audio_cache():
+                    if 'gemini_full_audio_link' in st.session_state: 
+                        st.session_state['gemini_full_audio_link'] = None
+                    if 'local_ai_audio_link' in st.session_state:
+                        st.session_state['local_ai_audio_link'] = None
+
+                # Text Area - [ĐÃ SỬA] Thêm on_change=clear_audio_cache
                 noi_dung_gui = st.text_area("", height=FIXED_HEIGHT, 
                                             placeholder="Nội dung kịch bản sẽ hiện ở đây...", 
-                                            key="main_content_area")
+                                            key="main_content_area",
+                                            on_change=clear_audio_cache) # <--- Thêm dòng này
                 
                 # [CHỈNH SỬA] Chỉ hiện các nút Nháp khi đang ở chế độ "Tự viết mới"
                 if source_opt == "✍️ Tự viết mới":
