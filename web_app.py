@@ -1992,7 +1992,7 @@ else:
                     st.markdown(f"""
                     <div style="margin-bottom: 15px; padding: 10px; border: 1px solid #D7CCC8; border-radius: 8px; background: #FFF8E1;">
                         <div style="display: flex; justify-content: space-between; margin-bottom: 5px; font-weight: bold; color: #5D4037;">
-                            <span>⏱️ Thời lượng AI (Local)</span>
+                            <span>⏱️ Thời lượng tạo giọng AI</span>
                             <span>Còn lại: {min_left} phút</span>
                         </div>
                         <div style="width: 100%; background-color: #E0E0E0; border-radius: 5px; height: 10px;">
@@ -2001,7 +2001,7 @@ else:
                     </div>
                     """, unsafe_allow_html=True)
 
-                    st.markdown("##### 🖥️ Chọn giọng đọc (VieNeu)")
+                    st.markdown("##### 🖥️ Chọn giọng đọc ")
                     
                     # Kiểm tra kịch bản
                     current_script_local = st.session_state.get('main_content_area', "")
