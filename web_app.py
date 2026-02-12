@@ -2553,7 +2553,7 @@ else:
                 "Pending": "⏳ Đang chờ", 
                 "Processing": "⚙️ Đang tạo...",
                 "Done": "✅ Hoàn thành", 
-                "VoiceOnly": "💾 Bản thu",
+                "VoiceOnly": "💾 Đã có giọng AI",
                 "Error": "❌ Lỗi", 
                 "": "❓ Không rõ"
             }
