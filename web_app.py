@@ -2565,10 +2565,10 @@ else:
                 
                 st.markdown(f"""
                 <div style="background-color: #E3F2FD; color: #0D47A1; padding: 15px; border-radius: 10px; border: 1px solid #2196F3; margin-bottom: 20px;">
-                    <span style="font-size: 18px; font-weight: bold;">⚙️ Hệ thống đang xử lý video</span><br>
+                    <span style="font-size: 18px; font-weight: bold;">⚙️ Đang tạo video </span><br>
                     <span style="font-size: 16px;">
-                        🔢 Hàng chờ hiện tại: <b>{q_text}</b> trước bạn.<br>
-                        ⏳ Ước tính thời gian còn lại: <b>{q_wait} phút</b>.
+                        🔢 Đang có <b>{q_text}</b> trước bạn.<br>
+                        ⏳ Ước tính thời gian chờ <b>{q_wait} phút</b>.
                     </span><br>
                     <i style="font-size: 14px; color: #1565C0;">(Hãy bấm nút "Làm mới" sau vài phút để cập nhật tiến độ)</i>
                 </div>
