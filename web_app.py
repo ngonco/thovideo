@@ -2545,17 +2545,38 @@ else:
 
     # [FIX] Chỉ hiển thị thông báo khi thực sự có video đang chạy
     if is_processing_real:
-        # Lấy giờ hiện tại để quyết định nội dung thông báo
+        # Lấy giờ hiện tại
         now_check = datetime.utcnow() + timedelta(hours=7)
         
-        # Nếu đang trong giờ làm việc (7h - 23h) -> Báo đợi 5 phút
+        # Nếu đang trong giờ làm việc (7h - 23h)
         if 7 <= now_check.hour < 23:
-            st.markdown("""
-            <div style="background-color: #FFF9C4; color: #5D4037; padding: 15px; border-radius: 10px; border: 1px solid #FBC02D; margin-bottom: 20px; font-weight: bold;">
-                ⏳ Đang tạo video. Vui lòng quay lại sau 5 phút và bấm nút "Xem danh sách video" hoặc nút "Làm mới"!
-            </div>
-            """, unsafe_allow_html=True)
-        
+            # --- [LOGIC MỚI] TÍNH TOÁN HÀNG CHỜ THỜI GIAN THỰC ---
+            try:
+                # Đếm lại số lượng để cập nhật mỗi khi f5
+                q_res = supabase.table('orders').select('*', count='exact').in_('status', ['Pending', 'Processing']).execute()
+                q_count = q_res.count if q_res.count else 1
+                q_wait = q_count * 3 # 3 phút/video
+                
+                # Logic ẩn số nếu đông
+                if q_count > 10:
+                    q_text = "Hơn 10 người"
+                else:
+                    q_text = f"{q_count} người"
+                
+                st.markdown(f"""
+                <div style="background-color: #E3F2FD; color: #0D47A1; padding: 15px; border-radius: 10px; border: 1px solid #2196F3; margin-bottom: 20px;">
+                    <span style="font-size: 18px; font-weight: bold;">⚙️ Hệ thống đang xử lý video</span><br>
+                    <span style="font-size: 16px;">
+                        🔢 Hàng chờ hiện tại: <b>{q_text}</b> trước bạn.<br>
+                        ⏳ Ước tính thời gian còn lại: <b>{q_wait} phút</b>.
+                    </span><br>
+                    <i style="font-size: 14px; color: #1565C0;">(Hãy bấm nút "Làm mới" sau vài phút để cập nhật tiến độ)</i>
+                </div>
+                """, unsafe_allow_html=True)
+            except:
+                # Fallback nếu lỗi kết nối đếm
+                st.info("⏳ Đang tạo video. Vui lòng đợi trong giây lát...")
+
         # Nếu là ban đêm -> Báo đang chờ đến sáng (KHÔNG báo đang tạo)
         else:
             st.markdown("""
