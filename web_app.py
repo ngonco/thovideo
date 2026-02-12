@@ -1804,7 +1804,8 @@ else:
                 "library": "🎵 Sử dụng giọng nói có sẵn",
                 "mic": "🎙️ Thu âm trực tiếp",
                 "upload": "📤 Tải file lên",
-                "gemini": "🤖 Giọng AI Gemini"
+                "gemini": "🤖 Giọng AI Gemini",
+                "local_ai": "🖥️ Giọng AI Cá Nhân (Local)" # <--- MỚI
             }
             
             # Lọc bỏ giọng thư viện nếu link không tồn tại
@@ -2247,6 +2248,83 @@ else:
                             final_audio_link_to_send = st.session_state['gemini_full_audio_link']
                             st.session_state['chk_ai_upload_flag'] = True
 
+                # CASE 5: GIỌNG AI LOCAL (HELIX SPEECH)
+                elif voice_method == "🖥️ Giọng AI Cá Nhân (Local)":
+                    st.markdown("##### 🖥️ Điều khiển Server Local (HelixSpeech)")
+                    
+                    # Kiểm tra kịch bản
+                    current_script_local = st.session_state.get('main_content_area', "")
+                    if not current_script_local or len(current_script_local.strip()) < 2:
+                        st.warning("⚠️ Vui lòng nhập nội dung kịch bản ở Bước 1 trước!")
+                    else:
+                        c_loc1, c_loc2 = st.columns(2)
+                        with c_loc1:
+                            # Nhập ID giọng (Theo API của bạn là số nguyên)
+                            voice_id_input = st.number_input("Mã số giọng (Voice ID)", min_value=0, value=1, step=1, help="Nhập ID giọng từ phần mềm HelixSpeech")
+                        with c_loc2:
+                            speed_input = st.slider("Tốc độ đọc", 0.5, 2.0, 1.0, 0.1)
+
+                        if st.button("🎙️ GỬI YÊU CẦU TẠO GIỌNG", type="primary", use_container_width=True):
+                            with st.spinner("Đang gửi yêu cầu về máy Local..."):
+                                # 1. Tạo yêu cầu vào bảng tts_requests
+                                try:
+                                    res = supabase.table('tts_requests').insert({
+                                        "email": user['email'],
+                                        "content": sanitize_input(current_script_local),
+                                        "voice_id": int(voice_id_input),
+                                        "speed": speed_input,
+                                        "status": "pending"
+                                    }).execute()
+                                    
+                                    if res.data:
+                                        req_id = res.data[0]['id']
+                                        st.toast(f"Đã gửi yêu cầu #{req_id}. Đang chờ máy local xử lý...", icon="⏳")
+                                        
+                                        # 2. Vòng lặp chờ kết quả (Polling) - Tối đa 60 giây
+                                        progress_text = "Đang kết nối với Cloud Bridge Local..."
+                                        my_bar = st.progress(0, text=progress_text)
+                                        
+                                        found_link = None
+                                        for i in range(60): # Chờ 60s
+                                            time.sleep(1)
+                                            my_bar.progress((i+1)/60, text=f"Đang tạo giọng... ({i+1}s)")
+                                            
+                                            # Kiểm tra lại DB
+                                            check = supabase.table('tts_requests').select("*").eq('id', req_id).execute()
+                                            if check.data:
+                                                status = check.data[0]['status']
+                                                if status == 'done':
+                                                    found_link = check.data[0]['audio_link']
+                                                    my_bar.progress(1.0, text="✅ Đã xong!")
+                                                    break
+                                                elif status == 'error':
+                                                    st.error(f"Lỗi từ Local: {check.data[0]['output_path']}")
+                                                    break
+                                        
+                                        my_bar.empty()
+                                        
+                                        if found_link:
+                                            st.success("✅ Đã tạo giọng thành công!")
+                                            # Lưu vào session để dùng cho bước tiếp theo
+                                            st.session_state['local_ai_audio_link'] = found_link
+                                            st.session_state['local_ai_info'] = f"Local Voice ID: {voice_id_input}"
+                                            st.rerun()
+                                        else:
+                                            st.error("❌ Hết thời gian chờ! Kiểm tra xem file `cloud_bridge.py` trên máy có đang chạy không?")
+                                            
+                                except Exception as e:
+                                    st.error(f"Lỗi kết nối Supabase: {e}")
+
+                    # Hiển thị kết quả nếu đã có
+                    if st.session_state.get('local_ai_audio_link'):
+                        st.audio(st.session_state['local_ai_audio_link'], format="audio/wav")
+                        st.info(f"Đang sử dụng: {st.session_state.get('local_ai_info')}")
+                        
+                        # Gán biến global để nút Gửi Video nhận diện được
+                        final_audio_link_to_send = st.session_state['local_ai_audio_link']
+                        st.session_state['chk_ai_upload_flag'] = True # Đánh dấu là AI để không lọc ồn
+
+
     # --- (B3) CHỌN PHONG CÁCH VIDEO (MỚI) ---
     st.markdown("<br><br>", unsafe_allow_html=True)
     
@@ -2394,6 +2472,19 @@ else:
                 MAX_WORDS = 1100
             else:
                 MAX_WORDS = 800
+
+        # [MỚI] CASE Local AI
+        elif voice_method == "🖥️ Giọng AI Cá Nhân (Local)":
+            if st.session_state.get('local_ai_audio_link'):
+                ready_to_send = True
+                final_audio_link_to_send = st.session_state['local_ai_audio_link']
+                # Cài đặt
+                settings['is_ai_voice'] = True
+                settings['clean_audio'] = False
+                settings['voice_info'] = st.session_state.get('local_ai_info', "Local AI")
+            else:
+                st.error("⚠️ Bạn chưa bấm nút tạo giọng ở Bước 2!")
+
 
         # [NEW] CASE 3: Các trường hợp khác (Giọng Google cũ, Tự thu, Upload...)
         else:
