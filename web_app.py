@@ -2492,12 +2492,20 @@ else:
                     # --- [LOGIC MỚI] ẨN SỐ LƯỢNG NẾU QUÁ ĐÔNG ---
                     real_pos = q_info['position']
                     
+                    # Tính số người thực sự đứng trước (Tổng trừ đi chính mình)
+                    people_ahead = max(0, real_pos - 1)
+
                     if real_pos > 10:
                         pos_display = "Hơn 10 người"
                         sub_text = "Hệ thống đang xử lý nhiều đơn hàng trước bạn"
                     else:
                         pos_display = f"Thứ {real_pos}"
-                        sub_text = f"Hệ thống đang xử lý {real_pos} đơn hàng trước bạn"
+                        
+                        # Logic hiển thị thông minh hơn
+                        if people_ahead == 0:
+                            sub_text = "✨ Hệ thống đang xử lý ngay."
+                        else:
+                            sub_text = f"Hệ thống đang xử lý {people_ahead} đơn hàng trước bạn"
                     # ---------------------------------------------
 
                     st.success(f"✅ ĐÃ GỬI THÀNH CÔNG! Mã đơn: {order_id}")
