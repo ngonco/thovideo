@@ -2223,8 +2223,8 @@ else:
             with st.spinner("Đang xử lý bản thu..."):
                 link = upload_to_catbox(st.session_state['temp_record_file'], st.session_state['temp_record_name'])
                 if link: final_audio_link_to_send = link; ready_to_send = True
-        # [MỚI] CASE Local AI (Đã gộp logic cũ của Gemini vào đây nếu cần thiết)
-        elif voice_method == "local_ai":
+        # [MỚI] CASE Local AI (SỬA LỖI TÊN GỌI)
+        elif voice_method == "🖥️ Giọng AI":
             if st.session_state.get('local_ai_audio_link'):
                 ready_to_send = True
                 final_audio_link_to_send = st.session_state['local_ai_audio_link']
