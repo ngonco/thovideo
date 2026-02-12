@@ -784,82 +784,7 @@ GEMINI_STYLES = {
     }
 }
 
-def tts_gemini(text, voice_style_key="Nam Hà Nội - Trầm Ấm", region="Miền Bắc", is_test=False):
-    """
-    Google Gemini TTS - Updated (Rút gọn cho giọng Hà Nội Trầm Ấm)
-    """
-    if "gemini" in st.secrets and "key" in st.secrets["gemini"]:
-        api_key = st.secrets["gemini"]["key"]
-    else:
-        st.error("⚠️ Chưa cấu hình Gemini API Key!")
-        return None
 
-    # Lấy cấu hình giọng
-    voice_config = GEMINI_STYLES.get(voice_style_key, GEMINI_STYLES["Nam Hà Nội - Trầm Ấm"])
-    voice_id = voice_config["id"]
-    style_prompt = voice_config["style"]
-    
-    # Xử lý Text đầu vào
-    if is_test:
-        if not text or len(text.strip()) < 5:
-            input_text = f"Chào bạn, đây là thử nghiệm {voice_style_key}."
-        else:
-            sentences = re.split(r'(?<=[.!?])\s+', text.strip())
-            input_text = " ".join(sentences[:2])
-    else:
-        # [QUAN TRỌNG] Gắn lời nhắc hệ thống (Prompt) để ép giọng Hà Nội
-        input_text = f"{style_prompt}: {text}"
-
-    # URL API
-    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent"
-    
-    headers = {
-        "Content-Type": "application/json",
-        "x-goog-api-key": api_key
-    }
-    
-    payload = {
-        "contents": [{
-            "role": "user",
-            "parts": [{"text": f"{input_text}"}]
-        }],
-        "generationConfig": {
-            "responseModalities": ["AUDIO"],
-            "temperature": 1,
-            "speech_config": {
-                "voice_config": {
-                    "prebuilt_voice_config": {
-                        "voice_name": voice_id
-                    }
-                }
-            }
-        }
-    }
-    
-    try:
-        response = requests.post(url, headers=headers, json=payload, timeout=30)
-        
-        if response.status_code == 200:
-            result = response.json()
-            candidates_data = result[0] if isinstance(result, list) and len(result) > 0 else result
-            
-            if candidates_data and 'candidates' in candidates_data:
-                for candidate in candidates_data['candidates']:
-                    if 'content' in candidate and 'parts' in candidate['content']:
-                        for part in candidate['content']['parts']:
-                            if 'inlineData' in part and 'data' in part['inlineData']:
-                                wav_data = _convert_to_wav(part['inlineData']['data'])
-                                if wav_data:
-                                    if is_test: return wav_data 
-                                    return upload_to_catbox(wav_data, "gemini_hanoi_voice.wav")
-            
-            print(f"DEBUG GEMINI: {result}")
-            st.error("Gemini không trả về dữ liệu âm thanh.")
-        else:
-            st.error(f"Lỗi API ({response.status_code}): {response.text}")
-    except Exception as e: 
-        st.error(f"Lỗi kết nối: {e}")
-    return None
 
 
 
@@ -1804,8 +1729,7 @@ else:
                 "library": "🎵 Sử dụng giọng nói có sẵn",
                 "mic": "🎙️ Thu âm trực tiếp",
                 "upload": "📤 Tải file lên",
-                "gemini": "🤖 Giọng AI Gemini",
-                "local_ai": "🖥️ Giọng AI Cá Nhân (Local)" # <--- MỚI
+                "local_ai": "🖥️ Giọng AI (Local)" 
             }
             
             # Lọc bỏ giọng thư viện nếu link không tồn tại
@@ -2039,218 +1963,37 @@ else:
                                     """, unsafe_allow_html=True)
                 
 
-                # CASE 4: GIỌNG AI CHẤT LƯỢNG CAO
-                elif voice_method == "🤖 Giọng AI Gemini":
+                
 
+                # CASE 5: GIỌNG AI LOCAL (ĐÃ CÓ LIMIT)
+                elif voice_method == "local_ai": # Đã đổi key cho khớp bước 1
                     
-                    
-                    # --- [NEW] HIỂN THỊ HẠN MỨC SỬ DỤNG ---
-                    # Lấy số liệu (xử lý None)
+                    # --- [NEW] HIỂN THỊ HẠN MỨC SỬ DỤNG (Tái sử dụng cột tts_usage) ---
                     u_usage = user.get('tts_usage', 0) or 0
-                    u_limit = user.get('tts_limit', 10000) or 10000
+                    u_limit = user.get('tts_limit', 10000) or 10000 # Mặc định 10k ký tự
                     
-                    # Quy đổi ra phút (1000 char = 1 min)
                     min_used = round(u_usage / 1000, 1)
                     min_total = round(u_limit / 1000, 1)
                     min_left = max(0, min_total - min_used)
-                    
-                    # Tính phần trăm để vẽ thanh bar
                     progress = min(u_usage / u_limit, 1.0) if u_limit > 0 else 1.0
                     bar_color = "red" if progress > 0.9 else ("orange" if progress > 0.7 else "green")
 
                     st.markdown(f"""
                     <div style="margin-bottom: 15px; padding: 10px; border: 1px solid #D7CCC8; border-radius: 8px; background: #FFF8E1;">
                         <div style="display: flex; justify-content: space-between; margin-bottom: 5px; font-weight: bold; color: #5D4037;">
-                            <span>⏱️ Thời lượng AI Gemini</span>
+                            <span>⏱️ Thời lượng AI (Local)</span>
                             <span>Còn lại: {min_left} phút</span>
                         </div>
                         <div style="width: 100%; background-color: #E0E0E0; border-radius: 5px; height: 10px;">
                             <div style="width: {progress*100}%; background-color: {bar_color}; height: 10px; border-radius: 5px;"></div>
                         </div>
                         <div style="text-align: right; font-size: 12px; color: #888; margin-top: 3px;">
-                            ({min_used}/{min_total} phút)
+                            ({u_usage}/{u_limit} ký tự)
                         </div>
                     </div>
                     """, unsafe_allow_html=True)
-                    # ----------------------------------------
 
-                    # [LOGIC MỚI] Kiểm tra xem đã có kịch bản chưa
-                    current_script_gemini = st.session_state.get('main_content_area', "")
-                    
-                    # Nếu chưa có nội dung hoặc quá ngắn (< 5 ký tự) -> Hiện cảnh báo và DỪNG HIỂN THỊ
-                    if not current_script_gemini or len(current_script_gemini.strip()) < 5:
-                         st.markdown("""
-                            <div style="color: #3E2723; font-weight: bold; padding: 10px; background-color: #FFF3E0; border-radius: 5px; border-left: 5px solid #8B4513;">
-                                ⚠️ Bạn chưa nhập kịch bản! Vui lòng quay lại Bước 1 viết nội dung trước khi tải file âm thanh.
-                            </div>
-                        """, unsafe_allow_html=True)
-                    
-                    else:
-                        # [NẾU ĐÃ CÓ KỊCH BẢN] -> Mới hiển thị các công cụ bên dưới
-                        st.markdown("##### 🔊 Chọn giọng đọc Gemini (Hà Nội)")
-                        
-                        # 1. CHỈ CÒN CHỌN GIỌNG (Bỏ vùng miền)
-                        selected_voice_key = st.selectbox("🗣️ Chọn chất giọng:", list(GEMINI_STYLES.keys()))
-                        
-                        # Mặc định vùng miền là Bắc (để tương thích logic cũ)
-                        selected_region = "Miền Bắc" 
-
-                        
-
-                        st.markdown("---")
-                        
-                        # 3. TẠO GIỌNG ĐẦY ĐỦ (FULL) - THEO YÊU CẦU MỚI
-                        # Kiểm tra xem đã có nội dung chưa
-                        current_script_full = st.session_state.get('main_content_area', "")
-                        
-                        # --- [LOGIC MỚI] XỬ LÝ NÚT BẤM CÓ XÁC NHẬN ---
-                        
-                        # 1. Khởi tạo biến cờ để quyết định có chạy hay không
-                        should_run_process = False
-
-                        # 2. Xử lý nút bấm chính
-                        if st.button("🎙️ TẠO GIỌNG ĐỌC ĐẦY ĐỦ (BẮT BUỘC)", type="primary", use_container_width=True):
-                            if not current_script_full or len(current_script_full.strip()) < 2:
-                                st.error("⚠️ Vui lòng nhập nội dung kịch bản ở Bước 1 trước!")
-                            else:
-                                # Kiểm tra độ dài
-                                word_count_gemini = len(current_script_full.split())
-                                if word_count_gemini > 700:
-                                    # Nếu dài quá -> Bật cờ cảnh báo trong session, KHÔNG CHẠY NGAY
-                                    st.session_state['gemini_warning_active'] = True
-                                else:
-                                    # Nếu ngắn -> Chạy luôn
-                                    should_run_process = True
-
-                        # 3. Hiển thị CẢNH BÁO MÀU NÂU (Nếu cờ cảnh báo đang bật)
-                        if st.session_state.get('gemini_warning_active'):
-                            current_len = len(current_script_full.split())
-                            st.markdown(f"""
-                            <div style="background-color: #EFEBE9; border: 2px solid #5D4037; padding: 15px; border-radius: 10px; margin-bottom: 15px; margin-top: 10px;">
-                                <h4 style="color: #5D4037; margin: 0; font-size: 18px;">⚠️ Cảnh báo: Kịch bản quá dài ({current_len} từ)</h4>
-                                <p style="color: #3E2723; font-size: 16px; margin-top: 10px;">
-                                    Với văn bản trên 700 từ, giọng đọc Gemini có khả năng bị ngắt quãng hoặc mất nội dung giữa chừng.<br>
-                                    <b>💡 Gợi ý tốt nhất:</b> Bạn nên tách kịch bản thành 2 phần nhỏ để đảm bảo chất lượng.
-                                </p>
-                                <p style="color: #D32F2F; font-weight: bold; margin-top: 10px;">Bạn có chắc chắn muốn tiếp tục không?</p>
-                            </div>
-                            """, unsafe_allow_html=True)
-
-                            col_conf1, col_conf2 = st.columns(2)
-                            with col_conf1:
-                                if st.button("✅ Vẫn tạo (Chấp nhận rủi ro)", use_container_width=True):
-                                    should_run_process = True
-                                    st.session_state['gemini_warning_active'] = False # Tắt cảnh báo sau khi bấm
-                            with col_conf2:
-                                if st.button("❌ Hủy để tách kịch bản", use_container_width=True):
-                                    st.session_state['gemini_warning_active'] = False
-                                    st.rerun()
-
-                        # 4. THỰC THI LOGIC TẠO GIỌNG (Chỉ chạy khi cờ cho phép)
-                        if should_run_process:
-                            # Kiểm tra hạn mức TTS
-                            is_enough, msg_or_count = check_tts_quota(user, current_script_full)
-                            if not is_enough:
-                                st.error(msg_or_count) 
-                            else:
-                                # Hạn mức OK -> Tiến hành tạo
-                                with st.spinner(f"⏳ Đang xử lý ({round(msg_or_count/1000, 1)} phút)... Vui lòng đợi!"):
-                                    # Gọi API
-                                    full_audio_link = tts_gemini(current_script_full, voice_style_key=selected_voice_key, region=selected_region, is_test=False)
-                                    
-                                    if full_audio_link:
-                                        # 1. Tạo ID đơn hàng ngay lập tức
-                                        import random
-                                        now_vn = datetime.utcnow() + timedelta(hours=7)
-                                        order_id = now_vn.strftime("%Y%m%d_%H%M%S") + f"_{random.randint(100, 999)}"
-                                        
-                                        # 2. Lưu thông tin vào session
-                                        st.session_state['gemini_full_audio_link'] = full_audio_link
-                                        st.session_state['gemini_voice_info'] = f"Gemini - {selected_region} - {selected_voice_key}"
-                                        st.session_state['current_order_id'] = order_id # Lưu ID để tí nữa update
-                                        
-                                        # 3. Trừ hạn mức TTS (Ký tự đọc)
-                                        new_usage = update_tts_usage_supabase(user['id'], msg_or_count)
-                                        if new_usage:
-                                            st.session_state['user_info']['tts_usage'] = new_usage
-
-                                        # 4. TỰ ĐỘNG TẠO ĐƠN HÀNG NHÁP (Trạng thái mặc định)
-                                        order_data = {
-                                            "id": order_id,
-                                            "created_at": datetime.utcnow().isoformat(),
-                                            "email": user['email'],
-                                            "source": "Gemini AI",
-                                            "content": sanitize_input(current_script_full),
-                                            "audio_link": full_audio_link,
-                                            "status": "Đã có giọng AI Gemini", # Trạng thái mặc định như bạn yêu cầu
-                                            "result_link": "",
-                                            "settings": settings 
-                                        }
-                                        supabase.table('orders').insert(order_data).execute()
-
-                                        st.success("✅ Đã tạo xong và tự động lưu đơn hàng nháp!")
-                                        time.sleep(1) 
-                                        st.rerun()
-                                    else:
-                                        st.error("❌ Lỗi khi tạo giọng. Vui lòng thử lại!")
-
-                        # 4. HIỂN THỊ PLAYER & XÁC NHẬN TẠO VIDEO
-                        if st.session_state.get('gemini_full_audio_link'):
-                            st.audio(st.session_state['gemini_full_audio_link'], format="audio/wav")
-                            
-                            st.markdown("""
-                                <div style="background-color: #E8F5E9; padding: 15px; border-radius: 10px; border: 1px solid #2E7D32; margin-top: 10px;">
-                                    <p style="color: #2E7D32; font-weight: bold; margin: 0;">🎉 Giọng nói đã lưu vào danh sách Video!</p>
-                                    <p style="color: #3E2723; margin: 5px 0;">Bạn có muốn tạo Video này luôn không?</p>
-                                </div>
-                            """, unsafe_allow_html=True)
-
-                            # Chia thành 3 cột để thêm nút Tạo lại
-                            col_confirm1, col_confirm2, col_confirm3 = st.columns(3)
-                            
-                            with col_confirm1:
-                                if st.button("🚀 ĐỒNG Ý TẠO VIDEO", type="primary", use_container_width=True):
-                                    # Update trạng thái thành Pending để máy chủ bắt đầu làm video
-                                    order_id = st.session_state.get('current_order_id')
-                                    if order_id:
-                                        supabase.table('orders').update({"status": "Pending"}).eq('id', order_id).execute()
-                                        # Trừ Quota Video
-                                        update_user_usage_supabase(user['id'], user['quota_used'])
-                                        st.session_state['user_info']['quota_used'] += 1
-                                        st.success("✅ Đã xác nhận! Video đang được tạo.")
-                                        st.balloons()
-                                        
-                                        # --- [MỚI] DỌN DẸP SESSION ĐỂ THU GỌN GIAO DIỆN ---
-                                        # Xóa link audio và ID đơn hàng để giao diện Gemini quay về trạng thái ban đầu
-                                        st.session_state['gemini_full_audio_link'] = None
-                                        st.session_state['current_order_id'] = None
-                                        st.session_state['gemini_voice_info'] = None
-                                        # --------------------------------------------------
-
-                                        time.sleep(2)
-                                        st.rerun()
-
-                            with col_confirm2:
-                                if st.button("💾 CHỈ LƯU GIỌNG NÓI", use_container_width=True):
-                                    # Trạng thái vẫn giữ nguyên là "Đã có giọng AI Gemini"
-                                    st.info("📂 Đã lưu vào lịch sử. Bạn có thể tạo video sau.")
-
-                            with col_confirm3:
-                                if st.button("🔄 TẠO LẠI TTS", use_container_width=True):
-                                    # Xóa link audio cũ trong session để hiện lại nút tạo ban đầu
-                                    st.session_state['gemini_full_audio_link'] = None
-                                    st.session_state['current_order_id'] = None
-                                    st.toast("Đã sẵn sàng để tạo lại giọng mới!", icon="🔄")
-                                    time.sleep(0.5)
-                                    st.rerun()
-                            
-                            # Gán vào biến global để tương thích với các nút bấm khác (nếu cần)
-                            final_audio_link_to_send = st.session_state['gemini_full_audio_link']
-                            st.session_state['chk_ai_upload_flag'] = True
-
-                # CASE 5: GIỌNG AI LOCAL (HELIX SPEECH)
-                elif voice_method == "🖥️ Giọng AI Cá Nhân (Local)":
-                    st.markdown("##### 🖥️ Điều khiển Server Local (HelixSpeech)")
+                    st.markdown("##### 🖥️ Cài đặt giọng")
                     
                     # Kiểm tra kịch bản
                     current_script_local = st.session_state.get('main_content_area', "")
@@ -2259,70 +2002,75 @@ else:
                     else:
                         c_loc1, c_loc2 = st.columns(2)
                         with c_loc1:
-                            # Nhập ID giọng (Theo API của bạn là số nguyên)
-                            voice_id_input = st.number_input("Mã số giọng (Voice ID)", min_value=0, value=1, step=1, help="Nhập ID giọng từ phần mềm HelixSpeech")
+                            voice_id_input = st.number_input("Mã số giọng (Voice ID)", min_value=0, value=1, step=1)
                         with c_loc2:
                             speed_input = st.slider("Tốc độ đọc", 0.5, 2.0, 1.0, 0.1)
 
                         if st.button("🎙️ GỬI YÊU CẦU TẠO GIỌNG", type="primary", use_container_width=True):
-                            with st.spinner("Đang gửi yêu cầu về máy Local..."):
-                                # 1. Tạo yêu cầu vào bảng tts_requests
-                                try:
-                                    res = supabase.table('tts_requests').insert({
-                                        "email": user['email'],
-                                        "content": sanitize_input(current_script_local),
-                                        "voice_id": int(voice_id_input),
-                                        "speed": speed_input,
-                                        "status": "pending"
-                                    }).execute()
-                                    
-                                    if res.data:
-                                        req_id = res.data[0]['id']
-                                        st.toast(f"Đã gửi yêu cầu #{req_id}. Đang chờ máy local xử lý...", icon="⏳")
+                            # [QUAN TRỌNG] 1. Kiểm tra hạn mức trước
+                            is_enough, msg_or_count = check_tts_quota(user, current_script_local)
+                            
+                            if not is_enough:
+                                st.error(msg_or_count)
+                            else:
+                                # Nếu đủ hạn mức thì mới chạy
+                                with st.spinner("Đang gửi yêu cầu về máy Local..."):
+                                    try:
+                                        res = supabase.table('tts_requests').insert({
+                                            "email": user['email'],
+                                            "content": sanitize_input(current_script_local),
+                                            "voice_id": int(voice_id_input),
+                                            "speed": speed_input,
+                                            "status": "pending"
+                                        }).execute()
                                         
-                                        # 2. Vòng lặp chờ kết quả (Polling) - Tối đa 60 giây
-                                        progress_text = "Đang kết nối với Cloud Bridge Local..."
-                                        my_bar = st.progress(0, text=progress_text)
-                                        
-                                        found_link = None
-                                        for i in range(60): # Chờ 60s
-                                            time.sleep(1)
-                                            my_bar.progress((i+1)/60, text=f"Đang tạo giọng... ({i+1}s)")
+                                        if res.data:
+                                            req_id = res.data[0]['id']
                                             
-                                            # Kiểm tra lại DB
-                                            check = supabase.table('tts_requests').select("*").eq('id', req_id).execute()
-                                            if check.data:
-                                                status = check.data[0]['status']
-                                                if status == 'done':
-                                                    found_link = check.data[0]['audio_link']
-                                                    my_bar.progress(1.0, text="✅ Đã xong!")
-                                                    break
-                                                elif status == 'error':
-                                                    st.error(f"Lỗi từ Local: {check.data[0]['output_path']}")
-                                                    break
-                                        
-                                        my_bar.empty()
-                                        
-                                        if found_link:
-                                            st.success("✅ Đã tạo giọng thành công!")
-                                            # Lưu vào session để dùng cho bước tiếp theo
-                                            st.session_state['local_ai_audio_link'] = found_link
-                                            st.session_state['local_ai_info'] = f"Local Voice ID: {voice_id_input}"
-                                            st.rerun()
-                                        else:
-                                            st.error("❌ Hết thời gian chờ! Kiểm tra xem file `cloud_bridge.py` trên máy có đang chạy không?")
-                                            
-                                except Exception as e:
-                                    st.error(f"Lỗi kết nối Supabase: {e}")
+                                            # [QUAN TRỌNG] 2. Trừ hạn mức NGAY LẬP TỨC sau khi gửi thành công
+                                            new_val = update_tts_usage_supabase(user['id'], msg_or_count)
+                                            if new_val: user['tts_usage'] = new_val # Cập nhật hiển thị
 
-                    # Hiển thị kết quả nếu đã có
+                                            st.toast(f"Đã gửi yêu cầu #{req_id}. Đang chờ máy local xử lý...", icon="⏳")
+                                            
+                                            # 3. Vòng lặp chờ kết quả
+                                            progress_text = "Đang kết nối với Cloud Bridge Local..."
+                                            my_bar = st.progress(0, text=progress_text)
+                                            found_link = None
+                                            
+                                            for i in range(60): # Chờ 60s
+                                                time.sleep(1)
+                                                my_bar.progress((i+1)/60, text=f"Đang tạo giọng... ({i+1}s)")
+                                                check = supabase.table('tts_requests').select("*").eq('id', req_id).execute()
+                                                if check.data:
+                                                    status = check.data[0]['status']
+                                                    if status == 'done':
+                                                        found_link = check.data[0]['audio_link']
+                                                        my_bar.progress(1.0, text="✅ Đã xong!")
+                                                        break
+                                                    elif status == 'error':
+                                                        st.error(f"Lỗi từ Local: {check.data[0]['output_path']}")
+                                                        break
+                                            
+                                            my_bar.empty()
+                                            
+                                            if found_link:
+                                                st.success("✅ Đã tạo giọng thành công!")
+                                                st.session_state['local_ai_audio_link'] = found_link
+                                                st.session_state['local_ai_info'] = f"Local Voice ID: {voice_id_input}"
+                                                st.rerun()
+                                            else:
+                                                st.error("❌ Hết thời gian chờ! Kiểm tra `cloud_bridge.py`.")
+                                                
+                                    except Exception as e:
+                                        st.error(f"Lỗi kết nối Supabase: {e}")
+
+                    # Hiển thị kết quả
                     if st.session_state.get('local_ai_audio_link'):
                         st.audio(st.session_state['local_ai_audio_link'], format="audio/wav")
                         st.info(f"Đang sử dụng: {st.session_state.get('local_ai_info')}")
-                        
-                        # Gán biến global để nút Gửi Video nhận diện được
                         final_audio_link_to_send = st.session_state['local_ai_audio_link']
-                        st.session_state['chk_ai_upload_flag'] = True # Đánh dấu là AI để không lọc ồn
+                        st.session_state['chk_ai_upload_flag'] = True
 
 
     # --- (B3) CHỌN PHONG CÁCH VIDEO (MỚI) ---
@@ -2463,18 +2211,23 @@ else:
             with st.spinner("Đang xử lý bản thu..."):
                 link = upload_to_catbox(st.session_state['temp_record_file'], st.session_state['temp_record_name'])
                 if link: final_audio_link_to_send = link; ready_to_send = True
-        # [SỬA] Thêm dòng này để hệ thống biết chọn Gemini là hợp lệ, không cần file trước
-        elif voice_method == "🤖 Giọng AI Gemini":
-            ready_to_send = True
-            # [FIX LỖI] Cài đặt giới hạn từ ngay tại đây để tránh lỗi NameError
-            # Nếu gói Pro hoặc Huynh đệ/Đặc biệt thì được 1100 từ, thường 800 từ
-            if user.get('plan') in ['pro', 'huynhde', 'dacbiet']:
-                MAX_WORDS = 1100
+        # [MỚI] CASE Local AI (Đã gộp logic cũ của Gemini vào đây nếu cần thiết)
+        elif voice_method == "local_ai":
+            if st.session_state.get('local_ai_audio_link'):
+                ready_to_send = True
+                final_audio_link_to_send = st.session_state['local_ai_audio_link']
+                # Cài đặt
+                settings['is_ai_voice'] = True
+                settings['clean_audio'] = False
+                settings['voice_info'] = st.session_state.get('local_ai_info', "Local AI")
+                
+                # Giới hạn từ cho gói Pro (Thừa hưởng từ logic cũ)
+                if user.get('plan') in ['pro', 'huynhde', 'dacbiet']:
+                    MAX_WORDS = 1100
+                else:
+                    MAX_WORDS = 800
             else:
-                MAX_WORDS = 800
-
-        # [MỚI] CASE Local AI
-        elif voice_method == "🖥️ Giọng AI Cá Nhân (Local)":
+                st.error("⚠️ Bạn chưa bấm nút tạo giọng ở Bước 2!")
             if st.session_state.get('local_ai_audio_link'):
                 ready_to_send = True
                 final_audio_link_to_send = st.session_state['local_ai_audio_link']
