@@ -2123,24 +2123,43 @@ else:
 
                                             # st.toast(f"Đã gửi yêu cầu #{req_id}. Đang chờ VieNeu xử lý...", icon="⏳")
                                             
-                                            # Vòng lặp chờ kết quả
-                                            progress_text = "Đang kết nối máy chủ xử lý..." # Giấu chữ Local
+                                            # Vòng lặp chờ kết quả ĐỘNG (Dựa trên độ dài kịch bản)
+                                            progress_text = "Đang gửi kịch bản đến máy chủ xử lý..." 
                                             my_bar = st.progress(0, text=progress_text)
                                             found_link = None
                                             
-                                            # Chờ lâu hơn chút vì model này có thể mất thời gian load lần đầu
-                                            for i in range(90): 
+                                            # Tính toán thời gian chờ:
+                                            # 1. Thời gian khởi động model (Base): 15 giây
+                                            # 2. Thời gian đọc trung bình: ~1 giây xử lý cho mỗi 10 ký tự
+                                            char_count = len(current_script_local)
+                                            estimated_wait_time = 15 + int(char_count / 10)
+                                            
+                                            # Giới hạn an toàn (Tránh treo app quá lâu): Tối thiểu 45s, Tối đa 300s (5 phút)
+                                            MAX_WAIT_SECONDS = max(45, min(estimated_wait_time, 300))
+                                            
+                                            for i in range(MAX_WAIT_SECONDS): 
                                                 time.sleep(1)
-                                                my_bar.progress((i+1)/90, text=f"Đang xử lý âm thanh... ({i+1}s)")
-                                                check = supabase.table('tts_requests').select("*").eq('id', req_id).execute()
+                                                
+                                                # Tính phần trăm thanh tiến trình
+                                                percent = min(1.0, (i+1) / MAX_WAIT_SECONDS)
+                                                
+                                                # Hiển thị text cho mượt mà (chỉ cập nhật mỗi 3 giây để tránh giật lag UI)
+                                                if i % 3 == 0:
+                                                    msg = f"Đang tổng hợp giọng nói... (Ước tính còn {MAX_WAIT_SECONDS - i}s)"
+                                                    my_bar.progress(percent, text=msg)
+                                                
+                                                # Kiểm tra database liên tục
+                                                check = supabase.table('tts_requests').select("status, audio_link, output_path").eq('id', req_id).execute()
+                                                
                                                 if check.data:
                                                     status = check.data[0]['status']
                                                     if status == 'done':
                                                         found_link = check.data[0]['audio_link']
-                                                        my_bar.progress(1.0, text="✅ Đã xong!")
+                                                        my_bar.progress(1.0, text="✅ Đã tổng hợp xong!")
+                                                        time.sleep(0.5) # Dừng một nhịp cho đẹp
                                                         break
                                                     elif status == 'error':
-                                                        st.error(f"Lỗi từ Local: {check.data[0]['output_path']}")
+                                                        st.error(f"❌ Lỗi xử lý âm thanh: {check.data[0].get('output_path', 'Không rõ nguyên nhân')}")
                                                         break
                                             
                                             my_bar.empty()
