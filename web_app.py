@@ -2085,7 +2085,7 @@ else:
                             selected_voice_name = st.selectbox("Chọn giọng đọc:", VIENEU_VOICES, index=1) # Mặc định chọn Ly
                         with c_loc2:
                             # Sửa tốc độ mặc định thành 0.6 theo yêu cầu
-                            speed_input = st.slider("Tốc độ đọc", 0.5, 2.0, 0.6, 0.1)
+                            speed_input = st.slider("Tốc độ đọc", 0.5, 2.0, 0.8, 0.1)
 
                         if st.button("🎙️ GỬI YÊU CẦU TẠO GIỌNG", type="primary", use_container_width=True):
                             # 1. Kiểm tra hạn mức
