@@ -2565,20 +2565,24 @@ else:
                 q_count = q_res.count if q_res.count else 1
                 q_wait = q_count * 3 # 3 phút/video
                 
-                # Logic ẩn số nếu đông
-                if q_count > 10:
+                # [FIX] Trừ đi 1 (chính là đơn hàng của bạn)
+                real_ahead = max(0, q_count - 1)
+
+                # Logic hiển thị thông minh hơn
+                if real_ahead > 10:
                     q_text = "Hơn 10 người"
+                elif real_ahead == 0:
+                    q_text = "0 người"
                 else:
-                    q_text = f"{q_count} người"
+                    q_text = f"{real_ahead} người"
                 
                 st.markdown(f"""
                 <div style="background-color: #E3F2FD; color: #0D47A1; padding: 15px; border-radius: 10px; border: 1px solid #2196F3; margin-bottom: 20px;">
                     <span style="font-size: 18px; font-weight: bold;">⚙️ Đang tạo video </span><br>
                     <span style="font-size: 16px;">
                         🔢 Đang có <b>{q_text}</b> trước bạn.<br>
-                        ⏳ Ước tính thời gian chờ <b>{q_wait} phút</b>.
-                    </span><br>
-                    <i style="font-size: 14px; color: #1565C0;">(Hãy bấm nút "Làm mới" sau vài phút để cập nhật tiến độ)</i>
+                        ⏳ Vui lòng quay lại sau <b>{q_wait} phút và bấm nút xem danh sách hoặc làm mới. </b>.
+                    </span>
                 </div>
                 """, unsafe_allow_html=True)
             except:
