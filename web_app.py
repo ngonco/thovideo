@@ -2198,7 +2198,7 @@ else:
         # Radio chọn chế độ
         video_style = st.radio(
             "Chế độ video:",
-            ["AI tự động chọn video", "Chọn chủ đề video cụ thể"],
+            ["AI tự động chọn video", "Chọn chủ đề video cụ thể", "Video kết hợp ảnh AI (Mới)"],
             key="rb_video_style",
             label_visibility="collapsed"
         )
@@ -2227,6 +2227,9 @@ else:
             # Cập nhật vào settings
             settings['video_mode'] = 'topic'
             settings['topic_name'] = selected_topic_name
+        elif "ảnh AI" in video_style:
+            settings['video_mode'] = 'ai_image'
+            settings['topic_name'] = ""
         else:
             settings['video_mode'] = 'auto'
             settings['topic_name'] = ""
