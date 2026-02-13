@@ -1189,9 +1189,9 @@ st.markdown("""
     }
     .stTextArea textarea {
         background-color: #FFF8DC !important; 
-        color: #3E2723 !important; /* Màu nâu đậm nguyên bản */
-        caret-color: #8B4513 !important; /* MỚI: Đổi màu con trỏ nhấp nháy thành nâu đậm */
-        font-weight: 600 !important; /* MỚI: Làm chữ và dấu nháy dày lên cho dễ nhìn */
+        color: #3E2723 !important; 
+        caret-color: #8B4513 !important; 
+        font-weight: normal !important; /* Đã sửa: Trả chữ về nét mỏng bình thường */
         border: 2px solid #8B4513 !important; 
         font-size: 19px !important; 
         line-height: 1.5 !important; 
