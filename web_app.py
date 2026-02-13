@@ -1188,10 +1188,18 @@ st.markdown("""
         font-weight: 500 !important; border: 1px solid #D7CCC8; border-radius: 4px;
     }
     .stTextArea textarea {
-        background-color: #FFF8DC !important; color: #3E2723 !important;
+        background-color: #FFF8DC !important; 
+        color: #3E2723 !important; /* Màu nâu đậm nguyên bản */
+        caret-color: #8B4513 !important; /* MỚI: Đổi màu con trỏ nhấp nháy thành nâu đậm */
+        font-weight: 600 !important; /* MỚI: Làm chữ và dấu nháy dày lên cho dễ nhìn */
         border: 2px solid #8B4513 !important; 
-        font-size: 19px !important; /* [ĐÃ TĂNG] Cỡ chữ to hơn (cũ là 16px) */
-        line-height: 1.5 !important; /* Giãn dòng ra chút cho dễ đọc */
+        font-size: 19px !important; 
+        line-height: 1.5 !important; 
+    }
+    /* MỚI: Làm mờ chữ gợi ý (placeholder) để phân biệt rõ với chữ thật do user gõ */
+    .stTextArea textarea::placeholder {
+        color: #A1887F !important; 
+        font-weight: normal !important;
     }
     
     /* 5. FIX DROPDOWN & ICONS */
