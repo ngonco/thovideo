@@ -2113,17 +2113,17 @@ else:
                                             new_val = update_tts_usage_supabase(user['id'], msg_or_count)
                                             if new_val: user['tts_usage'] = new_val
 
-                                            st.toast(f"Đã gửi yêu cầu #{req_id}. Đang chờ VieNeu xử lý...", icon="⏳")
+                                            # st.toast(f"Đã gửi yêu cầu #{req_id}. Đang chờ VieNeu xử lý...", icon="⏳")
                                             
                                             # Vòng lặp chờ kết quả
-                                            progress_text = "Đang kết nối với Cloud Bridge Local..."
+                                            progress_text = "Đang kết nối máy chủ xử lý..." # Giấu chữ Local
                                             my_bar = st.progress(0, text=progress_text)
                                             found_link = None
                                             
                                             # Chờ lâu hơn chút vì model này có thể mất thời gian load lần đầu
                                             for i in range(90): 
                                                 time.sleep(1)
-                                                my_bar.progress((i+1)/90, text=f"AI đang đọc... ({i+1}s)")
+                                                my_bar.progress((i+1)/90, text=f"Đang xử lý âm thanh... ({i+1}s)")
                                                 check = supabase.table('tts_requests').select("*").eq('id', req_id).execute()
                                                 if check.data:
                                                     status = check.data[0]['status']
