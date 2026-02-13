@@ -2522,19 +2522,10 @@ else:
 
                     st.success(f"✅ ĐÃ GỬI THÀNH CÔNG! Mã đơn: {order_id}")
                     
-                    # Hiển thị thông báo (Dùng biến pos_display thay vì số thực)
-                    st.markdown(f"""
-                    <div style="background-color: #E3F2FD; padding: 15px; border-radius: 10px; border: 2px solid #2196F3; margin-top: 10px; margin-bottom: 10px;">
-                        <h4 style="color: #0D47A1; margin: 0;">🔢 Vị trí trong hàng chờ: {pos_display}</h4>
-                        <p style="color: #1565C0; margin-top: 5px; font-size: 18px;">
-                            ⏳ Thời gian chờ ước tính: <b>{q_info['wait_time']} phút</b><br>
-                            <span style="font-size: 14px;">({sub_text})</span>
-                        </p>
-                    </div>
-                    """, unsafe_allow_html=True)
+                    
                     
                     st.balloons()
-                    time.sleep(5) 
+                    time.sleep(3) 
                     st.rerun()
                 else:
                     # [ĐÃ SỬA] Dùng st.success và st.rerun giống hệt bên trên, chỉ khác nội dung
