@@ -2348,11 +2348,12 @@ else:
                 settings['clean_audio'] = False
                 settings['voice_info'] = st.session_state.get('local_ai_info', "Local AI")
                 
-                # Giới hạn từ cho gói Pro (Thừa hưởng từ logic cũ)
+                # Giới hạn từ cho gói Pro: 3 phút 10 giây (~633 từ)
                 if user.get('plan') in ['pro', 'huynhde', 'dacbiet']:
-                    MAX_WORDS = 1100
+                    MAX_WORDS = 633
+                # Giới hạn từ cho gói Free/Cơ bản: 2 phút (~400 từ)
                 else:
-                    MAX_WORDS = 800
+                    MAX_WORDS = 400
             else:
                 st.error("⚠️ Bạn chưa bấm nút tạo giọng ở Bước 2!")
             if st.session_state.get('local_ai_audio_link'):
