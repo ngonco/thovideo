@@ -2738,13 +2738,9 @@ else:
                                 else:
                                     direct_dl_link += "?download=2" # <-- Sửa số 1 thành 2
 
-                            # 4. HIỆN NÚT BẤM HTML THÔNG MINH (Tự đóng tab trên điện thoại)
-                            # Sử dụng JavaScript để kích hoạt tải về mà không để lại tab thừa
+                            # 4. HIỆN NÚT BẤM HTML (Đã sửa lỗi trên Xiaomi/HyperOS)
                             download_script = f"""
                             <a href="{direct_dl_link}" 
-                               onclick="setTimeout(function(){{ window.close(); }}, 500);" 
-                               target="_blank" 
-                               rel="noopener noreferrer" 
                                download
                                style="{btn_style} background-color: #2E7D32; color: white; border: 1px solid #1B5E20; text-decoration: none; display: block; text-align: center;">
                                 📥 TẢI VIDEO
