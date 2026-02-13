@@ -1812,7 +1812,7 @@ else:
                 "library": "🎵 Sử dụng giọng nói có sẵn",
                 "mic": "🎙️ Thu âm trực tiếp",
                 "upload": "📤 Tải file lên",
-                "local_ai": "🖥️ Giọng AI" 
+                "local_ai": "🖥️ Giọng AI tiêu chuẩn" 
             }
             
             # Lọc bỏ giọng thư viện nếu link không tồn tại
@@ -2049,7 +2049,7 @@ else:
                 
 
                 # CASE 5: GIỌNG AI VIENEU (LOCAL PC)
-                elif voice_method == "🖥️ Giọng AI": 
+                elif voice_method == "🖥️ Giọng AI tiêu chuẩn": 
                     
                     # --- THANH QUOTA (GIỮ NGUYÊN) ---
                     u_usage = user.get('tts_usage', 0) or 0
@@ -2063,8 +2063,8 @@ else:
                     st.markdown(f"""
                     <div style="margin-bottom: 15px; padding: 10px; border: 1px solid #D7CCC8; border-radius: 8px; background: #FFF8E1;">
                         <div style="display: flex; justify-content: space-between; margin-bottom: 5px; font-weight: bold; color: #5D4037;">
-                            <span>⏱️ Thời lượng tạo giọng AI</span>
-                            <span>Còn lại: {min_left} phút</span>
+                            <span>⏱️ Thời lượng giọng AI</span>
+                            <span>còn lại: {min_left} phút</span>
                         </div>
                         <div style="width: 100%; background-color: #E0E0E0; border-radius: 5px; height: 10px;">
                             <div style="width: {progress*100}%; background-color: {bar_color}; height: 10px; border-radius: 5px;"></div>
@@ -2094,7 +2094,7 @@ else:
                             if not is_enough:
                                 st.error(msg_or_count)
                             else:
-                                with st.spinner("Đang gửi yêu cầu về máy Local..."):
+                                with st.spinner("Đang gửi yêu cầu ..."):
                                     try:
                                         # [QUAN TRỌNG] Lưu TÊN GIỌNG (String) vào cột voice_id 
                                         # (Bạn cần vào Supabase đổi cột voice_id từ int sang text, HOẶC xem lưu ý bên dưới)
@@ -2328,7 +2328,7 @@ else:
                 link = upload_to_catbox(st.session_state['temp_record_file'], st.session_state['temp_record_name'])
                 if link: final_audio_link_to_send = link; ready_to_send = True
         # [MỚI] CASE Local AI (SỬA LỖI TÊN GỌI)
-        elif voice_method == "🖥️ Giọng AI":
+        elif voice_method == "🖥️ Giọng AI tiêu chuẩn":
             if st.session_state.get('local_ai_audio_link'):
                 ready_to_send = True
                 final_audio_link_to_send = st.session_state['local_ai_audio_link']
