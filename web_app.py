@@ -48,17 +48,38 @@ def get_cookie_manager():
 
 cookie_manager = get_cookie_manager()
 
-# --- [NEW] RATE LIMIT (CHỐNG SPAM) ---
+# --- [NEW] RATE LIMIT (CHỐNG SPAM) BẰNG DATABASE ---
 def check_rate_limit(user_email):
-    # Key lưu thời gian lần cuối request
+    try:
+        # 1. BẢO VỆ LỚP 1: KIỂM TRA TRÊN DATABASE (Không thể lách luật)
+        # Lấy thời gian của video gần nhất mà user này vừa bấm tạo
+        res = supabase.table('orders').select('created_at').eq('email', user_email).order('created_at', desc=True).limit(1).execute()
+        
+        if res.data and len(res.data) > 0:
+            last_created_str = res.data[0]['created_at']
+            
+            # Chuyển đổi thời gian từ hệ thống Supabase sang thời gian thực tế để làm toán
+            last_time = pd.to_datetime(last_created_str).tz_localize(None)
+            now_time = datetime.utcnow()
+            
+            # Tính khoảng cách bằng giây
+            diff_seconds = (now_time - last_time).total_seconds()
+            
+            # Nếu chưa qua 5 giây -> Chặn ngay lập tức
+            if diff_seconds < 5:
+                return False
+                
+    except Exception as e:
+        print(f"Lỗi hệ thống chống Spam DB: {e}")
+
+    # 2. BẢO VỆ LỚP 2: KIỂM TRA TRÊN TRÌNH DUYỆT (Giữ nguyên như cũ để phòng hờ)
     last_req_key = f"last_req_{user_email}"
     current_time = time.time()
     
     if last_req_key in st.session_state:
-        # Nếu khoảng cách giữa 2 lần bấm < 5 giây -> Chặn
         if current_time - st.session_state[last_req_key] < 5:
             return False
-    
+            
     st.session_state[last_req_key] = current_time
     return True
 
@@ -341,6 +362,20 @@ def get_latest_tts_log(email):
             return response.data[0]
     except Exception as e:
         print(f"Lỗi tải TTS log: {e}")
+    return None
+
+def get_pending_local_ai_request(email, content):
+    """Hàm tự động tìm lại yêu cầu TTS đang chạy ngầm nếu user bấm F5"""
+    try:
+        # Lấy yêu cầu mới nhất của user
+        res = supabase.table('tts_requests').select("id, status, content").eq('email', email).order('created_at', desc=True).limit(1).execute()
+        if res.data:
+            req = res.data[0]
+            # Nếu đang chờ/đang xử lý VÀ nội dung trùng khớp với trên màn hình
+            if req['status'] in ['pending', 'processing'] and req['content'] == sanitize_input(content):
+                return req['id']
+    except Exception as e:
+        print(f"Lỗi check request: {e}")
     return None
 
 # --- [NEW] HÀM CALLBACK ĐỂ AUTO-SAVE ---
@@ -2095,85 +2130,73 @@ else:
                             # Sửa tốc độ mặc định thành 0.6 theo yêu cầu
                             speed_input = st.slider("Tốc độ đọc", 0.5, 2.0, 0.8, 0.1)
 
-                        if st.button("🎙️ GỬI YÊU CẦU TẠO GIỌNG", type="primary", use_container_width=True):
-                            # 1. Kiểm tra hạn mức
-                            is_enough, msg_or_count = check_tts_quota(user, current_script_local)
+                        # --- CƠ CHẾ TỰ ĐỘNG PHỤC HỒI NẾU BỊ F5 MẤT SESSION ---
+                        if 'pending_tts_id' not in st.session_state:
+                            recovered_id = get_pending_local_ai_request(user['email'], current_script_local)
+                            if recovered_id:
+                                st.session_state['pending_tts_id'] = recovered_id
+                        
+                        # --- GIAO DIỆN KHI ĐANG CÓ YÊU CẦU CHẠY NGẦM ---
+                        if 'pending_tts_id' in st.session_state:
+                            req_id = st.session_state['pending_tts_id']
                             
-                            if not is_enough:
-                                st.error(msg_or_count)
-                            else:
-                                with st.spinner("Đang gửi yêu cầu ..."):
+                            # Kiểm tra tiến độ ngay lập tức
+                            check = supabase.table('tts_requests').select("status, audio_link, output_path, voice_id").eq('id', req_id).execute()
+                            
+                            if check.data:
+                                status = check.data[0]['status']
+                                
+                                if status == 'done':
+                                    st.success("✅ Đã tạo giọng thành công!")
+                                    st.session_state['local_ai_audio_link'] = check.data[0]['audio_link']
+                                    st.session_state['local_ai_info'] = f"Voice: {check.data[0]['voice_id']}"
+                                    del st.session_state['pending_tts_id'] # Xóa trạng thái chờ
+                                    st.rerun()
+                                    
+                                elif status == 'error':
+                                    st.error(f"❌ Lỗi xử lý âm thanh từ máy chủ AI: {check.data[0].get('output_path', 'Không rõ nguyên nhân')}")
+                                    del st.session_state['pending_tts_id']
+                                    if st.button("🔄 Thử lại"): st.rerun()
+                                    
+                                else:
+                                    # Trạng thái Pending/Processing
+                                    st.info("⏳ AI đang xử lý giọng nói ngầm. Quá trình này có thể mất 1-3 phút tùy độ dài kịch bản.")
+                                    st.caption("💡 Mẹo: Bạn có thể ẩn mục này đi, làm việc khác hoặc tải lại trang (F5). Dữ liệu đang được máy chủ giữ an toàn.")
+                                    if st.button("🔄 Bấm vào đây để kiểm tra trạng thái", use_container_width=True):
+                                        st.rerun()
+
+                        # --- GIAO DIỆN KHI CHƯA GỬI YÊU CẦU ---
+                        else:
+                            if st.button("🎙️ GỬI YÊU CẦU TẠO GIỌNG", type="primary", use_container_width=True):
+                                # 1. Kiểm tra hạn mức
+                                is_enough, msg_or_count = check_tts_quota(user, current_script_local)
+                                
+                                if not is_enough:
+                                    st.error(msg_or_count)
+                                else:
                                     try:
-                                        # [QUAN TRỌNG] Lưu TÊN GIỌNG (String) vào cột voice_id 
-                                        # (Bạn cần vào Supabase đổi cột voice_id từ int sang text, HOẶC xem lưu ý bên dưới)
+                                        # Insert vào database trạng thái chờ
                                         res = supabase.table('tts_requests').insert({
                                                 "email": user['email'],
                                                 "content": sanitize_input(current_script_local),
-                                                "voice_id": selected_voice_name, # Lưu tên giọng
-                                                "speed": speed_input, # Gửi tốc độ người dùng chọn (mặc định 0.6)
+                                                "voice_id": selected_voice_name,
+                                                "speed": speed_input,
                                                 "status": "pending"
                                             }).execute()
                                         
                                         if res.data:
                                             req_id = res.data[0]['id']
-                                            
                                             # Trừ hạn mức
                                             new_val = update_tts_usage_supabase(user['id'], msg_or_count)
                                             if new_val: user['tts_usage'] = new_val
 
-                                            # st.toast(f"Đã gửi yêu cầu #{req_id}. Đang chờ VieNeu xử lý...", icon="⏳")
+                                            # LƯU ID VÀO SESSION VÀ RELOAD
+                                            st.session_state['pending_tts_id'] = req_id
+                                            st.toast("🚀 Đã đẩy yêu cầu lên máy chủ thành công!", icon="✅")
+                                            st.rerun()
                                             
-                                            # Vòng lặp chờ kết quả ĐỘNG (Dựa trên độ dài kịch bản)
-                                            progress_text = "Đang gửi kịch bản đến máy chủ xử lý..." 
-                                            my_bar = st.progress(0, text=progress_text)
-                                            found_link = None
-                                            
-                                            # Tính toán thời gian chờ:
-                                            # 1. Thời gian khởi động model (Base): 15 giây
-                                            # 2. Thời gian đọc trung bình: ~1 giây xử lý cho mỗi 10 ký tự
-                                            char_count = len(current_script_local)
-                                            estimated_wait_time = 15 + int(char_count / 10)
-                                            
-                                            # Giới hạn an toàn (Tránh treo app quá lâu): Tối thiểu 45s, Tối đa 300s (5 phút)
-                                            MAX_WAIT_SECONDS = max(45, min(estimated_wait_time, 300))
-                                            
-                                            for i in range(MAX_WAIT_SECONDS): 
-                                                time.sleep(1)
-                                                
-                                                # Tính phần trăm thanh tiến trình
-                                                percent = min(1.0, (i+1) / MAX_WAIT_SECONDS)
-                                                
-                                                # Hiển thị text cho mượt mà (chỉ cập nhật mỗi 3 giây để tránh giật lag UI)
-                                                if i % 3 == 0:
-                                                    msg = f"Đang tổng hợp giọng nói... (Ước tính còn {MAX_WAIT_SECONDS - i}s)"
-                                                    my_bar.progress(percent, text=msg)
-                                                
-                                                # Kiểm tra database liên tục
-                                                check = supabase.table('tts_requests').select("status, audio_link, output_path").eq('id', req_id).execute()
-                                                
-                                                if check.data:
-                                                    status = check.data[0]['status']
-                                                    if status == 'done':
-                                                        found_link = check.data[0]['audio_link']
-                                                        my_bar.progress(1.0, text="✅ Đã tổng hợp xong!")
-                                                        time.sleep(0.5) # Dừng một nhịp cho đẹp
-                                                        break
-                                                    elif status == 'error':
-                                                        st.error(f"❌ Lỗi xử lý âm thanh: {check.data[0].get('output_path', 'Không rõ nguyên nhân')}")
-                                                        break
-                                            
-                                            my_bar.empty()
-                                            
-                                            if found_link:
-                                                st.success("✅ Đã tạo giọng thành công!")
-                                                st.session_state['local_ai_audio_link'] = found_link
-                                                st.session_state['local_ai_info'] = f"Voice: {selected_voice_name}"
-                                                st.rerun()
-                                            else:
-                                                st.error("❌ Hết thời gian chờ! Kiểm tra xem máy Lubuntu có đang chạy Cloud Bridge không.")
-                                                
                                     except Exception as e:
-                                        st.error(f"Lỗi kết nối Supabase: {e}")
+                                        st.error(f"Lỗi kết nối máy chủ dữ liệu: {e}")
 
                     # Hiển thị kết quả & Các tùy chọn
                     if st.session_state.get('local_ai_audio_link'):
