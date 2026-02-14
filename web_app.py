@@ -199,6 +199,7 @@ def create_order_logic(user, status, audio_link, content, settings):
         # Nếu chỉ lưu giọng, ta dùng settings hiện tại nhưng đánh dấu
         final_settings = settings.copy()
         final_settings['is_voice_only'] = (status == "VoiceOnly")
+        final_settings['user_plan'] = user.get('plan', 'free') # Thêm dòng này để báo gói cước cho hệ thống
 
         order_data = {
             "id": order_id,
@@ -224,6 +225,9 @@ def create_order_logic(user, status, audio_link, content, settings):
         else:
             st.toast("✅ Đã lưu bản thu vào lịch sử!", icon="💾")
             st.success("Đã lưu giọng nói. Bạn có thể xem lại trong phần 'Danh sách video'.")
+
+        # GIẢI PHÁP: Tự động ghi nhớ việc mở lịch sử video trước khi tải lại trang
+        st.session_state['show_history_section'] = True
 
         # Reload để cập nhật lịch sử
         time.sleep(1.5)
@@ -2315,6 +2319,15 @@ else:
                                 if tts_long_action == "tao_video_luon":
                                     button_label = "🎬 GỬI TẠO GIỌNG NÓI VÀ VIDEO"
                                     
+                                    # [MỚI] Tùy chọn Outro cho gói huynhde (Kịch bản tự động > 30s)
+                                    if user.get('plan') == 'huynhde':
+                                        c_space, c_outro = st.columns([3, 2])
+                                        with c_outro:
+                                            chk_outro_auto = st.checkbox("✨ Kèm Outro (hatbuinho.com)", value=False, key="chk_outro_auto")
+                                            settings['add_outro'] = chk_outro_auto
+                                    else:
+                                        settings['add_outro'] = False
+                                    
                                 if st.button(button_label, type="primary", use_container_width=True):
                                     is_enough, msg_or_count = check_tts_quota(user, current_script_local)
                                     if not is_enough:
@@ -2488,6 +2501,15 @@ else:
 
     # --- NÚT GỬI (ĐÃ SỬA ĐỂ CHECK QUOTA) ---
     result_container = st.container()
+    
+    # [MỚI] Tùy chọn Outro cho gói huynhde (Đẩy sang góc phải cho nhỏ gọn)
+    if user.get('plan') == 'huynhde':
+        c_space, c_outro = st.columns([3, 2])
+        with c_outro:
+            chk_outro_main = st.checkbox("✨ Kèm Outro (hatbuinho.com)", value=False, key="chk_outro_main")
+            settings['add_outro'] = chk_outro_main
+    else:
+        settings['add_outro'] = False
     
     # Disable nút bấm nếu hết Quota
     if st.button("🚀 GỬI YÊU CẦU TẠO VIDEO", type="primary", use_container_width=True, disabled=is_out_of_quota):
@@ -2668,6 +2690,9 @@ else:
                 # Cập nhật session ngay lập tức
                 st.session_state['user_info']['quota_used'] += 1
                 st.session_state['submitted_order_id'] = order_id 
+                
+                # GIẢI PHÁP: Tự động bật hiển thị lịch sử video
+                st.session_state['show_history_section'] = True
                 
                 # [MOI] Xóa cache lịch sử cũ & Bật thông báo chờ
                 st.session_state['show_wait_message'] = True
