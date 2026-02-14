@@ -20,12 +20,12 @@ import base64 # <--- [QUAN TRỌNG] Thêm dòng này để giải mã âm thanh
 # --- DANH SÁCH GIỌNG VIENEU-TTS ---
 # Lưu ý: Tên bên phải (Value) phải KHỚP CHÍNH XÁC với tên trong Dropdown của phần mềm trên máy bạn
 VIENEU_VOICES = [
+    "Đoan (nữ miền Nam)",
+    "Ngọc (nữ miền Bắc)",
     "Ly (nữ miền Bắc)",
     "Bình (nam miền Bắc)",
-    "Ngọc (nữ miền Bắc)",
     "Tuyên (nam miền Bắc)",
-    "Vĩnh (nam miền Nam)",
-    "Đoan (nữ miền Nam)"
+    "Vĩnh (nam miền Nam)"
 ]
 
 # --- THÊM ĐOẠN NÀY VÀO SAU CÁC DÒNG IMPORT ---
@@ -2287,7 +2287,7 @@ else:
                                     except Exception as e:
                                         st.error(f"Lỗi kết nối máy chủ dữ liệu: {e}")
 
-                                        
+
 
 
     # --- (B3) CHỌN PHONG CÁCH VIDEO (MỚI) ---
