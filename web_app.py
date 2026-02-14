@@ -2172,94 +2172,94 @@ else:
                             tts_long_action = "tao_video_luon"
 
                     # --- CƠ CHẾ TỰ ĐỘNG PHỤC HỒI NẾU BỊ F5 MẤT SESSION ---
-                        if 'pending_tts_id' not in st.session_state:
-                            recovered_id = get_pending_local_ai_request(user['email'], current_script_local)
-                            if recovered_id:
-                                st.session_state['pending_tts_id'] = recovered_id
+                    if 'pending_tts_id' not in st.session_state:
+                        recovered_id = get_pending_local_ai_request(user['email'], current_script_local)
+                        if recovered_id:
+                            st.session_state['pending_tts_id'] = recovered_id
+                    
+                    # --- GIAO DIỆN KHI ĐANG CÓ YÊU CẦU CHẠY NGẦM ---
+                    if 'pending_tts_id' in st.session_state:
+                        req_id = st.session_state['pending_tts_id']
                         
-                        # --- GIAO DIỆN KHI ĐANG CÓ YÊU CẦU CHẠY NGẦM ---
-                        if 'pending_tts_id' in st.session_state:
-                            req_id = st.session_state['pending_tts_id']
+                        # Kiểm tra tiến độ ngay lập tức
+                        check = supabase.table('tts_requests').select("status, audio_link, output_path, voice_id").eq('id', req_id).execute()
+                        
+                        if check.data:
+                            status = check.data[0]['status']
                             
-                            # Kiểm tra tiến độ ngay lập tức
-                            check = supabase.table('tts_requests').select("status, audio_link, output_path, voice_id").eq('id', req_id).execute()
-                            
-                            if check.data:
-                                status = check.data[0]['status']
+                            if status == 'done':
+                                st.success("✅ Đã tạo giọng thành công!")
+                                st.session_state['local_ai_audio_link'] = check.data[0]['audio_link']
+                                st.session_state['local_ai_info'] = f"Voice: {check.data[0]['voice_id']}"
+                                del st.session_state['pending_tts_id'] # Xóa trạng thái chờ
+                                st.rerun()
                                 
-                                if status == 'done':
-                                    st.success("✅ Đã tạo giọng thành công!")
-                                    st.session_state['local_ai_audio_link'] = check.data[0]['audio_link']
-                                    st.session_state['local_ai_info'] = f"Voice: {check.data[0]['voice_id']}"
-                                    del st.session_state['pending_tts_id'] # Xóa trạng thái chờ
+                            elif status == 'error':
+                                st.error(f"❌ Lỗi xử lý âm thanh từ máy chủ AI: {check.data[0].get('output_path', 'Không rõ nguyên nhân')}")
+                                del st.session_state['pending_tts_id']
+                                if st.button("🔄 Thử lại"): st.rerun()
+                                
+                            else:
+                                # Trạng thái Pending/Processing
+                                st.info("⏳ AI đang xử lý giọng nói ngầm. Quá trình này có thể mất 1-3 phút tùy độ dài kịch bản.")
+                                st.caption("💡 Mẹo: Bạn có thể ẩn mục này đi, làm việc khác hoặc tải lại trang (F5). Dữ liệu đang được máy chủ giữ an toàn.")
+                                if st.button("🔄 Bấm vào đây để kiểm tra trạng thái", use_container_width=True):
                                     st.rerun()
-                                    
-                                elif status == 'error':
-                                    st.error(f"❌ Lỗi xử lý âm thanh từ máy chủ AI: {check.data[0].get('output_path', 'Không rõ nguyên nhân')}")
-                                    del st.session_state['pending_tts_id']
-                                    if st.button("🔄 Thử lại"): st.rerun()
-                                    
-                                else:
-                                    # Trạng thái Pending/Processing
-                                    st.info("⏳ AI đang xử lý giọng nói ngầm. Quá trình này có thể mất 1-3 phút tùy độ dài kịch bản.")
-                                    st.caption("💡 Mẹo: Bạn có thể ẩn mục này đi, làm việc khác hoặc tải lại trang (F5). Dữ liệu đang được máy chủ giữ an toàn.")
-                                    if st.button("🔄 Bấm vào đây để kiểm tra trạng thái", use_container_width=True):
-                                        st.rerun()
 
-                        # --- GIAO DIỆN KHI CHƯA GỬI YÊU CẦU ---
-                        else:
-                            if st.button("🎙️ GỬI YÊU CẦU TẠO GIỌNG", type="primary", use_container_width=True):
-                                # 1. Kiểm tra hạn mức
-                                is_enough, msg_or_count = check_tts_quota(user, current_script_local)
-                                
-                                if not is_enough:
-                                    st.error(msg_or_count)
-                                else:
-                                    try:
-                                        # Insert vào database trạng thái chờ
-                                        res = supabase.table('tts_requests').insert({
-                                                "email": user['email'],
-                                                "content": sanitize_input(current_script_local),
-                                                "voice_id": selected_voice_name,
-                                                "speed": speed_input,
-                                                "status": "pending"
-                                            }).execute()
+                    # --- GIAO DIỆN KHI CHƯA GỬI YÊU CẦU ---
+                    else:
+                        if st.button("🎙️ GỬI YÊU CẦU TẠO GIỌNG", type="primary", use_container_width=True):
+                            # 1. Kiểm tra hạn mức
+                            is_enough, msg_or_count = check_tts_quota(user, current_script_local)
+                            
+                            if not is_enough:
+                                st.error(msg_or_count)
+                            else:
+                                try:
+                                    # Insert vào database trạng thái chờ
+                                    res = supabase.table('tts_requests').insert({
+                                            "email": user['email'],
+                                            "content": sanitize_input(current_script_local),
+                                            "voice_id": selected_voice_name,
+                                            "speed": speed_input,
+                                            "status": "pending"
+                                        }).execute()
+                                    
+                                    if res.data:
+                                        req_id = res.data[0]['id']
+                                        # Trừ hạn mức
+                                        new_val = update_tts_usage_supabase(user['id'], msg_or_count)
+                                        if new_val: user['tts_usage'] = new_val
+
+                                        # Ước tính thời gian tạo (Giả định máy chủ đọc 15 ký tự/giây)
+                                        estimated_time_seconds = len(current_script_local) / 15
+                                        temp_audio_link = f"pending_tts_{req_id}" # Tạo mã liên kết tạm thời
                                         
-                                        if res.data:
-                                            req_id = res.data[0]['id']
-                                            # Trừ hạn mức
-                                            new_val = update_tts_usage_supabase(user['id'], msg_or_count)
-                                            if new_val: user['tts_usage'] = new_val
-
-                                            # Ước tính thời gian tạo (Giả định máy chủ đọc 15 ký tự/giây)
-                                            estimated_time_seconds = len(current_script_local) / 15
-                                            temp_audio_link = f"pending_tts_{req_id}" # Tạo mã liên kết tạm thời
+                                        # [MỚI] Xử lý theo lựa chọn của người dùng
+                                        if tts_long_action == "tao_video_luon":
+                                            st.toast("🚀 Đang tự động gửi yêu cầu tạo CẢ GIỌNG VÀ VIDEO!", icon="✅")
                                             
-                                            # [MỚI] Xử lý theo lựa chọn của người dùng
-                                            if tts_long_action == "tao_video_luon":
-                                                st.toast("🚀 Đang tự động gửi yêu cầu tạo CẢ GIỌNG VÀ VIDEO!", icon="✅")
-                                                
-                                                # Cập nhật cài đặt mặc định cho video vì bỏ qua Bước 3
-                                                settings['is_ai_voice'] = True
-                                                settings['clean_audio'] = False
-                                                settings['voice_info'] = selected_voice_name
-                                                settings['video_mode'] = 'auto' # Mặc định AI tự chọn video minh họa
-                                                
-                                                # Chuyển status thành "Pending" để hệ thống TẠO VIDEO luôn
-                                                create_order_logic(user, "Pending", temp_audio_link, current_script_local, settings)
-                                                
-                                            elif estimated_time_seconds > 30:
-                                                # Kịch bản dài nhưng chọn "Nghe thử" -> Lưu VoiceOnly chạy ngầm
-                                                st.toast("🚀 Giọng nói đang được tạo ngầm, xem ở Lịch sử!", icon="✅")
-                                                create_order_logic(user, "VoiceOnly", temp_audio_link, current_script_local, settings)
-                                            else:
-                                                # Kịch bản ngắn -> Đợi trực tiếp trên màn hình
-                                                st.session_state['pending_tts_id'] = req_id
-                                                st.toast("🚀 Đã đẩy yêu cầu lên máy chủ thành công!", icon="✅")
-                                                st.rerun()
+                                            # Cập nhật cài đặt mặc định cho video vì bỏ qua Bước 3
+                                            settings['is_ai_voice'] = True
+                                            settings['clean_audio'] = False
+                                            settings['voice_info'] = selected_voice_name
+                                            settings['video_mode'] = 'auto' # Mặc định AI tự chọn video minh họa
                                             
-                                    except Exception as e:
-                                        st.error(f"Lỗi kết nối máy chủ dữ liệu: {e}")
+                                            # Chuyển status thành "Pending" để hệ thống TẠO VIDEO luôn
+                                            create_order_logic(user, "Pending", temp_audio_link, current_script_local, settings)
+                                            
+                                        elif estimated_time_seconds > 30:
+                                            # Kịch bản dài nhưng chọn "Nghe thử" -> Lưu VoiceOnly chạy ngầm
+                                            st.toast("🚀 Giọng nói đang được tạo ngầm, xem ở Lịch sử!", icon="✅")
+                                            create_order_logic(user, "VoiceOnly", temp_audio_link, current_script_local, settings)
+                                        else:
+                                            # Kịch bản ngắn -> Đợi trực tiếp trên màn hình
+                                            st.session_state['pending_tts_id'] = req_id
+                                            st.toast("🚀 Đã đẩy yêu cầu lên máy chủ thành công!", icon="✅")
+                                            st.rerun()
+                                        
+                                except Exception as e:
+                                    st.error(f"Lỗi kết nối máy chủ dữ liệu: {e}")
 
                     # Hiển thị kết quả & Các tùy chọn
                     if st.session_state.get('local_ai_audio_link'):
