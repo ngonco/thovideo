@@ -2155,8 +2155,8 @@ else:
                         
                         if estimated_time_seconds > 30:
                             # Ẩn 3 nút, chỉ hiện thông báo cho kịch bản dài
-                            st.success("🚀 Giọng nói đã được xử lý xong và tự động gửi đi tạo video/lưu lịch sử theo lựa chọn ban đầu của bạn!")
-                            st.info("👉 Vui lòng kéo xuống phần **Lịch sử Video** bên dưới để theo dõi tiến trình.")
+                            st.success("🚀 Đã tự động gửi đi tạo video và lưu giọng nói vào danh sách video.")
+                            st.info("👉 Bạn có thể đợi hoặc quay lại sau 3-10 phút để xem danh sách video kết quả.")
                         else:
                             # Hiện 3 nút cho kịch bản ngắn
                             st.write("👉 **Bạn muốn làm gì tiếp theo?**")
