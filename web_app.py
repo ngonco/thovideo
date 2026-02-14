@@ -2839,7 +2839,7 @@ else:
                         # [LOGIC MỚI] 1. Kiểm tra: Nếu CHƯA bấm nút (hoặc đang bấm nút khác) -> Thì mới hiện nút "Tạo lại"
                         if st.session_state.get('confirm_recreate_id') != order_id:
                             # Nút kích hoạt
-                            if st.button(f"♻️ Tạo lại bằng giọng nói này", key=f"pre_recreate_{order_id}_{index}", disabled=is_out_of_quota, use_container_width=True):
+                            if st.button(f"♻️ Tạo video bằng giọng nói này", key=f"pre_recreate_{order_id}_{index}", disabled=is_out_of_quota, use_container_width=True):
                                 # Lưu ID của đơn hàng đang muốn tạo lại vào session
                                 st.session_state['confirm_recreate_id'] = order_id
                                 st.rerun()
