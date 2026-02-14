@@ -2295,7 +2295,12 @@ else:
 
                         # CHƯA GỬI -> HIỆN NÚT BẤM
                         else:
-                            if st.button("🎙️ GỬI YÊU CẦU TẠO GIỌNG", type="primary", use_container_width=True):
+                            # --- MỚI: Tự động đổi tên nút dựa theo lựa chọn phía trên ---
+                            button_label = "🎙️ GỬI YÊU CẦU TẠO GIỌNG"
+                            if tts_long_action == "tao_video_luon":
+                                button_label = "🎬 GỬI TẠO GIỌNG NÓI VÀ VIDEO"
+                                
+                            if st.button(button_label, type="primary", use_container_width=True):
                                 is_enough, msg_or_count = check_tts_quota(user, current_script_local)
                                 if not is_enough:
                                     st.error(msg_or_count)
