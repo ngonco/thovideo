@@ -2200,11 +2200,46 @@ else:
                                 if st.button("🔄 Thử lại"): st.rerun()
                                 
                             else:
-                                # Trạng thái Pending/Processing
-                                st.info("⏳ AI đang xử lý giọng nói ngầm. Quá trình này có thể mất 1-3 phút tùy độ dài kịch bản.")
-                                st.caption("💡 Mẹo: Bạn có thể ẩn mục này đi, làm việc khác hoặc tải lại trang (F5). Dữ liệu đang được máy chủ giữ an toàn.")
-                                if st.button("🔄 Bấm vào đây để kiểm tra trạng thái", use_container_width=True):
-                                    st.rerun()
+                                    # [GIẢI PHÁP THÔNG MINH] Vòng lặp chờ tại chỗ (Không load lại toàn trang)
+                                    st.info("⏳ AI đang xử lý giọng nói... Bạn có thể đi làm việc khác.")
+                                    
+                                    # Tạo một khung trống để hiển thị thông báo thay đổi (UI thân thiện hơn)
+                                    status_box = st.empty()
+                                    
+                                    is_done = False
+                                    # Giới hạn kiểm tra tối đa 40 lần (khoảng 2 phút) để chống treo server vĩnh viễn
+                                    for i in range(40):
+                                        status_box.caption(f"🔄 Đang kiểm tra tiến độ lần {i+1}/40... Tự động hiện kết quả khi xong.")
+                                        
+                                        # CHỈ HỎI ĐÚNG 1 CÂU NHỎ BÉ (Cực kỳ nhẹ, không tốn tài nguyên Database)
+                                        quick_check = supabase.table('tts_requests').select("status, audio_link, output_path, voice_id").eq('id', req_id).execute()
+                                        
+                                        if quick_check.data:
+                                            current_status = quick_check.data[0]['status']
+                                            
+                                            if current_status == 'done':
+                                                # Lưu kết quả vào phiên làm việc
+                                                st.session_state['local_ai_audio_link'] = quick_check.data[0]['audio_link']
+                                                st.session_state['local_ai_info'] = f"Voice: {quick_check.data[0]['voice_id']}"
+                                                del st.session_state['pending_tts_id']
+                                                is_done = True
+                                                break # Xong rồi thì DỪNG vòng lặp ngay lập tức
+                                                
+                                            elif current_status == 'error':
+                                                st.error("❌ Quá trình tạo giọng bị lỗi từ máy chủ. Vui lòng thử lại.")
+                                                del st.session_state['pending_tts_id']
+                                                is_done = True
+                                                break # Lỗi cũng DỪNG vòng lặp
+                                                
+                                        # Nếu chưa xong, nghỉ ngơi 3 giây rồi mới hỏi tiếp
+                                        time.sleep(3) 
+                                        
+                                    if is_done:
+                                        # CHỈ TẢI LẠI TRANG ĐÚNG 1 LẦN DUY NHẤT KHI ĐÃ CÓ KẾT QUẢ
+                                        st.rerun()
+                                    else:
+                                        # Nếu chờ hết 2 phút (40 lần) mà vẫn chưa xong -> Nhả web ra cho user làm việc khác
+                                        status_box.warning("⏳ Máy chủ AI hiện đang xử lý nhiều đơn. Bạn vui lòng quay lại sau nhé!")
 
                     # --- GIAO DIỆN KHI CHƯA GỬI YÊU CẦU ---
                     else:
