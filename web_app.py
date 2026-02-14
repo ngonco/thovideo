@@ -2190,10 +2190,21 @@ else:
                                             new_val = update_tts_usage_supabase(user['id'], msg_or_count)
                                             if new_val: user['tts_usage'] = new_val
 
-                                            # LƯU ID VÀO SESSION VÀ RELOAD
-                                            st.session_state['pending_tts_id'] = req_id
-                                            st.toast("🚀 Đã đẩy yêu cầu lên máy chủ thành công!", icon="✅")
-                                            st.rerun()
+                                            # Ước tính thời gian tạo (Giả định máy chủ đọc 15 ký tự/giây)
+                                            estimated_time_seconds = len(current_script_local) / 15
+                                            
+                                            if estimated_time_seconds > 30:
+                                                # Kịch bản dài -> Chạy ngầm và lưu thẳng vào Lịch sử
+                                                st.toast("🚀 Giọng nói sẽ được lưu vào Danh sách video!", icon="✅")
+                                                temp_audio_link = f"pending_tts_{req_id}" # Tạo mã liên kết tạm thời
+                                                
+                                                # Hàm create_order_logic sẽ tự động lưu và load lại trang
+                                                create_order_logic(user, "VoiceOnly", temp_audio_link, current_script_local, settings)
+                                            else:
+                                                # Kịch bản ngắn -> Đợi trực tiếp trên màn hình
+                                                st.session_state['pending_tts_id'] = req_id
+                                                st.toast("🚀 Đã đẩy yêu cầu lên máy chủ thành công!", icon="✅")
+                                                st.rerun()
                                             
                                     except Exception as e:
                                         st.error(f"Lỗi kết nối máy chủ dữ liệu: {e}")
@@ -2717,23 +2728,48 @@ else:
                     if raw_status == "VoiceOnly":
                         st.info("💾 Đây là bản lưu giọng nói (Chưa tạo video).")
                         
-                        # 1. Hiện Audio Player để nghe lại
-                        if old_audio_link:
-                            st.audio(old_audio_link, format="audio/wav")
-                        
-                        # 2. Nút chuyển đổi thành Video
-                        if st.button("🎬 Chuyển thành Video ngay", key=f"btn_convert_{order_id}"):
-                            # Update trạng thái từ VoiceOnly -> Pending
+                        # --- [MỚI] KIỂM TRA TRẠNG THÁI TTS CHẠY NGẦM ---
+                        if old_audio_link and str(old_audio_link).startswith("pending_tts_"):
+                            # Trích xuất ID yêu cầu chạy ngầm
+                            req_id = str(old_audio_link).replace("pending_tts_", "")
+                            
                             try:
-                                supabase.table('orders').update({"status": "Pending"}).eq('id', order_id).execute()
-                                # Trừ quota
-                                update_user_usage_supabase(user['id'], user['quota_used'])
-                                st.session_state['user_info']['quota_used'] += 1
-                                st.success("✅ Đã đẩy sang hàng chờ xử lý video!")
-                                time.sleep(1)
-                                st.rerun()
+                                # Hỏi Supabase xem file đã tạo xong chưa
+                                check_tts = supabase.table('tts_requests').select('status, audio_link').eq('id', req_id).execute()
+                                if check_tts.data:
+                                    tts_status = check_tts.data[0]['status']
+                                    if tts_status == 'done':
+                                        real_link = check_tts.data[0]['audio_link']
+                                        # Đã xong -> Cập nhật link thật vào bảng orders
+                                        supabase.table('orders').update({"audio_link": real_link}).eq('id', order_id).execute()
+                                        st.success("✅ Hệ thống đã tạo xong giọng AI ngầm!")
+                                        st.audio(real_link, format="audio/wav")
+                                        old_audio_link = real_link # Cập nhật biến để hiển thị nút bên dưới
+                                    elif tts_status == 'error':
+                                        st.error("❌ Quá trình tạo giọng AI bị lỗi.")
+                                    else:
+                                        st.warning("⏳ Trí tuệ nhân tạo vẫn đang tạo giọng ngầm. Bạn hãy nhấn 'Làm mới' sau ít phút nhé...")
                             except Exception as e:
-                                st.error(f"Lỗi: {e}")
+                                st.error("Lỗi kiểm tra dữ liệu ngầm.")
+                        else:
+                            # 1. Hiện Audio Player để nghe lại bình thường (nếu đã có link thật)
+                            if old_audio_link and str(old_audio_link).startswith("http"):
+                                st.audio(old_audio_link, format="audio/wav")
+                        
+                        # 2. Nút chuyển đổi thành Video (Chỉ hiện khi đã có link audio thật)
+                        if old_audio_link and str(old_audio_link).startswith("http"):
+                            if st.button("🎬 Chuyển thành Video ngay", key=f"btn_convert_{order_id}"):
+                                # Update trạng thái từ VoiceOnly -> Pending
+                                try:
+                                    supabase.table('orders').update({"status": "Pending"}).eq('id', order_id).execute()
+                                    # Trừ quota
+                                    update_user_usage_supabase(user['id'], user['quota_used'])
+                                    st.session_state['user_info']['quota_used'] += 1
+                                    st.success("✅ Đã chuyển sang chờ xử lý video!")
+                                    time.sleep(1)
+                                    st.rerun()
+                                except Exception as e:
+                                    st.error(f"Lỗi: {e}")
 
                     # CASE B: VIDEO ĐÃ HOÀN THÀNH (Done)
                     elif result_link and len(str(result_link)) > 5:
