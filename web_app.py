@@ -2307,55 +2307,55 @@ else:
                                     
                                 if st.button(button_label, type="primary", use_container_width=True):
                                     is_enough, msg_or_count = check_tts_quota(user, current_script_local)
-                                if not is_enough:
-                                    st.error(msg_or_count)
-                                else:
-                                    try:
-                                        res = supabase.table('tts_requests').insert({
-                                                "email": user['email'],
-                                                "content": sanitize_input(current_script_local),
-                                                "voice_id": selected_voice_name,
-                                                "speed": speed_input,
-                                                "status": "pending"
-                                            }).execute()
-                                        
-                                        if res.data:
-                                            req_id = res.data[0]['id']
-                                            new_val = update_tts_usage_supabase(user['id'], msg_or_count)
-                                            if new_val: user['tts_usage'] = new_val
-
-                                            estimated_time_seconds = len(current_script_local) / 15
-                                            temp_audio_link = f"pending_tts_{req_id}" 
+                                    if not is_enough:
+                                        st.error(msg_or_count)
+                                    else:
+                                        try:
+                                            res = supabase.table('tts_requests').insert({
+                                                    "email": user['email'],
+                                                    "content": sanitize_input(current_script_local),
+                                                    "voice_id": selected_voice_name,
+                                                    "speed": speed_input,
+                                                    "status": "pending"
+                                                }).execute()
                                             
-                                            if tts_long_action == "tao_video_luon":
-                                                st.toast("🚀 Đang xử lý giọng! Hệ thống sẽ tự động tạo video ngay khi giọng hoàn tất.", icon="✅")
-                                                settings['is_ai_voice'] = True
-                                                settings['clean_audio'] = False
-                                                settings['voice_info'] = selected_voice_name
+                                            if res.data:
+                                                req_id = res.data[0]['id']
+                                                new_val = update_tts_usage_supabase(user['id'], msg_or_count)
+                                                if new_val: user['tts_usage'] = new_val
+
+                                                estimated_time_seconds = len(current_script_local) / 15
+                                                temp_audio_link = f"pending_tts_{req_id}" 
                                                 
-                                                if "Chọn chủ đề video cụ thể" in auto_video_style:
-                                                    settings['video_mode'] = 'topic'
-                                                    settings['topic_name'] = auto_topic_name
-                                                elif "ảnh AI" in auto_video_style:
-                                                    settings['video_mode'] = 'ai_image'
-                                                    settings['topic_name'] = ""
-                                                else:
-                                                    settings['video_mode'] = 'auto'
-                                                    settings['topic_name'] = ""
+                                                if tts_long_action == "tao_video_luon":
+                                                    st.toast("🚀 Đang xử lý giọng! Hệ thống sẽ tự động tạo video ngay khi giọng hoàn tất.", icon="✅")
+                                                    settings['is_ai_voice'] = True
+                                                    settings['clean_audio'] = False
+                                                    settings['voice_info'] = selected_voice_name
                                                     
-                                                # --- ĐÃ SỬA: Lưu yêu cầu vào bộ nhớ tạm thay vì tạo đơn ngay ---
-                                                st.session_state['auto_create_video_settings'] = settings
-                                                st.session_state['auto_create_video_script'] = current_script_local
-                                                st.session_state['pending_tts_id'] = req_id
-                                                st.rerun()
-                                            elif estimated_time_seconds > 30:
-                                                st.toast("🚀 Giọng nói đang được tạo, xem ở Lịch sử!", icon="✅")
-                                                create_order_logic(user, "VoiceOnly", temp_audio_link, current_script_local, settings)
-                                            else:
-                                                st.session_state['pending_tts_id'] = req_id
-                                                st.rerun()
-                                    except Exception as e:
-                                        st.error(f"Lỗi kết nối máy chủ dữ liệu: {e}")
+                                                    if "Chọn chủ đề video cụ thể" in auto_video_style:
+                                                        settings['video_mode'] = 'topic'
+                                                        settings['topic_name'] = auto_topic_name
+                                                    elif "ảnh AI" in auto_video_style:
+                                                        settings['video_mode'] = 'ai_image'
+                                                        settings['topic_name'] = ""
+                                                    else:
+                                                        settings['video_mode'] = 'auto'
+                                                        settings['topic_name'] = ""
+                                                        
+                                                    # --- ĐÃ SỬA: Lưu yêu cầu vào bộ nhớ tạm thay vì tạo đơn ngay ---
+                                                    st.session_state['auto_create_video_settings'] = settings
+                                                    st.session_state['auto_create_video_script'] = current_script_local
+                                                    st.session_state['pending_tts_id'] = req_id
+                                                    st.rerun()
+                                                elif estimated_time_seconds > 30:
+                                                    st.toast("🚀 Giọng nói đang được tạo, xem ở Lịch sử!", icon="✅")
+                                                    create_order_logic(user, "VoiceOnly", temp_audio_link, current_script_local, settings)
+                                                else:
+                                                    st.session_state['pending_tts_id'] = req_id
+                                                    st.rerun()
+                                        except Exception as e:
+                                            st.error(f"Lỗi kết nối máy chủ dữ liệu: {e}")
 
 
 
