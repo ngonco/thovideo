@@ -2298,11 +2298,7 @@ else:
                         else:
                             # --- MỚI: Ẩn nút nếu kịch bản dài mà chưa chọn cách xử lý ---
                             if estimated_time_seconds > 30 and choice is None:
-                                st.markdown("""
-                                <div style="text-align: center; color: #8B4513; padding: 10px; background-color: #FFF8DC; border: 1px dashed #D7CCC8; border-radius: 8px;">
-                                    👆 Vui lòng chọn ở bên trên để gửi yêu cầu!
-                                </div>
-                                """, unsafe_allow_html=True)
+                                pass # Lệnh pass giúp ẩn hoàn toàn phần hiển thị bên dưới, chỉ giữ lại 2 lựa chọn
                             else:
                                 # Tự động đổi tên nút dựa theo lựa chọn phía trên
                                 button_label = "🎙️ GỬI YÊU CẦU TẠO GIỌNG"
