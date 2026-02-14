@@ -2208,6 +2208,34 @@ else:
                             )
                             if "Tạo video" in choice:
                                 tts_long_action = "tao_video_luon"
+                                
+                                # --- MỚI: HỎI LỰA CHỌN VIDEO TRƯỚC KHI TẠO ---
+                                st.markdown("""
+                                <div style="background-color: #FFF3E0; border-left: 4px solid #FF9800; padding: 10px; margin-bottom: 15px;">
+                                    <b>👉 Vui lòng chọn phong cách Video cho tiến trình tự động này:</b>
+                                </div>
+                                """, unsafe_allow_html=True)
+                                
+                                auto_video_style = st.radio(
+                                    "Chế độ video tự động:",
+                                    ["AI tự động chọn video", "Chọn chủ đề video cụ thể", "Video kết hợp ảnh AI (Mới)"],
+                                    key="rb_auto_video_style",
+                                    label_visibility="collapsed"
+                                )
+                                
+                                auto_topic_name = ""
+                                if "Chọn chủ đề video cụ thể" in auto_video_style:
+                                    TOPIC_LIST = [
+                                        "0 Đức Phật 2026", "0 Đức Phật và Cờ VN", "0 Đọc sách bên hoa sen", "1 Người tí hon bên sen", "2 Đầm sen chill chill", "3 Ruộng bậc thang dưới ánh trăng", "AI bầu trời", "AI chùa", "AI sinh vật cute", "Anime", 
+                                        "Âu Mỹ", "Âu Mỹ home garden", "Bác Hồ", "Biển đại dương", 
+                                        "Chiến tranh người que", "Cô đơn giữa mây trời", "Cô gái và linh thú", 
+                                        "Con Đường", "Cyperpunk", "Động vật cute", 
+                                        "Gọt trái cây", "Mặt trời lặn", "Mặt trời mọc", "Mùa hạ", "Mùa thu", 
+                                        "Mùa xuân", "Thiên nhiên", 
+                                        "Thực vật phát sáng", "Võ thuật", "Vũ Trụ"
+                                    ]
+                                    auto_topic_name = st.selectbox("Chọn chủ đề mong muốn:", TOPIC_LIST, key="sb_auto_topic")
+                                st.markdown("---")
 
                         # Khôi phục trạng thái chờ nếu lỡ F5
                         if 'pending_tts_id' not in st.session_state:
@@ -2230,14 +2258,30 @@ else:
                                 if quick_check.data:
                                     current_status = quick_check.data[0]['status']
                                     if current_status == 'done':
-                                        st.session_state['local_ai_audio_link'] = quick_check.data[0]['audio_link']
+                                        real_audio_link = quick_check.data[0]['audio_link']
+                                        st.session_state['local_ai_audio_link'] = real_audio_link
                                         st.session_state['local_ai_info'] = f"Voice: {quick_check.data[0]['voice_id']}"
                                         del st.session_state['pending_tts_id']
+                                        
+                                        # --- [MỚI] TỰ ĐỘNG GỬI LỆNH TẠO VIDEO ---
+                                        if 'auto_create_video_settings' in st.session_state:
+                                            st.toast("✅ Đã tạo giọng xong! Đang tự động đẩy lệnh tạo Video...", icon="🎬")
+                                            auto_settings = st.session_state.pop('auto_create_video_settings')
+                                            auto_script = st.session_state.pop('auto_create_video_script')
+                                            
+                                            # Tự động gọi hàm tạo đơn hàng với link âm thanh THẬT
+                                            create_order_logic(user, "Pending", real_audio_link, auto_script, auto_settings)
+                                            st.stop() # Dừng luồng hiện tại vì create_order_logic đã có sẵn lệnh rerun
+                                            
                                         is_done = True
                                         break
                                     elif current_status == 'error':
                                         st.error("❌ Quá trình tạo giọng bị lỗi từ máy chủ. Vui lòng thử lại.")
                                         del st.session_state['pending_tts_id']
+                                        # Dọn dẹp bộ nhớ tự động nếu có lỗi
+                                        if 'auto_create_video_settings' in st.session_state:
+                                            del st.session_state['auto_create_video_settings']
+                                            del st.session_state['auto_create_video_script']
                                         is_done = True
                                         break
                                 time.sleep(3) 
@@ -2272,14 +2316,28 @@ else:
                                             temp_audio_link = f"pending_tts_{req_id}" 
                                             
                                             if tts_long_action == "tao_video_luon":
-                                                st.toast("🚀 Đang tự động gửi yêu cầu tạo CẢ GIỌNG VÀ VIDEO!", icon="✅")
+                                                st.toast("🚀 Đang xử lý giọng! Hệ thống sẽ tự động tạo video ngay khi giọng hoàn tất.", icon="✅")
                                                 settings['is_ai_voice'] = True
                                                 settings['clean_audio'] = False
                                                 settings['voice_info'] = selected_voice_name
-                                                settings['video_mode'] = 'auto' 
-                                                create_order_logic(user, "Pending", temp_audio_link, current_script_local, settings)
+                                                
+                                                if "Chọn chủ đề video cụ thể" in auto_video_style:
+                                                    settings['video_mode'] = 'topic'
+                                                    settings['topic_name'] = auto_topic_name
+                                                elif "ảnh AI" in auto_video_style:
+                                                    settings['video_mode'] = 'ai_image'
+                                                    settings['topic_name'] = ""
+                                                else:
+                                                    settings['video_mode'] = 'auto'
+                                                    settings['topic_name'] = ""
+                                                    
+                                                # --- ĐÃ SỬA: Lưu yêu cầu vào bộ nhớ tạm thay vì tạo đơn ngay ---
+                                                st.session_state['auto_create_video_settings'] = settings
+                                                st.session_state['auto_create_video_script'] = current_script_local
+                                                st.session_state['pending_tts_id'] = req_id
+                                                st.rerun()
                                             elif estimated_time_seconds > 30:
-                                                st.toast("🚀 Giọng nói đang được tạo ngầm, xem ở Lịch sử!", icon="✅")
+                                                st.toast("🚀 Giọng nói đang được tạo, xem ở Lịch sử!", icon="✅")
                                                 create_order_logic(user, "VoiceOnly", temp_audio_link, current_script_local, settings)
                                             else:
                                                 st.session_state['pending_tts_id'] = req_id
