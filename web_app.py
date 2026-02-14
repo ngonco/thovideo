@@ -2771,21 +2771,6 @@ else:
                             # 1. Hiện Audio Player để nghe lại bình thường (nếu đã có link thật)
                             if old_audio_link and str(old_audio_link).startswith("http"):
                                 st.audio(old_audio_link, format="audio/wav")
-                        
-                        # 2. Nút chuyển đổi thành Video (Chỉ hiện khi đã có link audio thật)
-                        if old_audio_link and str(old_audio_link).startswith("http"):
-                            if st.button("🎬 Chuyển thành Video ngay", key=f"btn_convert_{order_id}"):
-                                # Update trạng thái từ VoiceOnly -> Pending
-                                try:
-                                    supabase.table('orders').update({"status": "Pending"}).eq('id', order_id).execute()
-                                    # Trừ quota
-                                    update_user_usage_supabase(user['id'], user['quota_used'])
-                                    st.session_state['user_info']['quota_used'] += 1
-                                    st.success("✅ Đã chuyển sang chờ xử lý video!")
-                                    time.sleep(1)
-                                    st.rerun()
-                                except Exception as e:
-                                    st.error(f"Lỗi: {e}")
 
                     # CASE B: VIDEO ĐÃ HOÀN THÀNH (Done)
                     elif result_link and len(str(result_link)) > 5:
@@ -2844,7 +2829,7 @@ else:
                     
                     elif raw_status == "Error":
                         st.error("Video này bị lỗi xử lý.")
-                    else:
+                    elif raw_status in ["Pending", "Processing"]:
                         st.info("Hệ thống đang xử lý...")
 
                     # B. Nút Tạo lại (Re-create) - [ĐÃ CẬP NHẬT: THÊM XÁC NHẬN BƯỚC 3]
