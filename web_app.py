@@ -2219,7 +2219,7 @@ else:
                         if 'pending_tts_id' in st.session_state:
                             req_id = st.session_state['pending_tts_id']
                             
-                            st.info("⏳ AI đang xử lý giọng nói... Vui lòng giữ nguyên trang này hoặc đi làm việc khác.")
+                            st.info("⏳ AI đang xử lý giọng nói... Bạn có thể đợi hoặc đi làm việc khác.")
                             
                             status_box = st.empty()
                             is_done = False
