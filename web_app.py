@@ -2192,6 +2192,7 @@ else:
 
                         estimated_time_seconds = len(current_script_local) / 15
                         tts_long_action = "nghe_thu" 
+                        choice = None # <--- [MỚI] Khởi tạo biến choice rỗng để tránh lỗi
                         
                         if estimated_time_seconds > 30:
                             st.markdown("""
@@ -2295,13 +2296,21 @@ else:
 
                         # CHƯA GỬI -> HIỆN NÚT BẤM
                         else:
-                            # --- MỚI: Tự động đổi tên nút dựa theo lựa chọn phía trên ---
-                            button_label = "🎙️ GỬI YÊU CẦU TẠO GIỌNG"
-                            if tts_long_action == "tao_video_luon":
-                                button_label = "🎬 GỬI TẠO GIỌNG NÓI VÀ VIDEO"
-                                
-                            if st.button(button_label, type="primary", use_container_width=True):
-                                is_enough, msg_or_count = check_tts_quota(user, current_script_local)
+                            # --- MỚI: Ẩn nút nếu kịch bản dài mà chưa chọn cách xử lý ---
+                            if estimated_time_seconds > 30 and choice is None:
+                                st.markdown("""
+                                <div style="text-align: center; color: #8B4513; padding: 10px; background-color: #FFF8DC; border: 1px dashed #D7CCC8; border-radius: 8px;">
+                                    👆 Vui lòng chọn ở bên trên để gửi yêu cầu!
+                                </div>
+                                """, unsafe_allow_html=True)
+                            else:
+                                # Tự động đổi tên nút dựa theo lựa chọn phía trên
+                                button_label = "🎙️ GỬI YÊU CẦU TẠO GIỌNG"
+                                if tts_long_action == "tao_video_luon":
+                                    button_label = "🎬 GỬI TẠO GIỌNG NÓI VÀ VIDEO"
+                                    
+                                if st.button(button_label, type="primary", use_container_width=True):
+                                    is_enough, msg_or_count = check_tts_quota(user, current_script_local)
                                 if not is_enough:
                                     st.error(msg_or_count)
                                 else:
