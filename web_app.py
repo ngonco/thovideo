@@ -2127,16 +2127,51 @@ else:
                     current_script_local = st.session_state.get('main_content_area', "")
                     if not current_script_local or len(current_script_local.strip()) < 2:
                         st.warning("⚠️ Vui lòng nhập nội dung kịch bản ở Bước 1 trước!")
-                    else:
-                        c_loc1, c_loc2 = st.columns([2, 1])
-                        with c_loc1:
-                            # Hiển thị danh sách giọng đọc từ ảnh đính kèm
-                            selected_voice_name = st.selectbox("Chọn giọng đọc:", VIENEU_VOICES, index=1) # Mặc định chọn Ly
-                        with c_loc2:
-                            # Sửa tốc độ mặc định thành 0.6 theo yêu cầu
-                            speed_input = st.slider("Tốc độ đọc", 0.5, 2.0, 0.8, 0.1)
+                    c_loc1, c_loc2 = st.columns([2, 1])
+                    with c_loc1:
+                        # Hiển thị danh sách giọng đọc từ ảnh đính kèm
+                        selected_voice_name = st.selectbox("Chọn giọng đọc:", VIENEU_VOICES, index=1) # Mặc định chọn Ly
+                        
+                        # [MỚI] TỪ ĐIỂN CHỨA LINK NGHE THỬ TỪ HUGGING FACE 
+                        VOICE_PREVIEWS = {
+                            "Ly (nữ miền Bắc)": "https://huggingface.co/datasets/vinhn8n/voicedaoly/resolve/main/VoicePreview/ly_preview.wav",
+                            "Bình (nam miền Bắc)": "https://huggingface.co/datasets/vinhn8n/voicedaoly/resolve/main/VoicePreview/binh_preview.wav",
+                            "Ngọc (nữ miền Bắc)": "https://huggingface.co/datasets/vinhn8n/voicedaoly/resolve/main/VoicePreview/ngoc_preview.wav",
+                            "Tuyên (nam miền Bắc)": "https://huggingface.co/datasets/vinhn8n/voicedaoly/resolve/main/VoicePreview/tuyen_preview.wav",
+                            "Vĩnh (nam miền Nam)": "https://huggingface.co/datasets/vinhn8n/voicedaoly/resolve/main/VoicePreview/vinh_preview.wav",
+                            "Đoan (nữ miền Nam)": "https://huggingface.co/datasets/vinhn8n/voicedaoly/resolve/main/VoicePreview/doan_preview.wav"
+                        }
+                        # Hiện khung nghe thử
+                        preview_url = VOICE_PREVIEWS.get(selected_voice_name, "")
+                        if preview_url:
+                            st.caption("🎧 Nghe thử chất giọng:")
+                            st.audio(preview_url, format="audio/wav") # Chuyển format thành wav cho chuẩn xác
 
-                        # --- CƠ CHẾ TỰ ĐỘNG PHỤC HỒI NẾU BỊ F5 MẤT SESSION ---
+                    with c_loc2:
+                        # Sửa tốc độ mặc định thành 0.6 theo yêu cầu
+                        speed_input = st.slider("Tốc độ đọc", 0.5, 2.0, 0.8, 0.1)
+
+                    # [MỚI] TÍNH TOÁN THỜI GIAN VÀ HIỂN THỊ LỰA CHỌN NẾU > 30S
+                    estimated_time_seconds = len(current_script_local) / 15
+                    tts_long_action = "nghe_thu" # Mặc định
+                    
+                    if estimated_time_seconds > 30:
+                        st.markdown("""
+                            <div style="background-color: #E8F5E9; border: 1px solid #4CAF50; padding: 10px; border-radius: 5px; margin-top: 10px; margin-bottom: 10px; color: #1B5E20;">
+                                <b>⏳ Kịch bản khá dài (hơn 30 giây)</b><br>
+                                Hệ thống cần thời gian để tạo giọng nói. Bạn muốn làm gì?
+                            </div>
+                        """, unsafe_allow_html=True)
+                        
+                        choice = st.radio(
+                            "Chọn cách xử lý:",
+                            ["🎬 Tạo video tự động luôn (Không cần nghe thử)", "🎧 Đợi tạo giọng xong để nghe thử trước"],
+                            label_visibility="collapsed"
+                        )
+                        if "Tạo video" in choice:
+                            tts_long_action = "tao_video_luon"
+
+                    # --- CƠ CHẾ TỰ ĐỘNG PHỤC HỒI NẾU BỊ F5 MẤT SESSION ---
                         if 'pending_tts_id' not in st.session_state:
                             recovered_id = get_pending_local_ai_request(user['email'], current_script_local)
                             if recovered_id:
@@ -2198,13 +2233,24 @@ else:
 
                                             # Ước tính thời gian tạo (Giả định máy chủ đọc 15 ký tự/giây)
                                             estimated_time_seconds = len(current_script_local) / 15
+                                            temp_audio_link = f"pending_tts_{req_id}" # Tạo mã liên kết tạm thời
                                             
-                                            if estimated_time_seconds > 30:
-                                                # Kịch bản dài -> Chạy ngầm và lưu thẳng vào Lịch sử
-                                                st.toast("🚀 Giọng nói sẽ được lưu vào Danh sách video!", icon="✅")
-                                                temp_audio_link = f"pending_tts_{req_id}" # Tạo mã liên kết tạm thời
+                                            # [MỚI] Xử lý theo lựa chọn của người dùng
+                                            if tts_long_action == "tao_video_luon":
+                                                st.toast("🚀 Đang tự động gửi yêu cầu tạo CẢ GIỌNG VÀ VIDEO!", icon="✅")
                                                 
-                                                # Hàm create_order_logic sẽ tự động lưu và load lại trang
+                                                # Cập nhật cài đặt mặc định cho video vì bỏ qua Bước 3
+                                                settings['is_ai_voice'] = True
+                                                settings['clean_audio'] = False
+                                                settings['voice_info'] = selected_voice_name
+                                                settings['video_mode'] = 'auto' # Mặc định AI tự chọn video minh họa
+                                                
+                                                # Chuyển status thành "Pending" để hệ thống TẠO VIDEO luôn
+                                                create_order_logic(user, "Pending", temp_audio_link, current_script_local, settings)
+                                                
+                                            elif estimated_time_seconds > 30:
+                                                # Kịch bản dài nhưng chọn "Nghe thử" -> Lưu VoiceOnly chạy ngầm
+                                                st.toast("🚀 Giọng nói đang được tạo ngầm, xem ở Lịch sử!", icon="✅")
                                                 create_order_logic(user, "VoiceOnly", temp_audio_link, current_script_local, settings)
                                             else:
                                                 # Kịch bản ngắn -> Đợi trực tiếp trên màn hình
