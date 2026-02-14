@@ -1187,6 +1187,12 @@ st.markdown("""
     /* 1. CẤU TRÚC CHUNG */
     .stApp { background-color: #FDF5E6; color: #3E2723; font-family: 'Georgia', serif; }
     
+    /* [SỬA LỖI UI] Ép màu chữ của tất cả các ô thông báo (Warning, Info, Success, Error) thành màu Nâu Đậm */
+    div[data-testid="stAlert"] div[data-testid="stMarkdownContainer"] p {
+        color: #3E2723 !important;
+        font-weight: 600 !important;
+    }
+    
     /* 2. TIÊU ĐỀ (ĐÃ CHỈNH SỬA KÍCH THƯỚC) */
     h1 {
         color: #8B4513 !important; 
