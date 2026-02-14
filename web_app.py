@@ -2373,47 +2373,59 @@ else:
     # --- (B3) CHỌN PHONG CÁCH VIDEO (MỚI) ---
     st.markdown("<br><br>", unsafe_allow_html=True)
     
-    # [LƯU Ý] Dòng with này phải sát lề trái, thẳng hàng với các dòng if/else lớn
-    with st.expander("3️⃣ BƯỚC 3: CÁCH CHỌN VIDEO MINH HỌA", expanded=False):
-        
-        # Radio chọn chế độ
-        video_style = st.radio(
-            "Chế độ video:",
-            ["AI tự động chọn video", "Chọn chủ đề video cụ thể", "Video và ảnh AI (đang phát triển)"],
-            key="rb_video_style",
-            label_visibility="collapsed"
-        )
-        
-        selected_topic_name = ""
-        
-        if "Chọn chủ đề video cụ thể" in video_style:
-            # Danh sách chủ đề (Hardcode theo folder trên máy bạn)
-            TOPIC_LIST = [
-                "0 Đức Phật 2026", "0 Đức Phật và Cờ VN", "0 Đọc sách bên hoa sen", "1 Người tí hon bên sen", "2 Đầm sen chill chill", "3 Ruộng bậc thang dưới ánh trăng", "AI bầu trời", "AI chùa", "AI sinh vật cute", "Anime", 
-                "Âu Mỹ", "Âu Mỹ home garden", "Bác Hồ", "Biển đại dương", 
-                "Chiến tranh người que", "Cô đơn giữa mây trời", "Cô gái và linh thú", 
-                "Con Đường", "Cyperpunk", "Động vật cute", 
-                "Gọt trái cây", "Mặt trời lặn", "Mặt trời mọc", "Mùa hạ", "Mùa thu", 
-                "Mùa xuân", "Thiên nhiên", 
-                "Thực vật phát sáng", "Võ thuật", "Vũ Trụ"
-            ]
+    # --- [MỚI] KIỂM TRA ĐIỀU KIỆN ĐỂ ẨN BƯỚC 3 ---
+    hide_step_3 = False
+    if voice_method == "🖥️ Giọng AI tiêu chuẩn":
+        current_script_step3 = st.session_state.get('main_content_area', "")
+        if current_script_step3 and len(current_script_step3) / 15 > 30:
+            hide_step_3 = True # Nếu kịch bản dài hơn 30s thì bật cờ ẩn Bước 3
+
+    if not hide_step_3:
+        # [LƯU Ý] Dòng with này đã được thụt vào trong lệnh if
+        with st.expander("3️⃣ BƯỚC 3: CÁCH CHỌN VIDEO MINH HỌA", expanded=False):
             
-            selected_topic_name = st.selectbox(
-                "Chọn chủ đề mong muốn:",
-                TOPIC_LIST,
-                key="sb_topic_select"
+            # Radio chọn chế độ
+            video_style = st.radio(
+                "Chế độ video:",
+                ["AI tự động chọn video", "Chọn chủ đề video cụ thể", "Video và ảnh AI (đang phát triển)"],
+                key="rb_video_style",
+                label_visibility="collapsed"
             )
-            st.caption(f"👉 Chỉ lấy video từ chủ đề: **{selected_topic_name}**")
             
-            # Cập nhật vào settings
-            settings['video_mode'] = 'topic'
-            settings['topic_name'] = selected_topic_name
-        elif "ảnh AI" in video_style:
-            settings['video_mode'] = 'ai_image'
-            settings['topic_name'] = ""
-        else:
-            settings['video_mode'] = 'auto'
-            settings['topic_name'] = ""
+            selected_topic_name = ""
+            
+            if "Chọn chủ đề video cụ thể" in video_style:
+                # Danh sách chủ đề (Hardcode theo folder trên máy bạn)
+                TOPIC_LIST = [
+                    "0 Đức Phật 2026", "0 Đức Phật và Cờ VN", "0 Đọc sách bên hoa sen", "1 Người tí hon bên sen", "2 Đầm sen chill chill", "3 Ruộng bậc thang dưới ánh trăng", "AI bầu trời", "AI chùa", "AI sinh vật cute", "Anime", 
+                    "Âu Mỹ", "Âu Mỹ home garden", "Bác Hồ", "Biển đại dương", 
+                    "Chiến tranh người que", "Cô đơn giữa mây trời", "Cô gái và linh thú", 
+                    "Con Đường", "Cyperpunk", "Động vật cute", 
+                    "Gọt trái cây", "Mặt trời lặn", "Mặt trời mọc", "Mùa hạ", "Mùa thu", 
+                    "Mùa xuân", "Thiên nhiên", 
+                    "Thực vật phát sáng", "Võ thuật", "Vũ Trụ"
+                ]
+                
+                selected_topic_name = st.selectbox(
+                    "Chọn chủ đề mong muốn:",
+                    TOPIC_LIST,
+                    key="sb_topic_select"
+                )
+                st.caption(f"👉 Chỉ lấy video từ chủ đề: **{selected_topic_name}**")
+                
+                # Cập nhật vào settings
+                settings['video_mode'] = 'topic'
+                settings['topic_name'] = selected_topic_name
+            elif "ảnh AI" in video_style:
+                settings['video_mode'] = 'ai_image'
+                settings['topic_name'] = ""
+            else:
+                settings['video_mode'] = 'auto'
+                settings['topic_name'] = ""
+    else:
+        # Nếu Bước 3 bị ẩn, thiết lập giá trị mặc định an toàn cho biến settings để hệ thống không báo lỗi thiếu dữ liệu
+        settings['video_mode'] = 'auto'
+        settings['topic_name'] = ""
 
     # --- SETTINGS (CẬP NHẬT: TỰ ĐỘNG LOAD TỪ DATABASE) ---
     st.markdown("---")
