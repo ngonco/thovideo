@@ -2211,8 +2211,12 @@ else:
 
                     # Hiển thị kết quả & Các tùy chọn
                     if st.session_state.get('local_ai_audio_link'):
-                        # 1. Phát âm thanh
-                        st.audio(st.session_state['local_ai_audio_link'], format="audio/wav")
+                        # 1. Phát âm thanh (Đã bọc kiểm tra bảo mật)
+                        audio_url = str(st.session_state.get('local_ai_audio_link', ''))
+                        if audio_url.startswith("http"):
+                            st.audio(audio_url, format="audio/wav")
+                        else:
+                            st.error(f"⚠️ Không thể phát âm thanh: Link chưa được tải lên Cloud đúng cách ({audio_url})")
                         st.caption(f"ℹ️ {st.session_state.get('local_ai_info')}")
                         
                         # 2. Gán link để sẵn sàng sử dụng
@@ -2739,11 +2743,17 @@ else:
                                 if check_tts.data:
                                     tts_status = check_tts.data[0]['status']
                                     if tts_status == 'done':
-                                        real_link = check_tts.data[0]['audio_link']
+                                        real_link = str(check_tts.data[0]['audio_link'])
                                         # Đã xong -> Cập nhật link thật vào bảng orders
                                         supabase.table('orders').update({"audio_link": real_link}).eq('id', order_id).execute()
                                         st.success("✅ Hệ thống đã tạo xong giọng AI ngầm!")
-                                        st.audio(real_link, format="audio/wav")
+                                        
+                                        # [BẢO MẬT] Kiểm tra link trước khi phát
+                                        if real_link.startswith("http"):
+                                            st.audio(real_link, format="audio/wav")
+                                        else:
+                                            st.error("⚠️ File âm thanh bị lỗi hoặc chứa đường dẫn không hợp lệ.")
+                                            
                                         old_audio_link = real_link # Cập nhật biến để hiển thị nút bên dưới
                                     elif tts_status == 'error':
                                         st.error("❌ Quá trình tạo giọng AI bị lỗi.")
