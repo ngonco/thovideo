@@ -2147,27 +2147,37 @@ else:
                         final_audio_link_to_send = st.session_state['local_ai_audio_link']
                         st.session_state['chk_ai_upload_flag'] = True
 
-                        # 3. HIỂN THỊ 3 NÚT CHỨC NĂNG
+                        # 3. HIỂN THỊ 3 NÚT CHỨC NĂNG HOẶC THÔNG BÁO
                         st.markdown("---")
-                        st.write("👉 **Bạn muốn làm gì tiếp theo?**")
                         
-                        col_opt1, col_opt2, col_opt3 = st.columns(3)
-                        with col_opt1:
-                            if st.button("🎬 Dùng giọng này", type="primary", use_container_width=True):
-                                st.markdown("""
-                                <div style="background-color: #E8F5E9; border: 1px solid #4CAF50; padding: 10px; border-radius: 5px; margin-top: 10px; color: #1B5E20;">
-                                    <b>✅ Đã chọn giọng đọc!</b><br>
-                                    👇 Kéo xuống <b>BƯỚC 3</b> để chọn kiểu video minh họa, sau đó bấm nút <b>GỬI YÊU CẦU TẠO VIDEO</b>.
-                                </div>
-                                """, unsafe_allow_html=True)
-                        with col_opt2:
-                            if st.button("💾 Chỉ lưu giọng", use_container_width=True):
-                                create_order_logic(user, "VoiceOnly", final_audio_link_to_send, current_script_local, settings)
-                        with col_opt3:
-                            if st.button("🔄 Tạo lại giọng khác", use_container_width=True):
-                                # Khi bấm tạo lại, xóa link đi thì giao diện sẽ tự nhảy về Nhánh 2 (Form tạo)
-                                st.session_state['local_ai_audio_link'] = None
-                                st.rerun()
+                        # Tính thời lượng kịch bản hiện tại (15 ký tự ~ 1 giây)
+                        estimated_time_seconds = len(current_script_local) / 15
+                        
+                        if estimated_time_seconds > 30:
+                            # Ẩn 3 nút, chỉ hiện thông báo cho kịch bản dài
+                            st.success("🚀 Giọng nói đã được xử lý xong và tự động gửi đi tạo video/lưu lịch sử theo lựa chọn ban đầu của bạn!")
+                            st.info("👉 Vui lòng kéo xuống phần **Lịch sử Video** bên dưới để theo dõi tiến trình.")
+                        else:
+                            # Hiện 3 nút cho kịch bản ngắn
+                            st.write("👉 **Bạn muốn làm gì tiếp theo?**")
+                            
+                            col_opt1, col_opt2, col_opt3 = st.columns(3)
+                            with col_opt1:
+                                if st.button("🎬 Dùng giọng này", type="primary", use_container_width=True):
+                                    st.markdown("""
+                                    <div style="background-color: #E8F5E9; border: 1px solid #4CAF50; padding: 10px; border-radius: 5px; margin-top: 10px; color: #1B5E20;">
+                                        <b>✅ Đã chọn giọng đọc!</b><br>
+                                        👇 Kéo xuống <b>BƯỚC 3</b> để chọn kiểu video minh họa, sau đó bấm nút <b>GỬI YÊU CẦU TẠO VIDEO</b>.
+                                    </div>
+                                    """, unsafe_allow_html=True)
+                            with col_opt2:
+                                if st.button("💾 Chỉ lưu giọng", use_container_width=True):
+                                    create_order_logic(user, "VoiceOnly", final_audio_link_to_send, current_script_local, settings)
+                            with col_opt3:
+                                if st.button("🔄 Tạo lại giọng khác", use_container_width=True):
+                                    # Khi bấm tạo lại, xóa link đi thì giao diện sẽ tự nhảy về Nhánh 2 (Form tạo)
+                                    st.session_state['local_ai_audio_link'] = None
+                                    st.rerun()
 
                     # NHÁNH 2: NẾU CHƯA CÓ KẾT QUẢ -> HIỆN FORM CHỌN GIỌNG & NÚT GỬI
                     else:
