@@ -2203,10 +2203,12 @@ else:
                             
                             choice = st.radio(
                                 "Chọn cách xử lý:",
-                                ["🎬 Tạo video tự động luôn (Không cần nghe thử)", "🎧 Đợi tạo giọng xong để nghe thử trước"],
+                                ["🎬 Tạo video tự động (Không cần nghe thử)", "🎧 Đợi tạo giọng xong để nghe thử trước"],
+                                index=None, # <--- [MỚI] Để trống không chọn mặc định
                                 label_visibility="collapsed"
                             )
-                            if "Tạo video" in choice:
+                            # [QUAN TRỌNG] Phải thêm 'choice and' để tránh lỗi crash app khi người dùng chưa chọn gì
+                            if choice and "Tạo video" in choice:
                                 tts_long_action = "tao_video_luon"
                                 
                                 # --- MỚI: HỎI LỰA CHỌN VIDEO TRƯỚC KHI TẠO ---
@@ -2218,7 +2220,7 @@ else:
                                 
                                 auto_video_style = st.radio(
                                     "Chế độ video tự động:",
-                                    ["AI tự động chọn video", "Chọn chủ đề video cụ thể", "Video kết hợp ảnh AI (Mới)"],
+                                    ["AI tự động chọn video", "Chọn chủ đề video cụ thể", "Video và ảnh AI (đang phát triển)"],
                                     key="rb_auto_video_style",
                                     label_visibility="collapsed"
                                 )
@@ -2357,7 +2359,7 @@ else:
         # Radio chọn chế độ
         video_style = st.radio(
             "Chế độ video:",
-            ["AI tự động chọn video", "Chọn chủ đề video cụ thể", "Video kết hợp ảnh AI (Mới)"],
+            ["AI tự động chọn video", "Chọn chủ đề video cụ thể", "Video và ảnh AI (đang phát triển)"],
             key="rb_video_style",
             label_visibility="collapsed"
         )
