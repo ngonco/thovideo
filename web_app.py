@@ -1713,26 +1713,54 @@ else:
             final_script_content = ""
             selected_library_audio = None
 
-            # 1.1 LOGIC TÌM KIẾM TRONG THƯ VIỆN
-            # 1.1 LOGIC TÌM KIẾM TRONG THƯ VIỆN (CHẠY TRỰC TIẾP TRÊN SUPABASE)
+            # 1.1 LOGIC TÌM KIẾM VÀ LỌC TRONG THƯ VIỆN
             if source_opt == "📂 Tìm trong Thư viện":
-                st.info("💡Nhập tâm trạng hoặc từ khóa để tìm kịch bản phù hợp")
-                
-                with st.form(key="search_form"):
-                    c_search1, c_search2 = st.columns([3, 1], vertical_alignment="center")
-                    with c_search1:
-                        search_kw = st.text_input("", label_visibility="collapsed", placeholder="Nhập từ khóa (Ví dụ: Nhân quả, chữa lành...)")
-                    with c_search2:
-                        btn_search = st.form_submit_button("🔍 TÌM NGAY", use_container_width=True)
+                st.info("💡 Chọn danh mục thời lượng hoặc nhập từ khóa để tìm kịch bản")
 
-                if btn_search and search_kw:
-                    with st.spinner("Đang lục tìm trong kho dữ liệu..."):
-                        # Gửi lệnh cho Supabase tự tìm
-                        st.session_state['search_results'] = search_global_library(search_kw)
-                        st.session_state['has_searched'] = True
-                        if 'last_picked_idx' in st.session_state:
-                            del st.session_state['last_picked_idx']
+                # Thêm radio để người dùng chọn cách họ muốn tìm kịch bản
+                search_method = st.radio("Cách tìm kịch bản:", ["⏱️ Xem theo thời lượng (60s, 90s...)", "🔍 Tìm theo từ khóa"], horizontal=True, label_visibility="collapsed")
 
+                if search_method == "⏱️ Xem theo thời lượng (60s, 90s...)":
+                    col_cat1, col_cat2 = st.columns([3, 1], vertical_alignment="center")
+                    with col_cat1:
+                        # Dropdown chọn thư viện (Hiển thị tên đẹp mắt hơn)
+                        selected_cat = st.selectbox("Chọn thời lượng:", ["duoi_60s", "duoi_90s", "duoi_180s", "tren_180s"], format_func=lambda x: x.replace("duoi_", "Dưới ").replace("tren_", "Trên ").replace("s", " giây").title(), label_visibility="collapsed")
+                    with col_cat2:
+                        btn_load_cat = st.button("📥 TẢI DỮ LIỆU", use_container_width=True)
+
+                    if btn_load_cat:
+                        with st.spinner(f"Đang tải kịch bản {selected_cat}..."):
+                            raw_results = get_scripts_from_supabase_by_category(selected_cat)
+                            # Đồng bộ cấu trúc dữ liệu để code bên dưới không bị lỗi khi bấm chọn
+                            formatted_results = []
+                            for item in raw_results:
+                                formatted_results.append({
+                                    "content": item['content'],
+                                    "audio": item['audio_url'],
+                                    "source_sheet": item['category']
+                                })
+                            st.session_state['search_results'] = formatted_results
+                            st.session_state['has_searched'] = True
+                            if 'last_picked_idx' in st.session_state:
+                                del st.session_state['last_picked_idx']
+
+                else:
+                    # Giao diện tìm kiếm bằng từ khóa (Giữ nguyên như cũ)
+                    with st.form(key="search_form"):
+                        c_search1, c_search2 = st.columns([3, 1], vertical_alignment="center")
+                        with c_search1:
+                            search_kw = st.text_input("", label_visibility="collapsed", placeholder="Nhập từ khóa (Ví dụ: Nhân quả, chữa lành...)")
+                        with c_search2:
+                            btn_search = st.form_submit_button("🔍 TÌM NGAY", use_container_width=True)
+
+                    if btn_search and search_kw:
+                        with st.spinner("Đang lục tìm trong kho dữ liệu..."):
+                            st.session_state['search_results'] = search_global_library(search_kw)
+                            st.session_state['has_searched'] = True
+                            if 'last_picked_idx' in st.session_state:
+                                del st.session_state['last_picked_idx']
+
+                # Phần hiển thị kết quả chung cho cả 2 cách tìm
                 if st.session_state.get('has_searched'):
                     results = st.session_state.get('search_results', [])
                     if results:
@@ -1748,7 +1776,7 @@ else:
                             st.session_state['main_content_area'] = chosen_content
                             st.session_state['last_picked_idx'] = selected_idx
                             
-                            # --- [MỚI] RESET FILE ÂM THANH KHI ĐỔI KỊCH BẢN ---
+                            # --- RESET FILE ÂM THANH KHI ĐỔI KỊCH BẢN ---
                             if 'gemini_full_audio_link' in st.session_state: 
                                 st.session_state['gemini_full_audio_link'] = None
                             if 'local_ai_audio_link' in st.session_state:
@@ -1759,7 +1787,7 @@ else:
                         
                         final_script_content = chosen_content
                     else:
-                        st.warning("⚠️ Không tìm thấy kết quả nào. Hãy thử từ khóa khác!")
+                        st.warning("⚠️ Không tìm thấy kết quả nào. Hãy thử lại!")
 
             elif source_opt == "✍️ Tự viết mới":
                 st.caption("Nhập nội dung kịch bản của bạn vào bên dưới:")
