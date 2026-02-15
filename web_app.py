@@ -2816,20 +2816,20 @@ else:
                 # [FIX] Trừ đi 1 (chính là đơn hàng của bạn)
                 real_ahead = max(0, q_count - 1)
 
-                # Logic hiển thị thông minh hơn
+                # --- SỬA LẠI CÂU VĂN HIỂN THỊ CHO TỰ NHIÊN ---
                 if real_ahead > 10:
-                    q_text = "Hơn 10 người"
+                    q_display_text = "Đang có <b>hơn 10 đơn hàng</b> đang chờ trước bạn."
                 elif real_ahead == 0:
-                    q_text = "0 người"
+                    q_display_text = "✨ Đơn hàng của bạn <b>đang được xử lý ngay</b>."
                 else:
-                    q_text = f"{real_ahead} người"
+                    q_display_text = f"Đang có <b>{real_ahead} đơn hàng</b> đang chờ trước bạn."
                 
                 st.markdown(f"""
                 <div style="background-color: #E3F2FD; color: #0D47A1; padding: 15px; border-radius: 10px; border: 1px solid #2196F3; margin-bottom: 20px;">
-                    <span style="font-size: 18px; font-weight: bold;">⚙️ Đang tạo video </span><br>
+                    <span style="font-size: 18px; font-weight: bold;">⚙️ Hệ thống đang tạo video...</span><br>
                     <span style="font-size: 16px;">
-                        🔢 Đang có <b>{q_text}</b> đơn trước đơn này.<br>
-                        ⏳ Vui lòng quay lại sau <b>{q_wait} phút và bấm nút xem danh sách hoặc làm mới. </b>.
+                        🔢 {q_display_text}<br>
+                        ⏳ Ước tính xong sau: <b>~{q_wait} phút</b>. (Bấm "Làm mới" để cập nhật)
                     </span>
                 </div>
                 """, unsafe_allow_html=True)
