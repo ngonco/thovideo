@@ -2694,7 +2694,7 @@ else:
                     # count='exact' giúp Supabase chỉ trả về số lượng (rất nhanh), không tải dữ liệu nặng
                     queue_res = supabase.table('orders').select('*', count='exact').in_('status', ['Pending', 'Processing']).execute()
                     current_queue = queue_res.count if queue_res.count else 1
-                    est_wait_time = current_queue * 3 # Giả sử trung bình 3 phút/video
+                    est_wait_time = current_queue * 5 # Giả sử trung bình 5 phút/video
                     
                     st.session_state['queue_info'] = {
                         "position": current_queue,
@@ -2811,7 +2811,7 @@ else:
                 # Đếm lại số lượng để cập nhật mỗi khi f5
                 q_res = supabase.table('orders').select('*', count='exact').in_('status', ['Pending', 'Processing']).execute()
                 q_count = q_res.count if q_res.count else 1
-                q_wait = q_count * 3 # 3 phút/video
+                q_wait = q_count * 5 # 5 phút/video
                 
                 # [FIX] Trừ đi 1 (chính là đơn hàng của bạn)
                 real_ahead = max(0, q_count - 1)
@@ -2828,7 +2828,7 @@ else:
                 <div style="background-color: #E3F2FD; color: #0D47A1; padding: 15px; border-radius: 10px; border: 1px solid #2196F3; margin-bottom: 20px;">
                     <span style="font-size: 18px; font-weight: bold;">⚙️ Đang tạo video </span><br>
                     <span style="font-size: 16px;">
-                        🔢 Đang có <b>{q_text}</b> trước bạn.<br>
+                        🔢 Đang có <b>{q_text}</b> đơn trước đơn này.<br>
                         ⏳ Vui lòng quay lại sau <b>{q_wait} phút và bấm nút xem danh sách hoặc làm mới. </b>.
                     </span>
                 </div>
