@@ -2962,9 +2962,26 @@ else:
 
                     # CASE C: ĐANG XỬ LÝ / LỖI
                     elif raw_status == "Error":
-                        st.error("Video này bị lỗi xử lý.")
-                    else:
-                        st.info("Hệ thống đang xử lý video này...")
+                        st.error("❌ Video này bị lỗi xử lý.")
+                    elif raw_status in ["Pending", "Processing"]:
+                        # --- [MỚI] TÍNH TOÁN VỊ TRÍ HÀNG CHỜ TRONG LỊCH SỬ ---
+                        # Lấy tất cả đơn đang chờ của user này (theo thứ tự cũ đến mới)
+                        pending_orders = history_df[history_df['TrangThai'].isin(['Pending', 'Processing'])].iloc[::-1]
+                        
+                        # Tìm xem đơn hàng hiện tại đang đứng thứ mấy
+                        try:
+                            # Vị trí = (Số lượng đơn đang chờ) - (Vị trí của đơn này trong danh sách)
+                            pos_in_queue = list(pending_orders['ID']).index(order_id) + 1
+                            total_pending = len(pending_orders)
+                            
+                            if pos_in_queue == 1 and raw_status == "Processing":
+                                queue_msg = "🚀 **Hệ thống đang trực tiếp tạo video của bạn...**"
+                            else:
+                                queue_msg = f"🔢 Bạn đang đứng thứ **{pos_in_queue}/{total_pending}** trong hàng chờ xử lý."
+                        except:
+                            queue_msg = "⏳ Hệ thống đang xếp hàng xử lý video này..."
+
+                        st.info(queue_msg)
                     # A. Nếu có link kết quả -> Hiện nút Xem & Tải
                     # [FIX] Kiểm tra độ dài thay vì bắt buộc phải có http ngay từ đầu
                     if result_link and len(str(result_link)) > 5:
