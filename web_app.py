@@ -2343,7 +2343,7 @@ else:
                                     if user.get('plan') == 'huynhde':
                                         c_space, c_outro = st.columns([3, 2])
                                         with c_outro:
-                                            chk_outro_auto = st.checkbox("✨ Kèm Outro (hatbuinho.com)", value=False, key="chk_outro_auto")
+                                            chk_outro_auto = st.checkbox("(Tùy chọn) Kèm link hatbuinho.com ở cuối video", value=False, key="chk_outro_auto")
                                             settings['add_outro'] = chk_outro_auto
                                     else:
                                         settings['add_outro'] = False
