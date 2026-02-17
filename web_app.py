@@ -371,13 +371,15 @@ def get_latest_tts_log(email):
 def get_pending_local_ai_request(email, content):
     """Hàm tự động tìm lại yêu cầu TTS đang chạy ngầm nếu user bấm F5"""
     try:
-        # Lấy yêu cầu mới nhất của user
-        res = supabase.table('tts_requests').select("id, status, content").eq('email', email).order('created_at', desc=True).limit(1).execute()
+        # Lấy yêu cầu mới nhất của user (Thêm cột video_settings để kiểm tra)
+        res = supabase.table('tts_requests').select("id, status, content, video_settings").eq('email', email).order('created_at', desc=True).limit(1).execute()
         if res.data:
             req = res.data[0]
             # Nếu đang chờ/đang xử lý VÀ nội dung trùng khớp với trên màn hình
             if req['status'] in ['pending', 'processing'] and req['content'] == sanitize_input(content):
-                return req['id']
+                # CHỈ KHÔI PHỤC GIAO DIỆN CHỜ nếu đây KHÔNG PHẢI là lệnh tạo video ngầm
+                if req.get('video_settings') is None:
+                    return req['id']
     except Exception as e:
         print(f"Lỗi check request: {e}")
     return None
@@ -2403,6 +2405,12 @@ else:
                                                     
                                                     st.success("🚀 Đã đẩy lệnh xuống Server! Quá trình tạo giọng & video sẽ chạy ngầm hoàn toàn. Vui lòng kiểm tra mục 'Xem danh sách video' sau ít phút.")
                                                     st.session_state['show_history_section'] = True
+                                                    
+                                                    # LÀM SẠCH GIAO DIỆN ĐỂ TẠO KỊCH BẢN MỚI
+                                                    st.session_state['main_content_area'] = ""
+                                                    if 'pending_tts_id' in st.session_state:
+                                                        del st.session_state['pending_tts_id']
+                                                        
                                                     time.sleep(3)
                                                     st.rerun()
                                                     
