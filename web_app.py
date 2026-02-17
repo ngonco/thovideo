@@ -2407,7 +2407,9 @@ else:
                                                     st.session_state['show_history_section'] = True
                                                     
                                                     # LÀM SẠCH GIAO DIỆN ĐỂ TẠO KỊCH BẢN MỚI
-                                                    st.session_state['main_content_area'] = ""
+                                                    if 'main_content_area' in st.session_state:
+                                                        del st.session_state['main_content_area']
+                                                        
                                                     if 'pending_tts_id' in st.session_state:
                                                         del st.session_state['pending_tts_id']
                                                         
