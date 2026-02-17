@@ -2699,16 +2699,23 @@ else:
                 try:
                     supabase.table('orders').insert(order_data).execute()
                     
-                    # --- [MỚI] TÍNH TOÁN HÀNG CHỜ ---
-                    # Đếm số lượng đơn đang chờ hoặc đang chạy
-                    # count='exact' giúp Supabase chỉ trả về số lượng (rất nhanh), không tải dữ liệu nặng
-                    queue_res = supabase.table('orders').select('*', count='exact').in_('status', ['Pending', 'Processing']).execute()
-                    current_queue = queue_res.count if queue_res.count else 1
-                    est_wait_time = current_queue * 5 # Giả sử trung bình 5 phút/video
+                    # --- [MỚI] TÍNH TOÁN HÀNG CHỜ THÔNG MINH ---
+                    # Lấy email của tất cả đơn đang chờ để phân loại (Của mình vs Người khác)
+                    queue_res = supabase.table('orders').select('email').in_('status', ['Pending', 'Processing']).execute()
                     
+                    my_q = 0
+                    others_q = 0
+                    if queue_res.data:
+                        for item in queue_res.data:
+                            if item['email'] == user['email']:
+                                my_q += 1
+                            else:
+                                others_q += 1
+                                
                     st.session_state['queue_info'] = {
-                        "position": current_queue,
-                        "wait_time": est_wait_time
+                        "my_orders": my_q if my_q > 0 else 1, # Đảm bảo ít nhất là 1 vì vừa tạo
+                        "other_orders": others_q,
+                        "wait_time": (my_q + others_q) * 5
                     }
                     # --------------------------------
                     
@@ -2754,25 +2761,18 @@ else:
 
                 if is_working_time:
                     # Lấy thông tin hàng chờ
-                    q_info = st.session_state.get('queue_info', {'position': 1, 'wait_time': 5})
+                    q_info = st.session_state.get('queue_info', {'my_orders': 1, 'other_orders': 0, 'wait_time': 5})
                     
-                    # --- [LOGIC MỚI] ẨN SỐ LƯỢNG NẾU QUÁ ĐÔNG ---
-                    real_pos = q_info['position']
+                    # --- [LOGIC MỚI] HIỂN THỊ THÔNG MINH ---
+                    my_count = q_info['my_orders']
+                    other_count = q_info['other_orders']
                     
-                    # Tính số người thực sự đứng trước (Tổng trừ đi chính mình)
-                    people_ahead = max(0, real_pos - 1)
-
-                    if real_pos > 10:
-                        pos_display = "Hơn 10 người"
-                        sub_text = "Hệ thống đang xử lý nhiều đơn hàng trước bạn"
+                    if other_count == 0:
+                        sub_text = f"✨ Đang tạo {my_count} đơn hàng của bạn."
+                    elif other_count > 10:
+                        sub_text = f"⏳ Bạn có {my_count} đơn. Hệ thống khá tải (>10 đơn người khác xếp trước)."
                     else:
-                        pos_display = f"Thứ {real_pos}"
-                        
-                        # Logic hiển thị thông minh hơn
-                        if people_ahead == 0:
-                            sub_text = "✨ Hệ thống đang xử lý ngay."
-                        else:
-                            sub_text = f"Hệ thống đang xử lý {people_ahead} đơn hàng trước bạn"
+                        sub_text = f"⏳ Bạn có {my_count} đơn. Đang chờ sau {other_count} đơn của người khác."
                     # ---------------------------------------------
 
                     st.success(f"✅ ĐÃ GỬI THÀNH CÔNG! Mã đơn: {order_id}")
@@ -2816,30 +2816,36 @@ else:
         
         # Nếu đang trong giờ làm việc (7h - 23h)
         if 7 <= now_check.hour < 23:
-            # --- [LOGIC MỚI] TÍNH TOÁN HÀNG CHỜ THỜI GIAN THỰC ---
+            # --- [LOGIC MỚI] TÍNH TOÁN HÀNG CHỜ THÔNG MINH ---
             try:
-                # Đếm lại số lượng để cập nhật mỗi khi f5
-                q_res = supabase.table('orders').select('*', count='exact').in_('status', ['Pending', 'Processing']).execute()
-                q_count = q_res.count if q_res.count else 1
-                q_wait = q_count * 5 # 5 phút/video
+                # Lấy danh sách email để phân loại đơn của mình và người khác
+                q_res = supabase.table('orders').select('email').in_('status', ['Pending', 'Processing']).execute()
                 
-                # [FIX] Trừ đi 1 (chính là đơn hàng của bạn)
-                real_ahead = max(0, q_count - 1)
-
-                # --- SỬA LẠI CÂU VĂN HIỂN THỊ CHO TỰ NHIÊN ---
-                if real_ahead > 10:
-                    q_display_text = "Đang có <b>hơn 10 đơn hàng</b> đang chờ trước bạn."
-                elif real_ahead == 0:
-                    q_display_text = "✨ Đơn hàng của bạn <b>đang được xử lý ngay</b>."
+                my_q = 0
+                others_q = 0
+                if q_res.data:
+                    for item in q_res.data:
+                        if item['email'] == user['email']:
+                            my_q += 1
+                        else:
+                            others_q += 1
+                
+                q_wait = (my_q + others_q) * 5 # 5 phút/video
+                
+                # CÂU VĂN HIỂN THỊ THÔNG MINH
+                if others_q == 0:
+                    q_display_text = f"✨ <b>{my_q} đơn hàng</b> của bạn đang được xử lý ngay."
+                elif others_q > 10:
+                    q_display_text = f"⏳ Bạn có <b>{my_q} đơn</b>. Đang xếp sau <b>hơn 10 đơn</b> của người khác."
                 else:
-                    q_display_text = f"Đang có <b>{real_ahead} đơn hàng</b> đang chờ trước bạn."
+                    q_display_text = f"⏳ Bạn có <b>{my_q} đơn</b>. Đang xếp sau <b>{others_q} đơn</b> của người khác."
                 
                 st.markdown(f"""
                 <div style="background-color: #E3F2FD; color: #0D47A1; padding: 15px; border-radius: 10px; border: 1px solid #2196F3; margin-bottom: 20px;">
-                    <span style="font-size: 18px; font-weight: bold;">⚙️ Hệ thống đang tạo video...</span><br>
+                    <span style="font-size: 18px; font-weight: bold;">⚙️ Trạng thái máy chủ:</span><br>
                     <span style="font-size: 16px;">
-                        🔢 {q_display_text}<br>
-                        ⏳ Ước tính xong sau: <b>~{q_wait} phút</b>. (Bấm "Làm mới" để cập nhật)
+                        🎯 {q_display_text}<br>
+                        ⏱️ Hãy thư giãn và quay lại sau <b>~{q_wait} phút</b> và bấm "Làm mới" để cập nhật.
                     </span>
                 </div>
                 """, unsafe_allow_html=True)
