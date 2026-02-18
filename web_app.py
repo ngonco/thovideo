@@ -986,8 +986,8 @@ def admin_dashboard():
     st.markdown("---")
     st.title("🛠️ QUẢN TRỊ VIÊN (ADMIN)")
     
-    # [CẬP NHẬT] Thêm Tab thứ 3 là Quản lý User
-    tab1, tab2, tab3 = st.tabs(["👥 Thêm User Mới", "🔄 Đồng bộ Kịch bản", "✏️ Sửa/Tìm User"])
+    # [CẬP NHẬT] Thêm Tab thứ 4 là Nhật ký hệ thống
+    tab1, tab2, tab3, tab4 = st.tabs(["👥 Thêm User Mới", "🔄 Đồng bộ Kịch bản", "✏️ Sửa/Tìm User", "📜 Nhật ký Hệ thống"])
     
     # --- CẤU HÌNH CÁC GÓI CƯỚC CHUẨN (Dùng chung cho cả Tab 1 và Tab 3) ---
     # Tại đây quy định số video và mã code cho từng gói
@@ -1187,6 +1187,31 @@ def admin_dashboard():
                     st.rerun()
                 except Exception as e:
                     st.error(f"Lỗi khi lưu: {e}")
+
+    with tab4:
+        st.subheader("📜 Nhật ký & Báo cáo tài nguyên")
+        if st.button("🔄 Làm mới logs"):
+            st.rerun()
+            
+        try:
+            # Lấy 20 log mới nhất từ bảng admin_logs
+            # Lưu ý: Bạn cần tạo bảng 'admin_logs' trong Supabase (cột: id, created_at, type, message)
+            res = supabase.table('admin_logs').select("*").order('created_at', desc=True).limit(20).execute()
+            
+            if res.data:
+                for log in res.data:
+                    ts = pd.to_datetime(log['created_at']).tz_convert('Asia/Ho_Chi_Minh').strftime('%d/%m %H:%M')
+                    msg = log.get('message', '')
+                    l_type = log.get('type', 'info')
+                    
+                    if l_type == 'resource_warning':
+                        st.error(f"[{ts}] ⚠️ BÁO CÁO TÀI NGUYÊN:\n{msg}")
+                    else:
+                        st.info(f"[{ts}] ℹ️ {msg}")
+            else:
+                st.info("Chưa có nhật ký nào.")
+        except Exception as e:
+            st.warning("Chưa thể tải logs. Hãy chắc chắn bạn đã tạo bảng 'admin_logs' trong Supabase.")
 # --- CSS GIAO DIỆN (FIXED FILE UPLOADER VISIBILITY) ---
 st.markdown("""
     <style>
