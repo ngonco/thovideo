@@ -2286,34 +2286,25 @@ else:
                         # 3. HIỂN THỊ 3 NÚT CHỨC NĂNG HOẶC THÔNG BÁO
                         st.markdown("---")
                         
-                        # Tính thời lượng kịch bản hiện tại (15 ký tự ~ 1 giây)
-                        estimated_time_seconds = len(current_script_local) / 15
+                        st.write("👉 **Bạn muốn làm gì tiếp theo?**")
                         
-                        if estimated_time_seconds > 30:
-                            # Ẩn 3 nút, chỉ hiện thông báo cho kịch bản dài
-                            st.success("🚀 Đã tự động gửi đi tạo video và lưu giọng nói vào danh sách video.")
-                            st.info("👉 Bạn có thể đợi hoặc quay lại sau 3-10 phút để xem danh sách video kết quả.")
-                        else:
-                            # Hiện 3 nút cho kịch bản ngắn
-                            st.write("👉 **Bạn muốn làm gì tiếp theo?**")
-                            
-                            col_opt1, col_opt2, col_opt3 = st.columns(3)
-                            with col_opt1:
-                                if st.button("🎬 Dùng giọng này", type="primary", use_container_width=True):
-                                    st.markdown("""
-                                    <div style="background-color: #E8F5E9; border: 1px solid #4CAF50; padding: 10px; border-radius: 5px; margin-top: 10px; color: #1B5E20;">
-                                        <b>✅ Đã chọn giọng đọc!</b><br>
-                                        👇 Kéo xuống <b>BƯỚC 3</b> để chọn kiểu video minh họa, sau đó bấm nút <b>GỬI YÊU CẦU TẠO VIDEO</b>.
-                                    </div>
-                                    """, unsafe_allow_html=True)
-                            with col_opt2:
-                                if st.button("💾 Chỉ lưu giọng", use_container_width=True):
-                                    create_order_logic(user, "VoiceOnly", final_audio_link_to_send, current_script_local, settings)
-                            with col_opt3:
-                                if st.button("🔄 Tạo lại giọng khác", use_container_width=True):
-                                    # Khi bấm tạo lại, xóa link đi thì giao diện sẽ tự nhảy về Nhánh 2 (Form tạo)
-                                    st.session_state['local_ai_audio_link'] = None
-                                    st.rerun()
+                        col_opt1, col_opt2, col_opt3 = st.columns(3)
+                        with col_opt1:
+                            if st.button("🎬 Dùng giọng này", type="primary", use_container_width=True):
+                                st.markdown("""
+                                <div style="background-color: #E8F5E9; border: 1px solid #4CAF50; padding: 10px; border-radius: 5px; margin-top: 10px; color: #1B5E20;">
+                                    <b>✅ Đã chọn giọng đọc!</b><br>
+                                    👇 Kéo xuống <b>BƯỚC 3</b> để chọn kiểu video minh họa, sau đó bấm nút <b>GỬI YÊU CẦU TẠO VIDEO</b>.
+                                </div>
+                                """, unsafe_allow_html=True)
+                        with col_opt2:
+                            if st.button("💾 Chỉ lưu giọng", use_container_width=True):
+                                create_order_logic(user, "VoiceOnly", final_audio_link_to_send, current_script_local, settings)
+                        with col_opt3:
+                            if st.button("🔄 Tạo lại giọng khác", use_container_width=True):
+                                # Khi bấm tạo lại, xóa link đi thì giao diện sẽ tự nhảy về Nhánh 2 (Form tạo)
+                                st.session_state['local_ai_audio_link'] = None
+                                st.rerun()
 
                     # NHÁNH 2: NẾU CHƯA CÓ KẾT QUẢ -> HIỆN FORM CHỌN GIỌNG & NÚT GỬI
                     else:
@@ -2340,51 +2331,51 @@ else:
                         tts_long_action = "nghe_thu" 
                         choice = None # <--- [MỚI] Khởi tạo biến choice rỗng để tránh lỗi
                         
-                        if estimated_time_seconds > 30:
+                        st.markdown("""
+                            <div style="background-color: #E8F5E9; border: 1px solid #4CAF50; padding: 10px; border-radius: 5px; margin-top: 10px; margin-bottom: 10px; color: #1B5E20;">
+                                <b>🤖 Tùy chọn xử lý giọng AI</b><br>
+                                Bạn muốn hệ thống tạo tự động hay tạo giọng trước để nghe thử?
+                            </div>
+                        """, unsafe_allow_html=True)
+                        
+                        choice = st.radio(
+                            "Chọn cách xử lý:",
+                            ["🎬 Tạo video tự động (Không cần nghe thử)", "🎧 Đợi tạo giọng xong để nghe thử trước"],
+                            index=None, # <--- [MỚI] Để trống không chọn mặc định
+                            label_visibility="collapsed",
+                            key="rb_tts_action"
+                        )
+                        # [QUAN TRỌNG] Phải thêm 'choice and' để tránh lỗi crash app khi người dùng chưa chọn gì
+                        if choice and "Tạo video" in choice:
+                            tts_long_action = "tao_video_luon"
+                            
+                            # --- MỚI: HỎI LỰA CHỌN VIDEO TRƯỚC KHI TẠO ---
                             st.markdown("""
-                                <div style="background-color: #E8F5E9; border: 1px solid #4CAF50; padding: 10px; border-radius: 5px; margin-top: 10px; margin-bottom: 10px; color: #1B5E20;">
-                                    <b>⏳ Kịch bản khá dài (hơn 30 giây)</b><br>
-                                    Hệ thống cần thời gian để tạo giọng nói. Bạn muốn làm gì?
-                                </div>
+                            <div style="background-color: #FFF3E0; border-left: 4px solid #FF9800; padding: 10px; margin-bottom: 15px;">
+                                <b>👉 Vui lòng chọn phong cách Video cho tiến trình tự động này:</b>
+                            </div>
                             """, unsafe_allow_html=True)
                             
-                            choice = st.radio(
-                                "Chọn cách xử lý:",
-                                ["🎬 Tạo video tự động (Không cần nghe thử)", "🎧 Đợi tạo giọng xong để nghe thử trước"],
-                                index=None, # <--- [MỚI] Để trống không chọn mặc định
+                            auto_video_style = st.radio(
+                                "Chế độ video tự động:",
+                                ["AI tự động chọn video", "Chọn chủ đề video cụ thể", "Video và ảnh AI (đang phát triển)"],
+                                key="rb_auto_video_style",
                                 label_visibility="collapsed"
                             )
-                            # [QUAN TRỌNG] Phải thêm 'choice and' để tránh lỗi crash app khi người dùng chưa chọn gì
-                            if choice and "Tạo video" in choice:
-                                tts_long_action = "tao_video_luon"
-                                
-                                # --- MỚI: HỎI LỰA CHỌN VIDEO TRƯỚC KHI TẠO ---
-                                st.markdown("""
-                                <div style="background-color: #FFF3E0; border-left: 4px solid #FF9800; padding: 10px; margin-bottom: 15px;">
-                                    <b>👉 Vui lòng chọn phong cách Video cho tiến trình tự động này:</b>
-                                </div>
-                                """, unsafe_allow_html=True)
-                                
-                                auto_video_style = st.radio(
-                                    "Chế độ video tự động:",
-                                    ["AI tự động chọn video", "Chọn chủ đề video cụ thể", "Video và ảnh AI (đang phát triển)"],
-                                    key="rb_auto_video_style",
-                                    label_visibility="collapsed"
-                                )
-                                
-                                auto_topic_name = ""
-                                if "Chọn chủ đề video cụ thể" in auto_video_style:
-                                    TOPIC_LIST = [
-                                        "0 Đức Phật 2026", "0 Đức Phật và Cờ VN", "0 Đọc sách bên hoa sen", "1 Người tí hon bên sen", "2 Đầm sen chill chill", "3 Ruộng bậc thang dưới ánh trăng", "AI bầu trời", "AI chùa", "AI sinh vật cute", "Anime", 
-                                        "Âu Mỹ", "Âu Mỹ home garden", "Bác Hồ", "Biển đại dương", 
-                                        "Chiến tranh người que", "Cô đơn giữa mây trời", "Cô gái và linh thú", 
-                                        "Con Đường", "Cyperpunk", "Động vật cute", 
-                                        "Gọt trái cây", "Mặt trời lặn", "Mặt trời mọc", "Mùa hạ", "Mùa thu", 
-                                        "Mùa xuân", "Thiên nhiên", 
-                                        "Thực vật phát sáng", "Võ thuật", "Vũ Trụ"
-                                    ]
-                                    auto_topic_name = st.selectbox("Chọn chủ đề mong muốn:", TOPIC_LIST, key="sb_auto_topic")
-                                st.markdown("---")
+                            
+                            auto_topic_name = ""
+                            if "Chọn chủ đề video cụ thể" in auto_video_style:
+                                TOPIC_LIST = [
+                                    "0 Đức Phật 2026", "0 Đức Phật và Cờ VN", "0 Đọc sách bên hoa sen", "1 Người tí hon bên sen", "2 Đầm sen chill chill", "3 Ruộng bậc thang dưới ánh trăng", "AI bầu trời", "AI chùa", "AI sinh vật cute", "Anime", 
+                                    "Âu Mỹ", "Âu Mỹ home garden", "Bác Hồ", "Biển đại dương", 
+                                    "Chiến tranh người que", "Cô đơn giữa mây trời", "Cô gái và linh thú", 
+                                    "Con Đường", "Cyperpunk", "Động vật cute", 
+                                    "Gọt trái cây", "Mặt trời lặn", "Mặt trời mọc", "Mùa hạ", "Mùa thu", 
+                                    "Mùa xuân", "Thiên nhiên", 
+                                    "Thực vật phát sáng", "Võ thuật", "Vũ Trụ"
+                                ]
+                                auto_topic_name = st.selectbox("Chọn chủ đề mong muốn:", TOPIC_LIST, key="sb_auto_topic")
+                            st.markdown("---")
 
                         # Khôi phục trạng thái chờ nếu lỡ F5
                         if 'pending_tts_id' not in st.session_state:
@@ -2434,8 +2425,8 @@ else:
 
                         # CHƯA GỬI -> HIỆN NÚT BẤM
                         else:
-                            # --- MỚI: Ẩn nút nếu kịch bản dài mà chưa chọn cách xử lý ---
-                            if estimated_time_seconds > 30 and choice is None:
+                            # --- MỚI: Ẩn nút nếu chưa chọn cách xử lý (áp dụng cho mọi thời lượng) ---
+                            if choice is None:
                                 pass # Lệnh pass giúp ẩn hoàn toàn phần hiển thị bên dưới, chỉ giữ lại 2 lựa chọn
                             else:
                                 # Tự động đổi tên nút dựa theo lựa chọn phía trên
@@ -2536,9 +2527,12 @@ else:
     # --- [MỚI] KIỂM TRA ĐIỀU KIỆN ĐỂ ẨN BƯỚC 3 ---
     hide_step_3 = False
     if voice_method == "🖥️ Giọng AI tiêu chuẩn":
-        current_script_step3 = st.session_state.get('main_content_area', "")
-        if current_script_step3 and len(current_script_step3) / 15 > 30:
-            hide_step_3 = True # Nếu kịch bản dài hơn 30s thì bật cờ ẩn Bước 3
+        # Ẩn Bước 3 nếu người dùng đang ở Nhánh 2 (chưa có file âm thanh) 
+        # VÀ đã chọn chức năng "Tạo video tự động"
+        if not st.session_state.get('local_ai_audio_link'):
+            action_choice = st.session_state.get("rb_tts_action", "")
+            if action_choice and "Tạo video" in action_choice:
+                hide_step_3 = True
 
     if not hide_step_3:
         # [LƯU Ý] Dòng with này đã được thụt vào trong lệnh if
