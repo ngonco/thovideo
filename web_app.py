@@ -1189,29 +1189,106 @@ def admin_dashboard():
                     st.error(f"Lỗi khi lưu: {e}")
 
     with tab4:
-        st.subheader("📜 Nhật ký & Báo cáo tài nguyên")
-        if st.button("🔄 Làm mới logs"):
-            st.rerun()
+        c_log1, c_log2 = st.columns([3, 1])
+        with c_log1:
+            st.subheader("📜 Nhật ký & Báo cáo hệ thống")
+        with c_log2:
+            if st.button("🔄 Làm mới logs", use_container_width=True):
+                st.rerun()
             
         try:
-            # Lấy 20 log mới nhất từ bảng admin_logs
-            # Lưu ý: Bạn cần tạo bảng 'admin_logs' trong Supabase (cột: id, created_at, type, message)
-            res = supabase.table('admin_logs').select("*").order('created_at', desc=True).limit(20).execute()
+            # Lấy 50 log mới nhất (Tăng lên để không bị trôi mất thông tin quan trọng)
+            res = supabase.table('admin_logs').select("*").order('created_at', desc=True).limit(50).execute()
             
             if res.data:
                 for log in res.data:
-                    ts = pd.to_datetime(log['created_at']).tz_convert('Asia/Ho_Chi_Minh').strftime('%d/%m %H:%M')
+                    # Xử lý thời gian
+                    try:
+                        ts = pd.to_datetime(log['created_at']).tz_convert('Asia/Ho_Chi_Minh').strftime('%d/%m %H:%M')
+                    except:
+                        ts = str(log['created_at'])
+                        
                     msg = log.get('message', '')
                     l_type = log.get('type', 'info')
                     
+                    # --- GIAO DIỆN 1: BÁO CÁO TÀI NGUYÊN (Dạng Bảng) ---
                     if l_type == 'resource_warning':
-                        st.error(f"[{ts}] ⚠️ BÁO CÁO TÀI NGUYÊN:\n{msg}")
+                        with st.expander(f"⚠️ [{ts}] BÁO CÁO KHO VIDEO (Click để xem chi tiết)", expanded=True):
+                            # Xử lý văn bản thô thành bảng dữ liệu đẹp mắt
+                            lines = msg.split('\n')
+                            table_data = []
+                            raw_text_fallback = []
+                            
+                            for line in lines:
+                                line = line.strip()
+                                # Chỉ lấy những dòng có chứa dấu gạch đứng '|' (Dấu hiệu của bảng dữ liệu)
+                                if "|" in line and "Tổng:" in line:
+                                    # Tách các cột: Anchay | Tổng: 10 | Còn: 0 | Trạng thái
+                                    parts = [p.strip() for p in line.split('|')]
+                                    if len(parts) >= 4:
+                                        # Làm sạch dữ liệu từng cột
+                                        topic = parts[0]
+                                        total = parts[1].replace("Tổng:", "").strip()
+                                        remain = parts[2].replace("Còn:", "").replace("Reset:", "").strip() # Xử lý cả trường hợp Reset
+                                        status = parts[3]
+                                        
+                                        # Nếu là dòng Reset, hiển thị rõ số lần Reset
+                                        if "Reset" in parts[2]:
+                                            remain_col_name = "Số lần Reset"
+                                        else:
+                                            remain_col_name = "Còn lại"
+
+                                        table_data.append({
+                                            "Chủ đề": topic,
+                                            "Tổng kho": total,
+                                            "Số liệu": remain, # Cột này hiển thị số dư hoặc số lần reset
+                                            "Trạng thái": status
+                                        })
+                                else:
+                                    if line: raw_text_fallback.append(line)
+
+                            # Hiển thị bảng nếu phân tích thành công
+                            if table_data:
+                                st.dataframe(
+                                    pd.DataFrame(table_data), 
+                                    use_container_width=True, 
+                                    hide_index=True,
+                                    column_config={
+                                        "Trạng thái": st.column_config.TextColumn("Cảnh báo", help="Mức độ nghiêm trọng")
+                                    }
+                                )
+                            else:
+                                # Nếu không phân tích được bảng thì hiện text thường (nhưng nhỏ gọn hơn st.error)
+                                st.text(msg)
+
+                    # --- GIAO DIỆN 2: AI GỢI Ý CHỦ ĐỀ MỚI (Nổi bật) ---
+                    elif l_type == 'topic_suggestion':
+                        st.markdown(f"""
+                        <div style="
+                            background-color: #FFFDE7; 
+                            border-left: 5px solid #FBC02D; 
+                            padding: 15px; 
+                            border-radius: 5px; 
+                            margin-bottom: 15px; 
+                            box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                            <div style="font-weight: bold; color: #F57F17; font-size: 18px; margin-bottom: 5px;">
+                                💡 [{ts}] AI PHÁT HIỆN CHỦ ĐỀ MỚI
+                            </div>
+                            <div style="color: #3E2723; font-size: 16px; white-space: pre-wrap; line-height: 1.5;">
+                                {msg}
+                            </div>
+                        </div>
+                        """, unsafe_allow_html=True)
+
+                    # --- GIAO DIỆN 3: LOG THÔNG THƯỜNG ---
                     else:
-                        st.info(f"[{ts}] ℹ️ {msg}")
+                        st.text(f"[{ts}] ℹ️ {msg}")
+                    
+                    st.divider() # Kẻ ngang phân cách giữa các log
             else:
                 st.info("Chưa có nhật ký nào.")
         except Exception as e:
-            st.warning("Chưa thể tải logs. Hãy chắc chắn bạn đã tạo bảng 'admin_logs' trong Supabase.")
+            st.error(f"Lỗi hiển thị logs: {e}")
 # --- CSS GIAO DIỆN (FIXED FILE UPLOADER VISIBILITY) ---
 st.markdown("""
     <style>
