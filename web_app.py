@@ -2643,17 +2643,25 @@ else:
     # --- NÚT GỬI (ĐÃ SỬA ĐỂ CHECK QUOTA) ---
     result_container = st.container()
     
-    # [MỚI] Tùy chọn Outro cho gói huynhde (Đẩy sang góc phải cho nhỏ gọn)
-    if user.get('plan') == 'huynhde':
-        c_space, c_outro = st.columns([3, 2])
-        with c_outro:
-            chk_outro_main = st.checkbox("✨ Kèm Outro (hatbuinho.com)", value=False, key="chk_outro_main")
-            settings['add_outro'] = chk_outro_main
+    # [FIX] Sử dụng biến hide_step_3 để quyết định xem có vẽ Nút Gửi và Checkbox hay không
+    btn_submit_main = False
+    if not hide_step_3:
+        # [MỚI] Tùy chọn Outro cho gói huynhde (Đẩy sang góc phải cho nhỏ gọn)
+        if user.get('plan') == 'huynhde':
+            c_space, c_outro = st.columns([3, 2])
+            with c_outro:
+                chk_outro_main = st.checkbox("✨ Kèm Outro (hatbuinho.com)", value=False, key="chk_outro_main")
+                settings['add_outro'] = chk_outro_main
+        else:
+            settings['add_outro'] = False
+        
+        # Disable nút bấm nếu hết Quota
+        btn_submit_main = st.button("🚀 GỬI YÊU CẦU TẠO VIDEO", type="primary", use_container_width=True, disabled=is_out_of_quota)
     else:
+        # Đảm bảo biến cài đặt không bị lỗi khi nút bị ẩn
         settings['add_outro'] = False
-    
-    # Disable nút bấm nếu hết Quota
-    if st.button("🚀 GỬI YÊU CẦU TẠO VIDEO", type="primary", use_container_width=True, disabled=is_out_of_quota):
+
+    if btn_submit_main:
         
         # [NEW] Kiểm tra spam (Chống bấm liên tục)
         # [BẢO MẬT] Kiểm tra Quota thực tế từ DB lần nữa trước khi gọi API tốn tiền
